@@ -99,6 +99,7 @@ export function Chat({
   const [showJump, setShowJump] = useState(false);
   const lastMessage = chat.messages.at(-1);
   const latestRun = chat.runs.at(-1);
+  const runningTask = chat.runs.find((task) => task.status === "running");
   const conversationId = chat.current?.id;
   const hasMessages = chat.messages.length > 0;
   useLayoutEffect(() => {
@@ -418,8 +419,6 @@ export function Chat({
                           <TaskActivity
                             task={task}
                             activities={chat.activities}
-                            cancelling={chat.cancelling}
-                            onCancel={(id) => void chat.cancel(id)}
                           />
                         )}
                       </article>
@@ -475,30 +474,52 @@ export function Chat({
                   if (!event.repeat) event.currentTarget.form?.requestSubmit();
                 }}
                 aria-describedby={composerStatus ? "composer-help" : undefined}
-                disabled={chat.pending}
+                disabled={chat.pending && !chat.submissionAccepted}
               />
-              <Button
-                className="send-button"
-                size={40}
-                type="submit"
-                disabled={unavailable || !draft.trim()}
-                aria-label="Send message"
-                title="Send message"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+              {runningTask ? (
+                <Button
+                  className="send-button"
+                  size={40}
+                  type="button"
+                  aria-label="Stop response"
+                  title="Stop response"
+                  disabled={chat.cancelling}
+                  onClick={() => void chat.cancel(runningTask.id)}
                 >
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
-              </Button>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <rect x="5" y="5" width="14" height="14" rx="2" />
+                  </svg>
+                </Button>
+              ) : (
+                <Button
+                  className="send-button"
+                  size={40}
+                  type="submit"
+                  disabled={unavailable || !draft.trim()}
+                  aria-label="Send message"
+                  title="Send message"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 19V5M5 12l7-7 7 7" />
+                  </svg>
+                </Button>
+              )}
             </form>
             {composerStatus && (
               <p id="composer-help" className="composer-status" role="status">

@@ -1,4 +1,3 @@
-import { Button } from "@jack.winter/pancake-ui";
 import type { Activity, TaskRun } from "@panky/shared";
 import "./task-activity.css";
 
@@ -66,13 +65,9 @@ function ActivityEntry({ activity }: { activity: Activity }) {
 export function TaskActivity({
   task,
   activities,
-  cancelling,
-  onCancel,
 }: {
   task: TaskRun;
   activities: Activity[];
-  cancelling: boolean;
-  onCancel: (id: string) => void;
 }) {
   const status = statuses[task.status];
   return (
@@ -110,18 +105,6 @@ export function TaskActivity({
         <p className="task-error" role="alert">
           {task.error}
         </p>
-      )}
-      {task.status === "running" && (
-        <div className="task-controls">
-          <Button
-            variant="secondary"
-            onClick={() => onCancel(task.id)}
-            disabled={cancelling}
-            aria-label="Cancel task"
-          >
-            {cancelling ? "Cancelling…" : "Cancel task"}
-          </Button>
-        </div>
       )}
     </section>
   );

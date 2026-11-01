@@ -25,6 +25,7 @@ export function useChat(api: Api) {
   const [cancelling, setCancelling] = useState(false);
   const cancelLock = useRef(false);
   const [pending, setPending] = useState(false);
+  const [submissionAccepted, setSubmissionAccepted] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [serverBusy, setServerBusy] = useState(false);
   const [connected, setConnected] = useState(true);
@@ -37,6 +38,7 @@ export function useChat(api: Api) {
     if (lock.current || cancelLock.current) return;
     lock.current = true;
     setPending(true);
+    setSubmissionAccepted(false);
     setError("");
     try {
       await operation();
@@ -151,6 +153,7 @@ export function useChat(api: Api) {
         if (!mounted.current) return;
         switch (event.type) {
           case "start":
+            setSubmissionAccepted(true);
             assistantId = event.assistant.id;
             runId = event.run.id;
             setRuns((items) => [...items, event.run]);
@@ -275,6 +278,7 @@ export function useChat(api: Api) {
     cancel,
     pending: pending || cancelling,
     streaming,
+    submissionAccepted,
     serverBusy,
     connected,
     error,

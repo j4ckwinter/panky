@@ -87,10 +87,69 @@ test("activity remains compact during streaming and cancellation stays reachable
   await expect(activity.getByText("Running", { exact: true })).toBeVisible();
   await expect(activity.locator("details").first()).not.toHaveAttribute("open");
   await expect(
-    activity.getByRole("button", { name: "Cancel task" }),
+    page.getByRole("button", { name: "Stop response" }),
   ).toBeVisible();
-  await activity.getByRole("button", { name: "Cancel task" }).click();
+  await page.getByRole("button", { name: "Stop response" }).click();
   await expect(activity.getByText("Cancelled", { exact: true })).toBeVisible();
   await activity.locator("summary").first().click();
   await expect(activity.getByLabel("Task timeline")).toBeVisible();
+});
+
+test("next draft survives cancellation and sends only on request", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await login(page);
+  const input = page.getByLabel("Message", { exact: true });
+  await input.fill("Long answer " + "word ".repeat(800));
+  await input.press("Enter");
+  await expect(page.getByLabel("Stop response", { exact: true })).toBeVisible();
+  await expect(input).toBeEnabled();
+  await input.fill("My next question");
+  await input.press("Enter");
+  await expect(
+    page.getByRole("article", { name: "Your message", exact: true }),
+  ).toHaveCount(1);
+  await page.getByLabel("Stop response", { exact: true }).click();
+  await expect(page.getByLabel("Send message", { exact: true })).toBeEnabled();
+  await expect(input).toHaveValue("My next question");
+  await input.press("Enter");
+  await expect(
+    page.getByRole("article", { name: "Your message", exact: true }),
+  ).toHaveCount(2);
+  await expect(input).toHaveValue("");
+  await expect(
+    page.getByLabel("Refresh history", { exact: true }),
+  ).toBeEnabled();
+});
+
+test("next draft survives a completed reply without being submitted", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await login(page);
+  const input = page.getByLabel("Message", { exact: true });
+  await input.fill("Complete this reply " + "word ".repeat(200));
+  await input.press("Enter");
+  await expect(page.getByLabel("Stop response", { exact: true })).toBeVisible();
+  let releaseRefresh: (() => void) | undefined;
+  const refreshGate = new Promise<void>((resolve) => {
+    releaseRefresh = resolve;
+  });
+  await page.route("**/api/conversations", async (route) => {
+    if (route.request().method() === "GET") await refreshGate;
+    await route.continue();
+  });
+  await input.fill("Keep this draft");
+  await expect(page.getByLabel("Stop response", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(input).toBeEnabled();
+  await expect(input).toBeFocused();
+  releaseRefresh?.();
+  await expect(page.getByLabel("Send message", { exact: true })).toBeEnabled();
+  await expect(input).toHaveValue("Keep this draft");
+  await expect(
+    page.getByRole("article", { name: "Your message", exact: true }),
+  ).toHaveCount(1);
 });

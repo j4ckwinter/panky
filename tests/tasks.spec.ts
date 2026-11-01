@@ -115,7 +115,7 @@ test("real clock tool result appears in the mock reply and survives refresh with
   });
 });
 
-test("Cancel task stops a live reply and persists cancellation across refresh", async ({
+test("Stop response stops a live reply and persists cancellation across refresh", async ({
   page,
   request,
 }) => {
@@ -134,7 +134,9 @@ test("Cancel task stops a live reply and persists cancellation across refresh", 
   await expect(
     page.getByText(/This is a mock response from Panky/),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Cancel task", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Stop response", exact: true })
+    .click();
   const activity = page.getByRole("region", {
     name: "Task activity",
     exact: true,
@@ -143,7 +145,7 @@ test("Cancel task stops a live reply and persists cancellation across refresh", 
     activity.getByText("Cancelled", { exact: true }).first(),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Cancel task", exact: true }),
+    page.getByRole("button", { name: "Stop response", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
   const saved = historySchema.parse(
