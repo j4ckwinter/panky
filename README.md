@@ -85,9 +85,9 @@ Server environment variables are loaded from `apps/server/.env` by the package s
 
 | Variable               | Default / requirement                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------------------------- |
-| `AUTH_ORIGIN` | Exact browser origin for Google sign-in and cookies; default `http://localhost:5173` |
-| `OWNER_EMAIL` | Initial owner email; required when Google sign-in is configured |
-| `GOOGLE_CLIENT_ID` | Google OAuth web client ID; absent means browser sign-in is disabled |
+| `AUTH_ORIGIN`          | Exact browser origin for Google sign-in and cookies; default `http://localhost:5173`                    |
+| `OWNER_EMAIL`          | Initial owner email; required when Google sign-in is configured                                         |
+| `GOOGLE_CLIENT_ID`     | Google OAuth web client ID; absent means browser sign-in is disabled                                    |
 | `AUTH_TOKEN`           | Required, at least 32 characters; generate a random token                                               |
 | `HOST`                 | `127.0.0.1`; keep loopback when using the tunnel                                                        |
 | `PORT`                 | `3001`                                                                                                  |
