@@ -78,37 +78,23 @@ SQLite files contain plaintext conversations. Keep the data directory private. F
 
 ## Prepare remote access
 
-These steps are for you to perform when ready. No account, DNS record, tunnel, or deployment is created by this repository. You need a Vercel account and a domain managed through Cloudflare. The Mac must stay awake and connected, with both the backend and tunnel running.
+The frontend runs on Vercel and the backend stays on your Mac. Both the backend and the tunnel must remain running, and the Mac must stay awake and connected. You need Vercel and ngrok accounts; no purchased domain is required.
 
-### 1. Create a named Cloudflare tunnel
+### 1. Start the ngrok tunnel
 
-Install `cloudflared` and authenticate, then create a named tunnel:
-
-```sh
-brew install cloudflared
-cloudflared tunnel login
-cloudflared tunnel create panky
-```
-
-Put this configuration in `~/.cloudflared/config.yml`, replacing the UUID, username, and hostname:
-
-```yaml
-tunnel: YOUR-TUNNEL-UUID
-credentials-file: /Users/YOUR-USERNAME/.cloudflared/YOUR-TUNNEL-UUID.json
-ingress:
-  - hostname: panky-api.example.com
-    service: http://127.0.0.1:3001
-  - service: http_status:404
-```
-
-Then route DNS and run it:
+Install ngrok and configure its account authtoken in your own terminal:
 
 ```sh
-cloudflared tunnel route dns panky panky-api.example.com
-cloudflared tunnel run panky
+brew install ngrok
+ngrok config add-authtoken "YOUR_NGROK_AUTHTOKEN"
+ngrok http http://127.0.0.1:3001 --inspect=false
 ```
 
-Keep the credentials file private and outside the repository. See Cloudflare's [named tunnel setup](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/). Do not use a Quick Tunnel: [Quick Tunnels do not support SSE](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/). The backend sends `text/event-stream` with cache bypass headers for incremental delivery. Keep caching disabled for the API hostname and avoid additional interactive login middleware on it, which would require a different cross-origin authentication flow.
+The ngrok account token is different from Panky's `AUTH_TOKEN`. Keep both private. `--inspect=false` disables local HTTP request inspection, which would otherwise capture authentication headers and conversation content. Keep this terminal open. Copy the public HTTPS URL ngrok assigns you.
+
+The frontend sends ngrok's documented `ngrok-skip-browser-warning` header when the API hostname ends in `.ngrok-free.dev`, `.ngrok-free.app`, or `.ngrok.app`. The backend permits that header in preflight requests; bearer authentication is still required for every API request. See [ngrok macOS setup](https://ngrok.com/download/mac-os) and [free-plan limits](https://ngrok.com/docs/pricing-limits/free-plan-limits). The free plan has usage limits; it is suitable for this development setup, not a claim of production availability.
+
+A named Cloudflare tunnel remains an alternative if you later have a Cloudflare-managed domain. Do not use a Cloudflare Quick Tunnel for this SSE endpoint.
 
 ### 2. Configure Vercel
 
@@ -118,7 +104,7 @@ Import the repository into a Vercel project. Select the Vite framework and root 
 - Build command: `pnpm build`
 - Output directory: `dist`
 - Node.js: 24.x
-- Environment: `VITE_API_URL=https://panky-api.example.com`
+- Environment: `VITE_API_URL=https://YOUR-NGROK-DOMAIN.ngrok-free.dev`
 
 The app's `vercel.json` supplies build/output settings. Vercel's [monorepo documentation](https://vercel.com/docs/monorepos) explains project roots and workspace dependencies. The token belongs only in the local backend environment, never in Vercel.
 
@@ -128,12 +114,12 @@ Set backend `ALLOWED_ORIGINS` to the exact deployed origin, for example `https:/
 
 On the deployed frontend, connect with your token and send a message. Confirm text appears progressively, then refresh and reconnect to verify history. Stop and restart the backend and check the same history again. In browser developer tools, check that a request without `Authorization` receives 401; an unlisted frontend origin should fail access. Open a second tab and attempt a submission during a response: it must be rejected cleanly. Disconnect during a reply and verify an interrupted record after reconnecting. Inspect the network response for `text/event-stream` and incremental data.
 
-A successful local build does not prove streaming through Vercel, Cloudflare, or your network. Remote access remains unverified until these steps pass on the actual deployment.
+A successful local build does not prove streaming through Vercel, ngrok, or your network. Remote access remains unverified until these steps pass on the actual deployment.
 
 ## Milestone status and limits
 
 Milestone 1 implementation includes authenticated streaming mock chat, SQLite history, responsive UI, workspace checks, and deployment preparation. Local verification passed on Node 26.13.0: `pnpm check` (13 backend tests), `pnpm build`, and `pnpm test:e2e` (5 Chromium tests). Desktop and 390px mobile screenshots were inspected. The compiled backend also streamed a reply and restored it after an actual process restart. The maximum-length browser test completed in about 13 seconds. Independent review found no remaining actionable issues after the long-message streaming fix.
 
-CI targets Node 24; that runtime and hosted CI have not been exercised locally. Vercel configuration and the production frontend build are prepared, but an actual Vercel build/deployment and Cloudflare tunnel remain unverified. The local Git repository includes `pnpm-lock.yaml`; environment secrets, conversation data, and generated files are ignored.
+GitHub CI passed on Node 24 for the initial Milestone 1 commit. Vercel configuration and the production frontend build are prepared, but an actual Vercel build/deployment and end-to-end remote access remain unverified. The local Git repository includes `pnpm-lock.yaml`; environment secrets, conversation data, and generated files are ignored.
 
 The mock is deterministic and does not reason, execute tools, or call an AI service. There is no Ollama installation or model download. The next milestone is **Tool Execution and Task Activity**; it has not been started.

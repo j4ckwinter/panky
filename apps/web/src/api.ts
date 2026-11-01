@@ -37,6 +37,10 @@ function backendUrl() {
 
 export function createApi(token: string) {
   const base = backendUrl();
+  const hostname = new URL(base).hostname;
+  const ngrok = [".ngrok-free.dev", ".ngrok-free.app", ".ngrok.app"].some(
+    (suffix) => hostname.endsWith(suffix),
+  );
   async function request(path: string, init: RequestInit = {}) {
     let response: Response;
     try {
@@ -45,7 +49,11 @@ export function createApi(token: string) {
         signal: init.signal ?? AbortSignal.timeout(15_000),
         credentials: "omit",
         redirect: "error",
-        headers: { Authorization: `Bearer ${token}`, ...init.headers },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(ngrok ? { "ngrok-skip-browser-warning": "1" } : {}),
+          ...init.headers,
+        },
       });
     } catch {
       throw new Error(

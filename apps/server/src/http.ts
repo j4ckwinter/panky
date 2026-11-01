@@ -78,16 +78,19 @@ export function createApp(
           ?.split(",")
           .some(
             (header) =>
-              !["authorization", "content-type"].includes(
-                header.trim().toLowerCase(),
-              ),
+              ![
+                "authorization",
+                "content-type",
+                "ngrok-skip-browser-warning",
+              ].includes(header.trim().toLowerCase()),
           )
       ) {
         throw new HttpError(403, "Preflight request is not allowed.");
       }
       response.writeHead(204, {
         "Access-Control-Allow-Methods": "GET, POST",
-        "Access-Control-Allow-Headers": "Authorization, Content-Type",
+        "Access-Control-Allow-Headers":
+          "Authorization, Content-Type, ngrok-skip-browser-warning",
         "Access-Control-Max-Age": "600",
       });
       response.end();

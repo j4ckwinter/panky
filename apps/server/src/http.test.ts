@@ -153,12 +153,21 @@ test("CORS only permits configured origins, methods and request headers", async 
     headers: {
       Origin: origin,
       "Access-Control-Request-Method": "POST",
-      "Access-Control-Request-Headers": "authorization,content-type",
+      "Access-Control-Request-Headers":
+        "authorization,content-type,ngrok-skip-browser-warning",
     },
   });
   assert.equal(preflight.status, 204);
   assert.equal(preflight.headers.get("access-control-allow-origin"), origin);
   assert.equal(preflight.headers.get("access-control-allow-credentials"), null);
+  assert.match(
+    preflight.headers.get("access-control-allow-headers") ?? "",
+    /ngrok-skip-browser-warning/,
+  );
+  const noToken = await fetch(`${app.base}/api/health`, {
+    headers: { Origin: origin, "ngrok-skip-browser-warning": "1" },
+  });
+  assert.equal(noToken.status, 401);
   const bad = await fetch(`${app.base}/api/conversations`, {
     method: "OPTIONS",
     headers: { Origin: origin, "Access-Control-Request-Method": "DELETE" },
