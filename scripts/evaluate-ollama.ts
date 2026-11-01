@@ -7,9 +7,9 @@ import {
   type StreamEvent,
   streamEventSchema,
 } from "@panky/shared";
+import { dateTimeTool } from "../apps/server/src/chat/tools.js";
 import { loadConfig } from "../apps/server/src/config.js";
 import { createApp } from "../apps/server/src/http.js";
-import { dateTimeTool } from "../apps/server/src/tools.js";
 
 const { values } = parseArgs({
   options: {

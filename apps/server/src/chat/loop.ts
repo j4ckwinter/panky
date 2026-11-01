@@ -1,10 +1,10 @@
 import type { Message } from "@panky/shared";
-import type { Config } from "./config.js";
+import type { Config } from "../config.js";
 import {
   type ContextMessage,
   type ModelProvider,
   providerEventSchema,
-} from "./provider.js";
+} from "../providers/provider.js";
 import type { ActivityPayload } from "./store.js";
 import type { Tool } from "./tools.js";
 

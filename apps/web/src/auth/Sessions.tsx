@@ -1,13 +1,14 @@
-import { DialogHeading } from "./DialogHeading";
+import { useModalDialog } from "../components/useModalDialog";
+import { DialogHeading } from "../components/DialogHeading";
 import { BannerToast, Button, Stack } from "@jack.winter/pancake-ui";
-import { useEffect, useRef, useState } from "react";
-import { ApiError } from "./api";
+import { useEffect, useState } from "react";
+import { ApiError } from "../api/ApiError";
 import {
   type DeviceSession,
   revokeSession,
   sessions,
   signInError,
-} from "./auth";
+} from "./api";
 
 export function Sessions({
   onClose,
@@ -18,20 +19,11 @@ export function Sessions({
   onSignedOut: () => void;
   error: string;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useModalDialog();
   const [items, setItems] = useState<DeviceSession[]>([]);
   const [error, setError] = useState(initialError);
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    const element = dialog.current;
-    const trigger = document.activeElement;
-    element?.showModal();
-    return () => {
-      element?.close();
-      if (trigger instanceof HTMLElement) trigger.focus();
-    };
-  }, []);
   useEffect(() => {
     let alive = true;
     setLoading(true);

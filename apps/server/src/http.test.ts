@@ -11,10 +11,10 @@ import {
   historySchema,
   streamEventSchema,
 } from "@panky/shared";
+import { Store } from "./chat/store.js";
 import { loadConfig } from "./config.js";
 import { createApp } from "./http.js";
-import { MockProvider, type ModelProvider } from "./provider.js";
-import { Store } from "./store.js";
+import { MockProvider, type ModelProvider } from "./providers/provider.js";
 
 const token = "test-token-with-at-least-thirty-two-characters";
 const origin = "http://localhost:5173";

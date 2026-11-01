@@ -1,18 +1,11 @@
 import type { StreamEvent } from "@panky/shared";
-import type { Config } from "./config.js";
+import type { Config } from "../config.js";
+import { HttpError } from "../http-utils.js";
+import type { ModelProvider } from "../providers/provider.js";
 import { boundedHistory, runLoop, TaskError } from "./loop.js";
-import type { ModelProvider } from "./provider.js";
 import type { Store } from "./store.js";
 import { dateTimeTool, type Tool } from "./tools.js";
 
-export class HttpError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
 export class Chat {
   private active:
     | { controller: AbortController; conversationId: string; runId?: string }

@@ -148,7 +148,7 @@ after deployment, check Google sign-in, streamed replies, stopping a response an
 
 ## work on it
 
-React and Vite live in `apps/web`. the Node backend, model providers and SQLite storage live in `apps/server`. `packages/shared` holds the API schemas and types.
+React and Vite live in `apps/web`, grouped into chat, auth and shared components. `apps/server` separates authentication, chat execution and model providers, with tests alongside them. `packages/shared` holds the API schemas and types.
 
 ```sh
 pnpm check       # lint, formatting, types and backend tests

@@ -9,8 +9,8 @@ import {
   streamEventSchema,
 } from "@panky/shared";
 import { z } from "zod";
-import { loadConfig } from "./config.js";
-import { createApp } from "./http.js";
+import { loadConfig } from "../config.js";
+import { createApp } from "../http.js";
 import { OllamaProvider } from "./ollama.js";
 import type { ContextMessage, ProviderEvent } from "./provider.js";
 

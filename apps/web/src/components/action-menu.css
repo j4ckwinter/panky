@@ -1,0 +1,50 @@
+.action-menu {
+  position: relative;
+  min-width: 0;
+}
+.action-menu > button {
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px;
+}
+.action-menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.action-menu-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  min-width: 180px;
+  z-index: 10;
+  border: 1px solid var(--color-pancake-border);
+  background: var(--color-pancake-surface);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 10%);
+  border-radius: 12px;
+  padding: 4px;
+}
+.action-menu-panel > button {
+  width: 100%;
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  background: transparent;
+}
+@media (max-width: 640px) {
+  .mobile-header-menu .action-menu-panel {
+    bottom: auto;
+    top: calc(100% + 8px);
+    left: auto;
+    right: 0;
+    width: 180px;
+  }
+}
+.action-menu-panel > button:hover {
+  background: var(--color-pancake-surface-muted);
+}

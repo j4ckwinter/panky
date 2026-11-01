@@ -1,4 +1,4 @@
-import type { GoogleIdentity } from "../apps/server/src/google.js";
+import type { GoogleIdentity } from "../apps/server/src/auth/google.js";
 import { loadConfig } from "../apps/server/src/config.js";
 import { createApp } from "../apps/server/src/http.js";
 

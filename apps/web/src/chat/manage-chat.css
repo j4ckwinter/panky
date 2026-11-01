@@ -1,0 +1,20 @@
+.manage-chat-dialog {
+  width: min(400px, calc(100% - 32px));
+  padding: 20px;
+  border-radius: 16px;
+}
+.manage-chat-dialog p {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.manage-chat-dialog .delete-chat-action {
+  align-self: flex-start;
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  color: var(--color-pancake-error-strong);
+  background: transparent;
+  font-size: 13px;
+}

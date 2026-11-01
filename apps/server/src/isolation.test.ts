@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { request as httpRequest } from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
+import { request as httpRequest } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -11,10 +11,10 @@ import {
   conversationsSchema,
   historySchema,
 } from "@panky/shared";
+import { Store } from "./chat/store.js";
 import { loadConfig } from "./config.js";
 import { createApp } from "./http.js";
-import { MockProvider } from "./provider.js";
-import { Store } from "./store.js";
+import { MockProvider } from "./providers/provider.js";
 
 const origin = "http://localhost:5173";
 const token = "isolated-tests-only-at-least-32-characters";

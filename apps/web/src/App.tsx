@@ -1,11 +1,11 @@
 import { BannerToast, Button, Stack, Text } from "@jack.winter/pancake-ui";
 import { useCallback, useEffect, useState } from "react";
-import { Access } from "./Access";
-import { type Api, createApi, sessionExpiredEvent } from "./api";
-import { type AuthStatus, authStatus, signInError, signOut } from "./auth";
-import { Chat } from "./Chat";
-import { GoogleSignIn } from "./GoogleSignIn";
-import { Sessions } from "./Sessions";
+import { Access } from "./auth/Access";
+import { type Api, createApi, sessionExpiredEvent } from "./api/chat";
+import { type AuthStatus, authStatus, signInError, signOut } from "./auth/api";
+import { Chat } from "./chat/Chat";
+import { GoogleSignIn } from "./auth/GoogleSignIn";
+import { Sessions } from "./auth/Sessions";
 
 export function App() {
   const [api, setApi] = useState<Api | null>(null);

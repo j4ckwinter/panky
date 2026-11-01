@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ToolDefinition } from "./provider.js";
+import type { ToolDefinition } from "../providers/provider.js";
 
 export interface Tool {
   definition: ToolDefinition;

@@ -1,14 +1,15 @@
-import { DialogHeading } from "./DialogHeading";
+import { useModalDialog } from "../components/useModalDialog";
+import { DialogHeading } from "../components/DialogHeading";
 import { BannerToast, Button, Stack, TextField } from "@jack.winter/pancake-ui";
-import { useEffect, useRef, useState } from "react";
-import { ApiError } from "./api";
+import { useEffect, useState } from "react";
+import { ApiError } from "../api/ApiError";
 import {
   type Access as AccessData,
   access,
   invite,
   revokeAccess,
   signInError,
-} from "./auth";
+} from "./api";
 
 export function Access({
   onClose,
@@ -17,22 +18,13 @@ export function Access({
   onClose: () => void;
   onSignedOut: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useModalDialog();
   const [data, setData] = useState<AccessData | null>(null);
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [removing, setRemoving] = useState<string | null>(null);
-  useEffect(() => {
-    const element = dialog.current;
-    const trigger = document.activeElement;
-    element?.showModal();
-    return () => {
-      element?.close();
-      if (trigger instanceof HTMLElement) trigger.focus();
-    };
-  }, []);
   useEffect(() => {
     let alive = true;
     setLoading(true);

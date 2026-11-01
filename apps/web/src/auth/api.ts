@@ -5,7 +5,7 @@ import {
   errorSchema,
   googleOptionsSchema,
 } from "@panky/shared";
-import { ApiError } from "./api";
+import { ApiError } from "../api/ApiError";
 
 export type {
   Access,

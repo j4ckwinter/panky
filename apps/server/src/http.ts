@@ -6,49 +6,20 @@ import {
   type ServerResponse,
 } from "node:http";
 import {
+  renameConversationSchema,
   type StreamEvent,
   submissionSchema,
-  renameConversationSchema,
 } from "@panky/shared";
 import { z } from "zod";
-import { Auth } from "./auth.js";
-import type { GoogleVerifier } from "./google.js";
-import { Chat, HttpError } from "./chat.js";
+import { Auth } from "./auth/auth.js";
+import type { GoogleVerifier } from "./auth/google.js";
+import { Chat } from "./chat/chat.js";
+import { Store } from "./chat/store.js";
+import type { Tool } from "./chat/tools.js";
 import type { Config } from "./config.js";
-import { MockProvider, type ModelProvider } from "./provider.js";
-import { OllamaProvider } from "./ollama.js";
-import { Store } from "./store.js";
-import type { Tool } from "./tools.js";
-
-function json(response: ServerResponse, status: number, data: unknown) {
-  response.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-  });
-  response.end(JSON.stringify(data));
-}
-
-async function readJson(request: IncomingMessage): Promise<unknown> {
-  if (
-    request.headers["content-type"]?.split(";")[0]?.trim() !==
-    "application/json"
-  )
-    throw new HttpError(415, "Use application/json.");
-  const chunks: Buffer[] = [];
-  let length = 0;
-  for await (const chunk of request) {
-    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
-    length += bytes.length;
-    if (length > 65536) throw new HttpError(413, "Message body is too large.");
-    chunks.push(bytes);
-  }
-  let input: unknown;
-  try {
-    input = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  } catch {
-    throw new HttpError(400, "Invalid JSON.");
-  }
-  return input;
-}
+import { HttpError, json, readJson } from "./http-utils.js";
+import { OllamaProvider } from "./providers/ollama.js";
+import { MockProvider, type ModelProvider } from "./providers/provider.js";
 
 async function readSubmission(request: IncomingMessage) {
   const result = submissionSchema.safeParse(await readJson(request));

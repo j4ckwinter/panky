@@ -59,10 +59,12 @@ test("authenticates, streams from the server and restores conversations after re
 test("reports an unreachable backend and lets the user retry", async ({
   page,
 }) => {
-  await page.route("**/api/**", (route) => route.abort("connectionrefused"));
+  await page.route(/^https?:\/\/[^/]+\/api\//, (route) =>
+    route.abort("connectionrefused"),
+  );
   await page.goto("/");
   await expect(page.getByRole("alert")).toBeVisible();
-  await page.unroute("**/api/**");
+  await page.unroute(/^https?:\/\/[^/]+\/api\//);
   await page.getByRole("button", { name: "Try again", exact: true }).click();
   await login(page);
 });
@@ -237,7 +239,9 @@ test("disconnected composer explains why sending is unavailable and preserves dr
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
   await page.getByLabel("Message", { exact: true }).fill("Keep this draft");
-  await page.route("**/api/**", (route) => route.abort("connectionrefused"));
+  await page.route(/^https?:\/\/[^/]+\/api\//, (route) =>
+    route.abort("connectionrefused"),
+  );
   await expect(page.locator("#composer-help")).toContainText(
     "Connection lost",
     { timeout: 10000 },

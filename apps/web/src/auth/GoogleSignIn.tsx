@@ -1,6 +1,6 @@
 import { BannerToast, Button, Stack } from "@jack.winter/pancake-ui";
 import { useEffect, useRef, useState } from "react";
-import { googleOptions, signInError, verifyGoogle } from "./auth";
+import { googleOptions, signInError, verifyGoogle } from "./api";
 
 type GoogleIdentity = {
   initialize(options: {

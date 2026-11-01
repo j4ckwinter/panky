@@ -7,9 +7,9 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, test } from "node:test";
 import { z } from "zod";
-import { loadConfig } from "./config.js";
+import { loadConfig } from "../config.js";
+import { createApp } from "../http.js";
 import { type GoogleVerifier, googleIdentitySchema } from "./google.js";
-import { createApp } from "./http.js";
 
 const token = "isolated-auth-test-token-long-enough-for-validation";
 const origin = "http://localhost:5173";

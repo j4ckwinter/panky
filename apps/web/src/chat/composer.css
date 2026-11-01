@@ -1,0 +1,118 @@
+.jump-to-latest {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+.jump-to-latest .jump-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid var(--color-pancake-border);
+  border-radius: 50%;
+  background: var(--color-pancake-surface);
+  color: var(--color-pancake-deep);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+}
+.jump-to-latest .jump-button:hover {
+  background: var(--color-pancake-canvas);
+}
+@media (pointer: coarse) {
+  .jump-to-latest .jump-button {
+    width: 40px;
+    height: 40px;
+  }
+}
+.composer-area {
+  position: relative;
+  width: 100%;
+  max-width: 824px;
+  align-self: center;
+  padding: var(--spacing-pancake-12) var(--spacing-pancake-32)
+    var(--spacing-pancake-16);
+}
+.composer-progress {
+  padding: 8px 16px 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: end;
+  gap: var(--spacing-pancake-8);
+  border: 1px solid var(--color-pancake-border);
+  background: var(--color-pancake-canvas);
+  padding: 6px;
+  margin-top: var(--spacing-pancake-8);
+  border-radius: 24px;
+}
+.composer > div {
+  min-width: 0;
+}
+.composer label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.composer textarea {
+  display: block;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 40px;
+  max-height: 160px;
+  padding: var(--spacing-pancake-8) var(--spacing-pancake-12);
+  line-height: 24px;
+  resize: none;
+}
+.composer textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.composer .send-button {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+  border-radius: 50%;
+}
+.composer-status,
+.composer-note {
+  font-size: 12px;
+  color: var(--color-pancake-muted);
+  line-height: 1.5;
+}
+.composer-note {
+  font-size: 11px;
+  text-align: center;
+  margin: var(--spacing-pancake-12) 0 0;
+}
+@media (max-width: 640px) {
+  .composer-area {
+    padding: var(--spacing-pancake-8) var(--spacing-pancake-12)
+      var(--spacing-pancake-12);
+  }
+  .composer-note {
+    font-size: 10px;
+  }
+}
+.composer:focus-within {
+  border-color: var(--color-pancake-control-focus);
+  outline: 1px solid var(--color-pancake-control-focus);
+}
+.chat-body-empty .composer-area {
+  flex-shrink: 0;
+}
+.chat-body-empty .composer {
+  margin-top: 0;
+}

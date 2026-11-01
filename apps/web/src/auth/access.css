@@ -1,0 +1,70 @@
+.session-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.session-list li {
+  display: flex;
+  gap: var(--spacing-pancake-16);
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-pancake-16) 0;
+  border-bottom: 1px solid var(--color-pancake-control-border);
+}
+.session-list p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.access-list li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.access-confirm {
+  padding: var(--spacing-pancake-16);
+  border: 1px solid var(--color-pancake-control-border);
+  border-radius: 12px;
+}
+.access-confirm p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.sessions-dialog .session-list li {
+  gap: 12px;
+  padding: 12px 0;
+}
+.sessions-dialog .session-list li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sessions-dialog .session-list strong {
+  font-weight: 500;
+}
+.sessions-dialog .session-list button,
+.invite-form-row > button {
+  flex-shrink: 0;
+  width: auto;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.invite-form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.invite-form-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.invite-form-row > button {
+  height: 40px;
+}
+@media (max-width: 640px) {
+  .sessions-dialog .session-list button {
+    min-height: 40px;
+    height: 40px;
+  }
+}

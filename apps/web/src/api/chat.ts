@@ -1,3 +1,5 @@
+import { ApiError } from "./ApiError";
+export { ApiError } from "./ApiError";
 import {
   cancelResponseSchema,
   conversationSchema,
@@ -8,15 +10,6 @@ import {
   type StreamEvent,
   streamEventSchema,
 } from "@panky/shared";
-
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-  }
-}
 
 function backendUrl() {
   const url = new URL(import.meta.env.VITE_API_URL || "http://localhost:3001");

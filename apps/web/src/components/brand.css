@@ -1,0 +1,30 @@
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-pancake-12);
+  font-size: var(--text-pancake-title);
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+.brand-dot {
+  color: var(--color-pancake-control-focus);
+}
+.panky-mark {
+  --mark-size: var(--spacing-pancake-40);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  background: var(--color-pancake-accent);
+  border-radius: calc(var(--mark-size) * 0.3);
+  color: var(--color-pancake-deep);
+  font-size: calc(var(--mark-size) * 0.8);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  padding-bottom: calc(var(--mark-size) * 0.125);
+}
+.panky-mark-small {
+  --mark-size: var(--spacing-pancake-32);
+}

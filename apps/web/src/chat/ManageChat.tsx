@@ -1,7 +1,8 @@
-import { DialogHeading } from "./DialogHeading";
+import { useModalDialog } from "../components/useModalDialog";
+import { DialogHeading } from "../components/DialogHeading";
 import { BannerToast, Button, Stack, TextField } from "@jack.winter/pancake-ui";
 import type { Conversation } from "@panky/shared";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 export function ManageChat({
   conversation,
@@ -18,19 +19,9 @@ export function ManageChat({
   onDelete: () => Promise<boolean>;
   onClose: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null);
+  const dialog = useModalDialog();
   const [title, setTitle] = useState(conversation.title);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  useEffect(() => {
-    const element = dialog.current;
-    const trigger = document.activeElement;
-    element?.showModal();
-    return () => {
-      element?.close();
-      if (trigger instanceof HTMLElement && trigger.getClientRects().length)
-        trigger.focus();
-    };
-  }, []);
   return (
     <dialog
       ref={dialog}

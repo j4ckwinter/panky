@@ -1,0 +1,84 @@
+.connect-page {
+  min-height: 100dvh;
+  padding: var(--spacing-pancake-40) max(6vw, 24px);
+  border-top: 6px solid var(--color-pancake-accent);
+  display: flex;
+  align-items: center;
+}
+.connect-layout {
+  width: 100%;
+  max-width: 1080px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  align-items: center;
+  gap: var(--spacing-pancake-64);
+}
+.connect-wordmark {
+  color: var(--color-pancake-deep);
+  font-size: clamp(80px, 10vw, 144px);
+  font-weight: 700;
+  letter-spacing: -0.075em;
+  line-height: 1;
+  padding-bottom: 0.12em;
+}
+.connect-wordmark span {
+  color: var(--color-pancake-control-focus);
+}
+.connect-card {
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-20);
+  padding: var(--spacing-pancake-40) var(--spacing-pancake-32)
+    var(--spacing-pancake-32);
+  min-width: 0;
+  background: var(--color-pancake-surface);
+  box-shadow: 0 8px 32px rgb(55 69 59 / 4%);
+}
+.connect-card h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.75px;
+  color: var(--color-pancake-deep);
+}
+.connect-card .auth-description {
+  margin-top: -12px;
+  font-size: 14px;
+}
+.connect-access-note {
+  margin: 0;
+  padding-top: var(--spacing-pancake-20);
+  border-top: 1px solid var(--color-pancake-border);
+  color: var(--color-pancake-olive);
+  font-size: 12px;
+  text-align: center;
+}
+@media (max-width: 800px) {
+  .connect-page {
+    padding: var(--spacing-pancake-32) var(--spacing-pancake-24);
+  }
+  .connect-layout {
+    max-width: 440px;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-pancake-40);
+  }
+  .connect-wordmark {
+    font-size: clamp(72px, 18vw, 104px);
+  }
+  .connect-card {
+    padding: var(--spacing-pancake-32) var(--spacing-pancake-24);
+  }
+}
+.auth-description {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--color-pancake-text-secondary);
+}
+.google-sign-in {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  max-width: 400px;
+}
+.google-sign-in:empty {
+  visibility: hidden;
+}

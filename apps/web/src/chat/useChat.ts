@@ -6,11 +6,17 @@ import type {
   TaskRun,
 } from "@panky/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Api } from "./api";
-import { errorMessage } from "./api";
+import type { Api } from "../api/chat";
+import { errorMessage } from "../api/chat";
+
+function providerLabel(health: Awaited<ReturnType<Api["health"]>>) {
+  return health.provider === "mock"
+    ? "Demo mode"
+    : `Local AI · ${health.model}`;
+}
 
 export function useChat(api: Api) {
-  const [providerLabel, setProviderLabel] = useState("Connecting");
+  const [label, setProviderLabel] = useState("Connecting");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -68,11 +74,7 @@ export function useChat(api: Api) {
         setRuns(history?.runs ?? []);
         setActivities(history?.activities ?? []);
         setServerBusy(health.busy);
-        setProviderLabel(
-          health.provider === "mock"
-            ? "Demo mode"
-            : `Local AI · ${health.model}`,
-        );
+        setProviderLabel(providerLabel(health));
         setConnected(true);
       }),
     [api, run],
@@ -95,11 +97,7 @@ export function useChat(api: Api) {
         .then((health) => {
           if (alive) {
             setServerBusy(health.busy);
-            setProviderLabel(
-              health.provider === "mock"
-                ? "Demo mode"
-                : `Local AI · ${health.model}`,
-            );
+            setProviderLabel(providerLabel(health));
             setConnected(true);
           }
         })
@@ -297,7 +295,7 @@ export function useChat(api: Api) {
     }
   }
   return {
-    providerLabel,
+    providerLabel: label,
     draft,
     setDraft,
     conversations,
