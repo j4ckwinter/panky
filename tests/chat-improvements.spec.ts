@@ -40,7 +40,7 @@ test("new tabs start blank without creating records; reload restores only that t
     .getByRole("button", { name: "Refresh history", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "What’s on your mind?" }),
+    page.getByRole("heading", { name: "Start a chat" }),
   ).toBeVisible();
   expect(creates).toBe(0);
   await send(page, "First window conversation");
@@ -165,7 +165,7 @@ test("streaming respects reading position and Jump to latest resumes following",
     .click();
   await expect(jump).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "What’s on your mind?" }),
+    page.getByRole("heading", { name: "Start a chat" }),
   ).toBeVisible();
   await expect
     .poll(() => area.evaluate((element) => element.scrollTop))

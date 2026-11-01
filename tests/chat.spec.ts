@@ -98,9 +98,7 @@ test("reload interrupts a reply and does not submit it again", async ({
   await expect(
     page.getByText(/This is a mock response from Panky/),
   ).toBeVisible();
-  await expect(
-    page.getByText("Writing a mock reply…", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText("Replying…", { exact: true })).toBeVisible();
   await page.reload();
   let submissions = 0;
   page.on("request", (request) => {
@@ -148,9 +146,7 @@ test("maximum valid message streams progressively and completes", async ({
     exact: true,
   });
   await expect(reply).toContainText("This is a mock response from Panky");
-  await expect(
-    page.getByText("Writing a mock reply…", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText("Replying…", { exact: true })).toBeVisible();
   const partial = await reply.textContent();
   expect(partial?.length).toBeLessThan(content.length);
   await expect(

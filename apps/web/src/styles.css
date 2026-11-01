@@ -60,12 +60,6 @@ button:disabled {
   color: var(--color-pancake-muted);
   margin: var(--spacing-pancake-8) 0 0;
 }
-.eyebrow {
-  font-size: var(--text-pancake-label);
-  font-weight: 600;
-  letter-spacing: 2px;
-  color: var(--color-pancake-olive);
-}
 .connect-page {
   min-height: 100dvh;
   padding: var(--spacing-pancake-40) max(6vw, 24px) var(--spacing-pancake-24);
@@ -80,61 +74,15 @@ button:disabled {
 }
 .connect-layout {
   width: 100%;
-  max-width: 1120px;
+  max-width: 440px;
   margin: auto;
   padding: var(--spacing-pancake-80) 0;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  align-items: center;
-  gap: var(--spacing-pancake-80);
-}
-.intro h1 {
-  font-size: clamp(36px, 4vw, 54px);
-  line-height: 1.12;
-  letter-spacing: -2px;
-  margin: var(--spacing-pancake-24) 0;
-}
-.intro > p {
-  max-width: 420px;
-  color: var(--color-pancake-text-secondary);
-  font-size: 16px;
-}
-.intro-note {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-pancake-16);
-  margin-top: var(--spacing-pancake-48);
-  color: var(--color-pancake-olive);
-}
-.intro-note > span {
-  display: grid;
-  place-items: center;
-  width: var(--spacing-pancake-56);
-  height: var(--spacing-pancake-56);
-  border: 1px solid var(--color-pancake-control-border);
-  border-radius: 50%;
-  font-size: 24px;
-}
-.intro-note p {
-  font-size: var(--text-pancake-body);
-  margin: 0;
 }
 .connect-card {
   padding: var(--spacing-pancake-40);
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-28);
   background: var(--color-pancake-surface);
-}
-.connect-footnote {
-  color: var(--color-pancake-muted);
-  font-size: 12px;
-  padding-top: var(--spacing-pancake-24);
-  border-top: 1px solid var(--color-pancake-border);
-  margin: 0;
-}
-.connect-footer {
-  color: var(--color-pancake-muted);
-  font-size: 12px;
 }
 .chat-layout {
   display: grid;
@@ -319,13 +267,6 @@ button:disabled {
   letter-spacing: -1px;
   margin: var(--spacing-pancake-16) 0 0;
 }
-.welcome > p {
-  color: var(--color-pancake-muted);
-  font-size: var(--text-pancake-body);
-}
-.welcome-provider {
-  margin-top: var(--spacing-pancake-16);
-}
 .message-list {
   width: 100%;
   max-width: 760px;
@@ -362,14 +303,6 @@ button:disabled {
   background: var(--color-pancake-surface-muted);
   color: var(--color-pancake-olive);
   font-size: 12px;
-}
-.mock-label {
-  font-size: 9px;
-  letter-spacing: 1px;
-  color: var(--color-pancake-olive);
-  background: var(--color-pancake-canvas);
-  padding: 4px 6px;
-  border-radius: 4px;
 }
 .message-content {
   white-space: pre-wrap;
@@ -431,9 +364,6 @@ button:disabled {
   display: none;
 }
 @media (max-width: 900px) {
-  .connect-layout {
-    gap: var(--spacing-pancake-32);
-  }
   .connect-card {
     padding: var(--spacing-pancake-24);
   }
@@ -455,14 +385,7 @@ button:disabled {
     padding: var(--spacing-pancake-24);
   }
   .connect-layout {
-    grid-template-columns: 1fr;
     padding: var(--spacing-pancake-48) 0;
-  }
-  .intro h1 {
-    font-size: 38px;
-  }
-  .intro-note {
-    display: none;
   }
   .chat-layout {
     grid-template-columns: 1fr;
@@ -512,9 +435,6 @@ button:disabled {
     font-size: 44px;
     margin-bottom: var(--spacing-pancake-24);
   }
-  .welcome .eyebrow {
-    font-size: 9px;
-  }
   .composer-area {
     padding: var(--spacing-pancake-8) var(--spacing-pancake-12)
       var(--spacing-pancake-12);
@@ -552,7 +472,4 @@ button:disabled {
 }
 .composer:focus-within {
   border-color: var(--color-pancake-control-focus);
-}
-.welcome .demo-prompt {
-  font-size: 13px;
 }

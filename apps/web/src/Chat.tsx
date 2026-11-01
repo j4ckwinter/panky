@@ -137,9 +137,7 @@ export function Chat({
         <div className="sidebar-heading">YOUR CONVERSATIONS</div>
         <nav className="conversation-list" aria-label="Conversation history">
           {chat.conversations.length === 0 && (
-            <p className="muted sidebar-empty">
-              A fresh page. Start something.
-            </p>
+            <p className="muted sidebar-empty">No conversations yet.</p>
           )}
           {chat.conversations.map((conversation) => (
             <button
@@ -163,7 +161,9 @@ export function Chat({
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <StatusChip tone="warning">Mock provider</StatusChip>
+          <StatusChip tone="warning" title="Replies are simulated.">
+            Demo mode
+          </StatusChip>
           <Button
             variant="secondary"
             className="disconnect-button"
@@ -188,7 +188,7 @@ export function Chat({
               Conversations
             </Button>
             <Text as="h1" variant="heading">
-              {chat.current?.title ?? "Your next conversation"}
+              {chat.current?.title ?? "New chat"}
             </Text>
           </div>
           <Inline gap="space12">
@@ -213,7 +213,7 @@ export function Chat({
         </header>
         {chat.error && (
           <div className="chat-alert">
-            <BannerToast tone="error" title="Something needs a moment">
+            <BannerToast tone="error" title="Could not complete request">
               {chat.error}
             </BannerToast>
           </div>
@@ -235,21 +235,7 @@ export function Chat({
                 <span className="welcome-mark" aria-hidden="true">
                   p<span>✳</span>
                 </span>
-                <span className="eyebrow">HERE FOR YOUR NEXT THOUGHT</span>
-                <h2>What’s on your mind?</h2>
-                <p>
-                  A question, a half-formed idea, a place to start.
-                  <br />
-                  There’s room for it here.
-                </p>
-                <p className="demo-prompt">
-                  Try: “What is the current date and time?”
-                  <br />
-                  The mock provider can call a real date and time tool.
-                </p>
-                <StatusChip tone="warning" className="welcome-provider">
-                  Mock provider
-                </StatusChip>
+                <h2>Start a chat</h2>
               </section>
             ) : (
               <div className="message-list" aria-label="Messages">
@@ -281,14 +267,11 @@ export function Chat({
                         <strong>
                           {message.role === "user" ? "You" : "Panky"}
                         </strong>
-                        {message.role === "assistant" && (
-                          <span className="mock-label">MOCK</span>
-                        )}
                       </div>
                       <div className="message-content">
                         {message.content ||
                           (message.status === "streaming"
-                            ? "Getting a thought together…"
+                            ? "Preparing reply…"
                             : "No reply text was saved.")}
                       </div>
                       {message.status === "interrupted" && (
@@ -303,7 +286,7 @@ export function Chat({
                       {message.status === "streaming" && (
                         <p className="streaming-label">
                           {chat.streaming
-                            ? "Writing a mock reply…"
+                            ? "Replying…"
                             : "Reply in progress. Refresh history to check for updates."}
                         </p>
                       )}
@@ -349,7 +332,7 @@ export function Chat({
               rows={2}
               maxLength={8000}
               value={draft}
-              placeholder="Put a thought into words…"
+              placeholder="Message Panky"
               onChange={(event) => setDraft(event.currentTarget.value)}
               onKeyDown={(event) => {
                 if (
