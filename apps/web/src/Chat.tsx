@@ -566,13 +566,15 @@ export function Chat({
               </div>
             )}
             {chat.pending && (
-              <LoadingIndicator
-                label={
-                  chat.streaming
-                    ? "Panky is replying…"
-                    : "Loading conversation…"
-                }
-              />
+              <div className="composer-progress">
+                <LoadingIndicator
+                  label={
+                    chat.streaming
+                      ? "Panky is replying…"
+                      : "Loading conversation…"
+                  }
+                />
+              </div>
             )}
             <form
               className="composer"

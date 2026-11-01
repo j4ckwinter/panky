@@ -354,6 +354,11 @@ button:disabled {
   padding: var(--spacing-pancake-12) var(--spacing-pancake-32)
     var(--spacing-pancake-16);
 }
+.composer-progress {
+  padding: 8px 16px 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
 .composer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 40px;

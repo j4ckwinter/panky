@@ -496,3 +496,56 @@ test("desktop sidebar collapses, expands and preserves the current draft", async
     })
     .screenshot({ path: "test-results/refresh-icon.png" });
 });
+
+test("reply progress has breathing room above the mobile composer", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await connect(page);
+  const input = page.getByLabel("Message", { exact: true });
+  await expect(input).toHaveAttribute("autocomplete", "off");
+  await expect(page.locator("form.composer")).toHaveAttribute(
+    "autocomplete",
+    "off",
+  );
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/conversations/*/messages", async (route) => {
+    if (route.request().method() === "POST") await gate;
+    await route.continue();
+  });
+  await input.fill("A long reply " + "word ".repeat(800));
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  const progress = page.locator(".composer-progress");
+  try {
+    await expect(progress).toBeVisible();
+    const indicator = await progress.locator(":scope > *").boundingBox();
+    const composer = await page.locator(".composer").boundingBox();
+    if (!indicator || !composer)
+      throw new Error("Missing composer or progress bounds");
+    expect(composer.y - indicator.y - indicator.height).toBeGreaterThanOrEqual(
+      12,
+    );
+    expect(indicator.x - composer.x).toBeGreaterThanOrEqual(16);
+    await page.screenshot({ path: "test-results/mobile-reply-wait.png" });
+  } finally {
+    release();
+  }
+  await expect(
+    page.getByRole("button", { name: "Stop response", exact: true }),
+  ).toBeVisible();
+  await expect(progress).toContainText("Panky is replying");
+  const indicator = await progress.locator(":scope > *").boundingBox();
+  const composer = await page.locator(".composer").boundingBox();
+  if (!indicator || !composer) throw new Error("Missing streaming bounds");
+  expect(composer.y - indicator.y - indicator.height).toBeGreaterThanOrEqual(
+    12,
+  );
+  await page.screenshot({ path: "test-results/mobile-reply-streaming.png" });
+  await page
+    .getByRole("button", { name: "Stop response", exact: true })
+    .click();
+  await expect(progress).toHaveCount(0);
+});
