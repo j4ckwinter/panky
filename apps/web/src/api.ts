@@ -95,6 +95,22 @@ export function createApi(token?: string) {
         await (await request("/conversations", { method: "POST" })).json(),
       );
     },
+    async rename(id: string, title: string) {
+      return conversationSchema.parse(
+        await (
+          await request(`/conversations/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title }),
+          })
+        ).json(),
+      );
+    },
+    async remove(id: string) {
+      await request(`/conversations/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    },
     async history(id: string) {
       return historySchema.parse(
         await (

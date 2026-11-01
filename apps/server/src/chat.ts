@@ -14,7 +14,9 @@ export class HttpError extends Error {
   }
 }
 export class Chat {
-  private active: { controller: AbortController; runId?: string } | undefined;
+  private active:
+    | { controller: AbortController; conversationId: string; runId?: string }
+    | undefined;
   private finished: Promise<void> | undefined;
   constructor(
     private readonly store: Store,
@@ -24,6 +26,9 @@ export class Chat {
   ) {}
   get busy() {
     return this.active !== undefined;
+  }
+  get activeConversationId() {
+    return this.active?.conversationId;
   }
   start(
     conversationId: string,
@@ -40,7 +45,7 @@ export class Chat {
     if (!this.store.conversation(conversationId))
       throw new HttpError(404, "Conversation not found.");
     const controller = new AbortController();
-    const active: NonNullable<Chat["active"]> = { controller };
+    const active: NonNullable<Chat["active"]> = { controller, conversationId };
     this.active = active;
     const abort = () => controller.abort("interrupted");
     signal.addEventListener("abort", abort, { once: true });

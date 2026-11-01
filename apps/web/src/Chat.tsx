@@ -5,9 +5,12 @@ import {
   LoadingIndicator,
   Text,
   Textarea,
+  TextField,
 } from "@jack.winter/pancake-ui";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Api } from "./api";
+import type { Conversation } from "@panky/shared";
+import { ManageChat } from "./ManageChat";
 import { ActionMenu } from "./ActionMenu";
 import { Brand } from "./Brand";
 import { PankyMark } from "./PankyMark";
@@ -54,6 +57,11 @@ export function Chat({
     : chat.serverBusy && !chat.streaming
       ? "Another tab is running a task. Wait for it to finish."
       : "";
+  const [search, setSearch] = useState("");
+  const [managedChat, setManagedChat] = useState<Conversation | null>(null);
+  const visibleConversations = chat.conversations.filter((item) =>
+    item.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const sidebar = useRef<HTMLElement>(null);
@@ -64,8 +72,9 @@ export function Chat({
     const trigger = menu.current;
     const focusable = () =>
       Array.from(
-        panel?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ??
-          [],
+        panel?.querySelectorAll<HTMLElement>(
+          "button:not(:disabled), input:not(:disabled)",
+        ) ?? [],
       ).filter((button) => button.getClientRects().length > 0);
     focusable()[0]?.focus();
     const closeOnDesktop = () => {
@@ -136,6 +145,20 @@ export function Chat({
     <div
       className={`chat-layout${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
     >
+      {managedChat && (
+        <ManageChat
+          conversation={managedChat}
+          pending={chat.pending}
+          error={chat.error}
+          onRename={(title) => chat.rename(managedChat.id, title)}
+          onDelete={() => chat.remove(managedChat.id)}
+          onClose={() => {
+            setManagedChat(null);
+            if (window.matchMedia("(max-width: 640px)").matches)
+              menu.current?.focus();
+          }}
+        />
+      )}
       {sidebarOpen && (
         <div
           className="sidebar-backdrop"
@@ -213,7 +236,14 @@ export function Chat({
           </svg>
           <span className="new-chat-label">New chat</span>
         </Button>
-        <div className="sidebar-heading">Chats</div>
+        <div className="chat-search">
+          <TextField
+            label="Search chats"
+            placeholder="Search chats"
+            value={search}
+            onChange={(event) => setSearch(event.currentTarget.value)}
+          />
+        </div>
         <nav
           id="conversation-history"
           className="conversation-list"
@@ -222,22 +252,41 @@ export function Chat({
           {chat.conversations.length === 0 && (
             <p className="muted sidebar-empty">No conversations yet.</p>
           )}
-          {chat.conversations.map((conversation) => (
-            <button
-              type="button"
-              className="conversation-link"
-              key={conversation.id}
-              aria-current={
-                chat.current?.id === conversation.id ? "page" : undefined
-              }
-              disabled={chat.pending}
-              onClick={() => {
-                setSidebarOpen(false);
-                void chat.select(conversation.id);
-              }}
-            >
-              <span>{conversation.title}</span>
-            </button>
+          {chat.conversations.length > 0 &&
+            visibleConversations.length === 0 && (
+              <p className="muted sidebar-empty">No matching chats.</p>
+            )}
+          {visibleConversations.map((conversation) => (
+            <div className="conversation-row" key={conversation.id}>
+              <button
+                type="button"
+                className="conversation-link"
+                aria-current={
+                  chat.current?.id === conversation.id ? "page" : undefined
+                }
+                disabled={chat.pending}
+                onClick={() => {
+                  setSidebarOpen(false);
+                  void chat.select(conversation.id);
+                }}
+              >
+                <span>{conversation.title}</span>
+              </button>
+              <Button
+                variant="ghost"
+                size={40}
+                className="manage-chat-button"
+                aria-label={`Manage chat: ${conversation.title}`}
+                disabled={chat.pending}
+                onClick={() => {
+                  chat.clearError();
+                  setSidebarOpen(false);
+                  setManagedChat(conversation);
+                }}
+              >
+                ···
+              </Button>
+            </div>
           ))}
         </nav>
         <div className="sidebar-bottom">

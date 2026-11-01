@@ -88,6 +88,8 @@ test("all data endpoints require authentication even without Origin", async () =
     ["/api/conversations", "GET"],
     ["/api/conversations", "POST"],
     [`/api/conversations/${conversation.id}`, "GET"],
+    [`/api/conversations/${conversation.id}`, "PATCH"],
+    [`/api/conversations/${conversation.id}`, "DELETE"],
     [`/api/conversations/${conversation.id}/messages`, "POST"],
   ]) {
     const response = await fetch(`${app.base}${path}`, { method });
@@ -170,7 +172,7 @@ test("CORS only permits configured origins, methods and request headers", async 
   assert.equal(noToken.status, 401);
   const bad = await fetch(`${app.base}/api/conversations`, {
     method: "OPTIONS",
-    headers: { Origin: origin, "Access-Control-Request-Method": "DELETE" },
+    headers: { Origin: origin, "Access-Control-Request-Method": "PUT" },
   });
   assert.equal(bad.status, 403);
 });
@@ -379,4 +381,207 @@ test("oversized chunked uploads receive 413 before the upload finishes", async (
   });
   assert.equal(status, 413);
   assert.equal(app.store.messages(conversation.id).length, 0);
+});
+
+test("rename validates titles and persists; deletion removes related rows only", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "panky-management-"));
+  cleanups.push(() => rmSync(directory, { recursive: true, force: true }));
+  const path = join(directory, "chat.sqlite");
+  const app = await fixture(new MockProvider(0), path);
+  const conversation = await app.conversation();
+  const other = app.store.createConversation("another-user");
+  const otherResponse = app.store.beginResponse(other.id, "private");
+  app.store.finishRun(
+    otherResponse.run,
+    otherResponse.assistant,
+    "completed",
+    null,
+  );
+  const url = `/api/conversations/${conversation.id}`;
+  for (const method of ["PATCH", "DELETE"]) {
+    assert.equal(
+      (await app.request(`/api/conversations/${other.id}`, { method })).status,
+      404,
+    );
+    const preflight = await app.request(url, {
+      method: "OPTIONS",
+      headers: { "Access-Control-Request-Method": method },
+    });
+    assert.equal(preflight.status, 204);
+  }
+  const rename = (body: string, contentType = "application/json") =>
+    app.request(url, {
+      method: "PATCH",
+      headers: { "Content-Type": contentType },
+      body,
+    });
+  for (const body of [
+    "{",
+    "{}",
+    '{"title":" "}',
+    JSON.stringify({ title: "x".repeat(121) }),
+    '{"title":"valid","extra":true}',
+  ])
+    assert.equal((await rename(body)).status, 400);
+  assert.equal((await rename('{"title":"valid"}', "text/plain")).status, 415);
+  assert.equal(
+    (await rename(JSON.stringify({ title: "x".repeat(70000) }))).status,
+    413,
+  );
+  const renamed = conversationSchema.parse(
+    await (await rename('{"title":"  Saved title  "}')).json(),
+  );
+  assert.equal(renamed.title, "Saved title");
+  assert.equal(renamed.createdAt, conversation.createdAt);
+  assert(renamed.updatedAt >= conversation.updatedAt);
+  await (await app.submit(conversation.id)).text();
+  await untilIdle(app);
+  assert.equal(app.store.conversation(conversation.id)?.title, "Saved title");
+  await app.close();
+  const reopened = await fixture(new MockProvider(0), path);
+  assert.equal(
+    reopened.store.conversation(conversation.id)?.title,
+    "Saved title",
+  );
+  assert(reopened.store.activities(conversation.id).length > 0);
+  const response = await reopened.request(url, { method: "DELETE" });
+  assert.equal(response.status, 204);
+  assert.equal(await response.text(), "");
+  assert.equal((await reopened.request(url)).status, 404);
+  assert.deepEqual(reopened.store.messages(conversation.id), []);
+  assert.deepEqual(reopened.store.runs(conversation.id), []);
+  assert.deepEqual(reopened.store.activities(conversation.id), []);
+  assert.equal(reopened.store.messages(other.id).length, 2);
+  assert.equal(reopened.store.runs(other.id).length, 1);
+  assert.equal(reopened.store.activities(other.id).length, 1);
+  await reopened.close();
+  const final = new Store(path);
+  try {
+    assert.equal(final.conversation(conversation.id), undefined);
+    assert.equal(final.conversation(other.id)?.title, "private");
+  } finally {
+    final.close();
+  }
+});
+
+test("rename and delete reject the active conversation through provider cleanup", async () => {
+  let releaseCleanup = () => {};
+  const cleanupGate = new Promise<void>((resolve) => {
+    releaseCleanup = resolve;
+  });
+  let enteredCleanup = () => {};
+  const cleaning = new Promise<void>((resolve) => {
+    enteredCleanup = resolve;
+  });
+  const app = await fixture({
+    async *stream(_history, _tools, signal) {
+      try {
+        yield { type: "delta", text: "started" };
+        if (!signal.aborted) await once(signal, "abort");
+      } finally {
+        enteredCleanup();
+        await cleanupGate;
+      }
+    },
+  });
+  const conversation = await app.conversation();
+  const other = await app.conversation();
+  const controller = new AbortController();
+  const response = await app.submit(
+    conversation.id,
+    "Hello",
+    controller.signal,
+  );
+  const reader = response.body?.getReader();
+  assert(reader);
+  await reader.read();
+  try {
+    for (const method of ["PATCH", "DELETE"]) {
+      assert.equal(
+        (
+          await app.request(`/api/conversations/${conversation.id}`, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: method === "PATCH" ? '{"title":"Blocked"}' : undefined,
+          })
+        ).status,
+        409,
+      );
+    }
+    assert.equal(
+      (
+        await app.request(`/api/conversations/${other.id}`, {
+          method: "DELETE",
+        })
+      ).status,
+      204,
+    );
+    controller.abort();
+    await cleaning;
+    assert.equal(
+      (
+        await app.request(`/api/conversations/${conversation.id}`, {
+          method: "DELETE",
+        })
+      ).status,
+      409,
+    );
+  } finally {
+    releaseCleanup();
+    controller.abort();
+    await reader.cancel().catch(() => undefined);
+  }
+  await untilIdle(app);
+  assert.equal(
+    (
+      await app.request(`/api/conversations/${conversation.id}`, {
+        method: "DELETE",
+      })
+    ).status,
+    204,
+  );
+});
+
+test("delayed message and rename bodies cannot mutate a deleted conversation", async () => {
+  const app = await fixture();
+  for (const method of ["POST", "PATCH"]) {
+    const conversation = await app.conversation();
+    const reading = new Promise<void>((resolve) => {
+      app.server.once("request", (incoming) =>
+        incoming.once("readable", resolve),
+      );
+    });
+    const delayed = httpRequest(
+      `${app.base}/api/conversations/${conversation.id}${method === "POST" ? "/messages" : ""}`,
+      {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    const result = new Promise<number | undefined>((resolve, reject) => {
+      delayed.on("response", (response) => {
+        response.resume();
+        response.on("end", () => resolve(response.statusCode));
+      });
+      delayed.on("error", reject);
+    });
+    delayed.write(
+      method === "POST" ? '{"content":"Delayed' : '{"title":"Delayed',
+    );
+    await reading;
+    assert.equal(
+      (
+        await app.request(`/api/conversations/${conversation.id}`, {
+          method: "DELETE",
+        })
+      ).status,
+      204,
+    );
+    delayed.end('"}');
+    assert.equal(await result, 404);
+    assert.deepEqual(app.store.messages(conversation.id), []);
+  }
 });

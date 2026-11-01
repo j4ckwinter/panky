@@ -6,6 +6,11 @@ export const conversationSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+export const renameConversationSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120),
+  })
+  .strict();
 export const messageSchema = z.object({
   id: z.uuid(),
   conversationId: z.uuid(),

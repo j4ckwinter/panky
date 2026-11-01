@@ -5,7 +5,11 @@ import {
   type IncomingMessage,
   type ServerResponse,
 } from "node:http";
-import { type StreamEvent, submissionSchema } from "@panky/shared";
+import {
+  type StreamEvent,
+  submissionSchema,
+  renameConversationSchema,
+} from "@panky/shared";
 import { z } from "zod";
 import { Auth } from "./auth.js";
 import type { GoogleVerifier } from "./google.js";
@@ -23,7 +27,7 @@ function json(response: ServerResponse, status: number, data: unknown) {
   response.end(JSON.stringify(data));
 }
 
-async function readSubmission(request: IncomingMessage) {
+async function readJson(request: IncomingMessage): Promise<unknown> {
   if (
     request.headers["content-type"]?.split(";")[0]?.trim() !==
     "application/json"
@@ -43,7 +47,11 @@ async function readSubmission(request: IncomingMessage) {
   } catch {
     throw new HttpError(400, "Invalid JSON.");
   }
-  const result = submissionSchema.safeParse(input);
+  return input;
+}
+
+async function readSubmission(request: IncomingMessage) {
+  const result = submissionSchema.safeParse(await readJson(request));
   if (!result.success)
     throw new HttpError(
       400,
@@ -86,7 +94,7 @@ export function createApp(
       const headers = request.headers["access-control-request-headers"];
       if (
         !method ||
-        !["GET", "POST"].includes(method) ||
+        !["GET", "POST", "PATCH", "DELETE"].includes(method) ||
         headers
           ?.split(",")
           .some(
@@ -101,7 +109,7 @@ export function createApp(
         throw new HttpError(403, "Preflight request is not allowed.");
       }
       response.writeHead(204, {
-        "Access-Control-Allow-Methods": "GET, POST",
+        "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE",
         "Access-Control-Allow-Headers":
           "Authorization, Content-Type, ngrok-skip-browser-warning",
         "Access-Control-Max-Age": "600",
@@ -170,10 +178,43 @@ export function createApp(
       });
       return;
     }
+    if (
+      !match[2] &&
+      (request.method === "PATCH" || request.method === "DELETE")
+    ) {
+      let title: string | undefined;
+      if (request.method === "PATCH") {
+        const result = renameConversationSchema.safeParse(
+          await readJson(request),
+        );
+        if (!bearer && auth.authenticate(request)?.id !== userId)
+          throw new HttpError(401, "Sign in to continue.");
+        if (!result.success)
+          throw new HttpError(400, "Title must contain 1–120 characters.");
+        title = result.data.title;
+      }
+      if (!store.ownsConversation(id.data, userId))
+        throw new HttpError(404, "Conversation not found.");
+      if (chat.activeConversationId === id.data)
+        throw new HttpError(
+          409,
+          "Wait for this conversation's response to finish.",
+        );
+      if (title !== undefined) {
+        json(response, 200, store.renameConversation(id.data, title));
+      } else {
+        store.deleteConversation(id.data);
+        response.writeHead(204);
+        response.end();
+      }
+      return;
+    }
     if (match[2] && request.method === "POST") {
       const { content, includeActivity } = await readSubmission(request);
       if (!bearer && auth.authenticate(request)?.id !== userId)
         throw new HttpError(401, "Sign in to continue.");
+      if (!store.ownsConversation(id.data, userId))
+        throw new HttpError(404, "Conversation not found.");
       const controller = new AbortController();
       const disconnect = () => controller.abort();
       response.once("close", disconnect);

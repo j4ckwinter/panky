@@ -120,6 +120,33 @@ test("Google accounts isolate history, messages, tasks, cancellation, sessions a
       (await request(`/api/runs/${run.id}/cancel`, b, {})).status,
       404,
     );
+    for (const method of ["PATCH", "DELETE"]) {
+      const init = {
+        method,
+        headers: {
+          Origin: origin,
+          Cookie: b,
+          "Content-Type": "application/json",
+        },
+        body:
+          method === "PATCH"
+            ? JSON.stringify({ title: "Intrusion" })
+            : undefined,
+      };
+      assert.equal(
+        (await fetch(base + `/api/conversations/${ca.id}`, init)).status,
+        404,
+      );
+      assert.equal(
+        (
+          await fetch(base + `/api/conversations/${cb.id}`, {
+            ...init,
+            headers: { ...init.headers, Origin: "http://127.0.0.1:5173" },
+          })
+        ).status,
+        401,
+      );
+    }
     assert.equal(app.store.messages(ca.id).length, 2);
     assert.equal((await request("/api/auth/access", b)).status, 403);
     assert.equal(
@@ -170,11 +197,38 @@ test("Google accounts isolate history, messages, tasks, cancellation, sessions a
     );
     delayed.write('{"content":"Delayed member request');
     await readingBody;
+    const readingRename = new Promise<void>((resolve) => {
+      app.server.once("request", (incoming) =>
+        incoming.once("readable", resolve),
+      );
+    });
+    const delayedRename = httpRequest(base + `/api/conversations/${cb.id}`, {
+      method: "PATCH",
+      headers: {
+        Origin: origin,
+        Cookie: b,
+        "Content-Type": "application/json",
+      },
+    });
+    const renameAfterRevoke = new Promise<number | undefined>(
+      (resolve, reject) => {
+        delayedRename.on("response", (response) => {
+          response.resume();
+          response.on("end", () => resolve(response.statusCode));
+        });
+        delayedRename.on("error", reject);
+      },
+    );
+    delayedRename.write('{"title":"Delayed rename');
+    await readingRename;
     assert.equal(
       (await request("/api/auth/access/revoke", a, { email: member })).status,
       200,
     );
     delayed.end('"}');
+    delayedRename.end('"}');
+    assert.equal(await renameAfterRevoke, 401);
+    assert.equal(app.store.conversation(cb.id)?.title, "New conversation");
     assert.equal(await deniedAfterRevoke, 401);
     assert.equal(app.store.messages(cb.id).length, 0);
     assert.equal((await request("/api/conversations", b)).status, 401);

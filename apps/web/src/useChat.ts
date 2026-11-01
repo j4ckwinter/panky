@@ -35,15 +35,17 @@ export function useChat(api: Api) {
   const mounted = useRef(true);
 
   const run = useCallback(async (operation: () => Promise<void>) => {
-    if (lock.current || cancelLock.current) return;
+    if (lock.current || cancelLock.current) return false;
     lock.current = true;
     setPending(true);
     setSubmissionAccepted(false);
     setError("");
     try {
       await operation();
+      return true;
     } catch (cause) {
       if (mounted.current) setError(errorMessage(cause));
+      return false;
     } finally {
       lock.current = false;
       if (mounted.current) setPending(false);
@@ -131,6 +133,35 @@ export function useChat(api: Api) {
     setError("");
   }
 
+  function rename(id: string, title: string) {
+    return run(async () => {
+      const updated = await api.rename(id, title);
+      if (!mounted.current) return;
+      setConversations((items) => [
+        updated,
+        ...items.filter((item) => item.id !== id),
+      ]);
+      setCurrent((item) => (item?.id === id ? updated : item));
+    });
+  }
+  function remove(id: string) {
+    return run(async () => {
+      await api.remove(id);
+      if (!mounted.current) return;
+      setConversations((items) => items.filter((item) => item.id !== id));
+      setDrafts((items) => {
+        const next = { ...items };
+        delete next[id];
+        return next;
+      });
+      if (current?.id === id) {
+        setCurrent(null);
+        setMessages([]);
+        setRuns([]);
+        setActivities([]);
+      }
+    });
+  }
   function send(content: string) {
     return run(async () => {
       const conversation = current ?? (await api.create());
@@ -286,5 +317,8 @@ export function useChat(api: Api) {
     select,
     create,
     send,
+    rename,
+    remove,
+    clearError: () => setError(""),
   };
 }

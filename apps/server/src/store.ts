@@ -113,6 +113,33 @@ export class Store {
     return conversation;
   }
 
+  renameConversation(id: string, title: string): Conversation {
+    this.db
+      .prepare("UPDATE conversations SET title = ?, updatedAt = ? WHERE id = ?")
+      .run(title, new Date().toISOString(), id);
+    const conversation = this.conversation(id);
+    if (!conversation) throw new Error("Conversation not found.");
+    return conversation;
+  }
+
+  deleteConversation(id: string) {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.db
+        .prepare(
+          "DELETE FROM activities WHERE runId IN (SELECT id FROM task_runs WHERE conversationId = ?)",
+        )
+        .run(id);
+      this.db.prepare("DELETE FROM task_runs WHERE conversationId = ?").run(id);
+      this.db.prepare("DELETE FROM messages WHERE conversationId = ?").run(id);
+      this.db.prepare("DELETE FROM conversations WHERE id = ?").run(id);
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
   messages(id: string): Message[] {
     return this.db
       .prepare("SELECT * FROM messages WHERE conversationId = ? ORDER BY rowid")
@@ -156,7 +183,10 @@ export class Store {
           message.status,
           now,
         );
-      if (firstMessage) {
+      if (
+        firstMessage &&
+        this.conversation(conversationId)?.title === "New conversation"
+      ) {
         this.db
           .prepare(
             "UPDATE conversations SET title = ?, updatedAt = ? WHERE id = ?",
