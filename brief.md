@@ -231,6 +231,8 @@ Add:
 
 ## Milestone 3 — Local AI on the Windows PC
 
+Status: complete (1 November 2026). Local model and GPU evaluation passed; remote authentication and CORS checks passed against the PC backend. The owner confirmed deployed streaming, clock-tool activity and restored history after refresh and reconnection. See README.md for measurements, limitations and operating instructions.
+
 ### Goal
 
 Replace the mock provider with an Ollama provider running on my Windows PC.

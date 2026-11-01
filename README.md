@@ -106,7 +106,7 @@ Tests use isolated in-memory or temporary SQLite databases. Do not run verificat
 
 ## Original Mac remote-access setup
 
-The frontend runs on Vercel and the backend stays on your Mac. Both the backend and the tunnel must remain running, and the Mac must stay awake and connected. You need Vercel and ngrok accounts; no purchased domain is required.
+This section records the original Milestone 1 setup; the current PC setup is documented below. The frontend runs on Vercel and the backend originally ran on the Mac. Both the backend and the tunnel must remain running, and the Mac must stay awake and connected. You need Vercel and ngrok accounts; no purchased domain is required.
 
 ### 1. Start the ngrok tunnel
 
@@ -146,13 +146,13 @@ Repeat these checks when changing the deployment, tunnel, or backend configurati
 
 ## Milestone status and limits
 
-Milestone 1 is complete. The deployed frontend is https://panky.vercel.app, backed by the Mac through an authenticated ngrok HTTPS tunnel. It includes streaming mock chat, SQLite history, responsive UI, and workspace checks. Local verification passed on Node 26.13.0: `pnpm check` (13 backend tests), `pnpm build`, and `pnpm test:e2e` (5 Chromium tests). Desktop and 390px mobile screenshots were inspected. The compiled backend also streamed a reply and restored it after an actual process restart. The maximum-length browser test completed in about 13 seconds. Independent review found no remaining actionable issues after the long-message streaming fix.
+Milestone 1 is complete. The Milestone 1 deployment used https://panky.vercel.app, backed by the Mac through an authenticated ngrok HTTPS tunnel. It includes streaming mock chat, SQLite history, responsive UI, and workspace checks. Local verification passed on Node 26.13.0: `pnpm check` (13 backend tests), `pnpm build`, and `pnpm test:e2e` (5 Chromium tests). Desktop and 390px mobile screenshots were inspected. The compiled backend also streamed a reply and restored it after an actual process restart. The maximum-length browser test completed in about 13 seconds. Independent review found no remaining actionable issues after the long-message streaming fix.
 
 Verification on 1 November 2026: [GitHub CI passed on Node 24](https://github.com/j4ckwinter/panky/actions/runs/41298241985). The live Vercel frontend returns HTTP 200 and its production bundle contains the configured ngrok API URL. Remote checks using the deployed origin verified CORS preflight, rejection of missing authentication and unlisted origins, incremental SSE delivery, and exact saved reply content. The owner confirmed in the deployed browser that replies stream and conversation history survives refresh and reconnection. Remote browser automation was unavailable; concurrency, interruption recovery, mobile layout, and backend restart persistence were exercised by the local checks described above.
 
-The Mac, backend, and ngrok agent must remain running for remote chat to work. This setup is not an always-on hosted backend. The local Git repository includes `pnpm-lock.yaml`; environment secrets, conversation data, and generated files are ignored.
+The backend host, backend process, and ngrok agent must remain running for remote chat to work. This setup is not an always-on hosted backend. The local Git repository includes `pnpm-lock.yaml`; environment secrets, conversation data, and generated files are ignored.
 
-Milestone 2 is implemented with a real clock tool, bounded execution, persisted activity, and cancellation. Verification passed on Node 26.13.0: `pnpm check` (29 backend tests), `pnpm build`, and `pnpm test:e2e` (7 Chromium tests). Desktop and 390px mobile screenshots were inspected. Independent review found no remaining actionable issues. All Milestone 2 verification used isolated test databases. The mock does not reason or call an AI service; the backend executes only the allowed clock tool. Milestone 2 did not require Ollama or a model download. Milestone 3 is now in progress on the Windows PC; see the setup and verification notes below.
+Milestone 2 is implemented with a real clock tool, bounded execution, persisted activity, and cancellation. Verification passed on Node 26.13.0: `pnpm check` (29 backend tests), `pnpm build`, and `pnpm test:e2e` (7 Chromium tests). Desktop and 390px mobile screenshots were inspected. Independent review found no remaining actionable issues. All Milestone 2 verification used isolated test databases. The mock does not reason or call an AI service; the backend executes only the allowed clock tool. Milestone 2 did not require Ollama or a model download. Milestone 3 is complete on the Windows PC; see the setup and verification notes below.
 
 ## Windows local AI setup (Milestone 3)
 
@@ -198,11 +198,23 @@ The history budget counts characters, not tokens, and cannot guarantee fit in th
 
 Stop Panky on both machines. Back up the Mac's `apps/server/data` directory, including SQLite sidecar files, and securely copy the complete directory to `apps/server/data` on the PC. Back up any existing PC data first; do not overwrite it or merge databases implicitly. Set `DATABASE_PATH=./data/panky.sqlite`, then start one backend process. Existing task/activity tables remain compatible. Re-enter your backend token after browser refresh. Transfer configuration privately or generate a new token, and retain the exact frontend origin allowlist.
 
-### Move remote access to the PC
+### Remote access from the PC
 
-The prior deployment instructions above describe the Mac setup. On Windows, install ngrok using its [Windows instructions](https://ngrok.com/download/windows), configure its account token locally, then run `ngrok http http://127.0.0.1:3001 --inspect=false`. Use the existing assigned hostname if available. Keep `ALLOWED_ORIGINS` set to the exact Vercel frontend origin. Deploy the Milestone 3 frontend as part of the eventual migration: older frontend builds only accept the mock provider in the health response. If the tunnel hostname changes, also update `VITE_API_URL`. Rebuild/redeploy only with authorization. The PC and both processes must remain awake and connected.
+The deployed frontend at https://panky.vercel.app now includes Milestone 3 and uses the PC backend through the existing ngrok hostname. Stop the Mac's ngrok tunnel before starting the PC tunnel: only one machine should serve this hostname and conversation database.
 
-Remote migration is not verified until the deployed browser streams a real local-model reply, restores history after reconnect, and rejects unauthenticated access against the PC backend. No production database is used for automated verification.
+Ngrok is installed through the Microsoft Store on Windows. Configure its account token privately, then use **PowerShell** to start it (the Store executable alias did not launch from Git Bash):
+
+```powershell
+ngrok http http://127.0.0.1:3001 --url=https://upcountry-scheme-excretory.ngrok-free.dev --inspect=false
+```
+
+Keep this terminal and the Panky backend running, and keep the PC awake and connected. Ollama stays on loopback port 11434; only Panky's authenticated API is tunneled. Keep `ALLOWED_ORIGINS` set to the exact Vercel frontend origin plus any required local development origins. The Panky access token is stored only in the ignored backend environment file and must be re-entered after browser refresh. It is separate from the ngrok account token.
+
+Remote API verification on 1 November 2026 confirmed the public hostname reaches the PC's `ollama` provider with `panky-qwen3:4b`: authenticated health returned 200, missing authentication returned 401, an unlisted origin returned 403, and the deployed origin's preflight returned 204. The updated production frontend and GitHub CI passed for commit `f44a9bc`. No automated verification conversations were created in the live database. The owner confirmed that the deployed browser streams real-model replies, shows clock-tool activity, and restores the conversation after refresh and reconnection.
+
+### Develop on the MacBook while the PC serves Panky
+
+Push committed code from one machine and pull it on the other. Keep each machine's ignored environment files and databases separate; Git does not transfer them. For UI work on the Mac, set `apps/web/.env` to `VITE_API_URL=https://upcountry-scheme-excretory.ngrok-free.dev`, run the web app, and enter the PC backend's current token in the UI. The PC allowlist includes `http://localhost:5173` and `http://127.0.0.1:5173`. This uses the PC's live conversations and model; use a separate local mock backend and isolated database for automated tests. Backend changes must be pulled, built and restarted on the PC before they affect the remote app. Keep the Mac's old ngrok tunnel stopped.
 
 ### Repeat the real-model evaluation
 
@@ -218,4 +230,4 @@ The generic `qwen3:4b` tag resolved to Thinking 2507 and failed the initial eval
 
 Verification passed on Node 24.20.0: `pnpm check` with 46 backend tests, `pnpm build`, and `pnpm test:e2e` with 19 Chromium tests. A separate real-model browser check verified the provider label, clock activity and cancellation after streamed text began. Desktop and 390px mobile screenshots were inspected. All verification used isolated databases.
 
-The local portion of Milestone 3 is verified. Remote web access from the PC remains deferred at the owner's request; the migration instructions are prepared above. Milestone 4 has not started.
+Milestone 3 is complete. Local real-model evaluation, remote authentication and CORS checks, and owner verification of deployed streaming, clock activity and restored history all passed. Milestone 4 has not started.
