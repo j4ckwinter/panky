@@ -1,14 +1,11 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { historySchema } from "@panky/shared";
 
-const token = "panky-browser-test-token-never-use-in-production";
-const apiBase = "http://127.0.0.1:3101";
+import { test, login, token } from "./auth-fixture.js";
+const apiBase = "http://localhost:5174/api";
 async function connect(page: Page) {
   await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await expect(
     page.getByRole("button", { name: "Refresh history", exact: true }),
   ).toBeEnabled();
@@ -87,10 +84,7 @@ test("real clock tool result appears in the mock reply and survives refresh with
     if (req.method() === "POST" && req.url().startsWith(apiBase)) posts++;
   });
   await page.reload();
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await page
     .getByRole("button", {
       name: "What is the current date and time?",
@@ -166,10 +160,7 @@ test("Cancel task stops a live reply and persists cancellation across refresh", 
     saved.messages[0]?.content.length ?? 0,
   );
   await page.reload();
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await page.getByRole("button", { name: /Cancellation check/ }).click();
   await expect(
     activity.getByText("Cancelled", { exact: true }).first(),

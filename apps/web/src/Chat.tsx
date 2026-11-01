@@ -17,9 +17,11 @@ import { useChat } from "./useChat";
 export function Chat({
   api,
   onDisconnect,
+  onSessions,
 }: {
   api: Api;
   onDisconnect: () => void;
+  onSessions: () => void;
 }) {
   const chat = useChat(api);
   const { draft, setDraft } = chat;
@@ -235,13 +237,16 @@ export function Chat({
           <StatusChip tone="warning" title={chat.providerLabel}>
             {chat.providerLabel}
           </StatusChip>
+          <Button variant="secondary" onClick={onSessions}>
+            Sessions
+          </Button>
           <Button
             variant="secondary"
             className="disconnect-button"
             onClick={onDisconnect}
             disabled={chat.pending}
           >
-            Disconnect
+            Sign out
           </Button>
         </div>
       </aside>

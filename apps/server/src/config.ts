@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { z } from "zod";
 
 const originSchema = z
@@ -14,6 +15,13 @@ const configSchema = z.object({
     .string()
     .min(32)
     .regex(/^[A-Za-z0-9._~+/-]+=*$/),
+  AUTH_ORIGIN: originSchema.default("http://localhost:5173").refine((value) => {
+    const url = new URL(value);
+    return (
+      isIP(url.hostname.replace(/^\[|\]$/g, "")) === 0 &&
+      (url.protocol === "https:" || url.hostname === "localhost")
+    );
+  }, "Sign-in requires an HTTPS domain or HTTP localhost; IP addresses cannot be passkey relying parties."),
   HOST: z.string().min(1).default("127.0.0.1"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   DATABASE_PATH: z.string().min(1).default("./data/panky.sqlite"),

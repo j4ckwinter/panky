@@ -7,6 +7,7 @@ import {
 } from "node:http";
 import { type StreamEvent, submissionSchema } from "@panky/shared";
 import { z } from "zod";
+import { Auth } from "./auth.js";
 import { Chat, HttpError } from "./chat.js";
 import type { Config } from "./config.js";
 import { MockProvider, type ModelProvider } from "./provider.js";
@@ -62,6 +63,7 @@ export function createApp(
   tools?: readonly Tool[],
 ) {
   const store = new Store(config.DATABASE_PATH);
+  const auth = new Auth(config);
   const chat = new Chat(store, provider, config, tools);
   const expectedToken = createHash("sha256")
     .update(`Bearer ${config.AUTH_TOKEN}`)
@@ -105,19 +107,23 @@ export function createApp(
       response.end();
       return;
     }
+    const url = new URL(request.url ?? "/", "http://localhost");
+    if (url.search)
+      throw new HttpError(400, "Query parameters are not supported.");
+    if (await auth.route(request, response, url.pathname)) return;
     const suppliedToken = createHash("sha256")
       .update(request.headers.authorization ?? "")
       .digest();
-    if (!timingSafeEqual(suppliedToken, expectedToken)) {
+    if (
+      !timingSafeEqual(suppliedToken, expectedToken) &&
+      !auth.authenticate(request)
+    ) {
       response.setHeader("WWW-Authenticate", "Bearer");
       throw new HttpError(
         401,
         "Authentication required. Enter your backend access token.",
       );
     }
-    const url = new URL(request.url ?? "/", "http://localhost");
-    if (url.search)
-      throw new HttpError(400, "Query parameters are not supported.");
     if (url.pathname === "/api/health" && request.method === "GET") {
       json(response, 200, {
         provider: config.MODEL_PROVIDER,
@@ -219,6 +225,7 @@ export function createApp(
       await new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),
       );
+      auth.close();
       store.close();
     },
   };

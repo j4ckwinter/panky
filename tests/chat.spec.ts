@@ -1,20 +1,12 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 
-const token = "panky-browser-test-token-never-use-in-production";
+import { test, login, token } from "./auth-fixture.js";
 
 test("authenticates, streams from the server and restores conversations after reload", async ({
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill("wrong-token");
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await expect(page.getByRole("alert")).toBeVisible();
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await page
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
@@ -42,10 +34,7 @@ test("authenticates, streams from the server and restores conversations after re
     ),
   ).not.toContain(token);
   await page.reload();
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await page.getByRole("button", { name: /Remember my pancakes/ }).click();
   await expect(
     page.getByText(/This is a mock response from Panky/),
@@ -63,31 +52,22 @@ test("authenticates, streams from the server and restores conversations after re
   });
 });
 
-test("reports an unreachable backend without losing the login form", async ({
+test("reports an unreachable backend and lets the user retry", async ({
   page,
 }) => {
-  await page.route("http://127.0.0.1:3101/**", (route) =>
-    route.abort("connectionrefused"),
-  );
+  await page.route("**/api/**", (route) => route.abort("connectionrefused"));
   await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Connect", exact: true }),
-  ).toBeEnabled();
+  await page.unroute("**/api/**");
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await login(page);
 });
 
 test("reload interrupts a reply and does not submit it again", async ({
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await page
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
@@ -105,10 +85,7 @@ test("reload interrupts a reply and does not submit it again", async ({
     if (request.method() === "POST" && request.url().endsWith("/messages"))
       submissions++;
   });
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await expect(page.getByRole("article")).toHaveCount(0);
   await page.getByRole("button", { name: /Interrupt this reply/ }).click();
   await expect(
@@ -133,10 +110,7 @@ test("maximum valid message streams progressively and completes", async ({
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await page
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
@@ -163,10 +137,7 @@ test("Enter sends, Shift+Enter inserts a line, and composing Enter does not send
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await page
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
@@ -199,10 +170,7 @@ test("mobile conversations close with Escape, backdrop and selection", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   const menu = page.getByRole("button", { name: "Conversations", exact: true });
   await menu.click();
   const drawer = page.getByRole("dialog", {
@@ -214,9 +182,7 @@ test("mobile conversations close with Escape, backdrop and selection", async ({
     drawer.getByRole("button", { name: "Close conversations" }),
   ).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(
-    drawer.getByRole("button", { name: "Disconnect" }),
-  ).toBeFocused();
+  await expect(drawer.getByRole("button", { name: "Sign out" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(
     drawer.getByRole("button", { name: "Close conversations" }),
@@ -250,17 +216,12 @@ test("disconnected composer explains why sending is unavailable and preserves dr
   page,
 }) => {
   await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await login(page);
   await page
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
   await page.getByLabel("Message", { exact: true }).fill("Keep this draft");
-  await page.route("http://127.0.0.1:3101/**", (route) =>
-    route.abort("connectionrefused"),
-  );
+  await page.route("**/api/**", (route) => route.abort("connectionrefused"));
   await expect(page.locator("#composer-help")).toContainText(
     "Connection lost",
     { timeout: 10000 },

@@ -107,3 +107,11 @@ export const healthSchema = z.object({
 export type Conversation = z.infer<typeof conversationSchema>;
 export type Message = z.infer<typeof messageSchema>;
 export type StreamEvent = z.infer<typeof streamEventSchema>;
+
+export {
+  type AuthStatus,
+  authStatusSchema,
+  type DeviceSession,
+  deviceSessionSchema,
+  deviceSessionsSchema,
+} from "./auth.js";

@@ -1,18 +1,9 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
-const token = "panky-browser-test-token-never-use-in-production";
+import { test, login } from "./auth-fixture.js";
 async function connect(page: Page) {
   await page.goto("/");
   await login(page);
-}
-async function login(page: Page) {
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill(token);
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
-  ).toBeEnabled();
 }
 async function send(page: Page, content: string) {
   await page.getByLabel("Message", { exact: true }).fill(content);
@@ -395,9 +386,11 @@ test("connection page keeps the form usable at desktop and mobile sizes", async 
   await page.goto("/");
   for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await expect(page.getByRole("heading", { name: "Connect" })).toBeVisible();
     await expect(
-      page.getByRole("textbox", { name: "Access token", exact: true }),
+      page.getByRole("heading", { name: "Sign in", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Sign in with passkey", exact: true }),
     ).toBeVisible();
     expect(
       await page.evaluate(
@@ -406,16 +399,6 @@ test("connection page keeps the form usable at desktop and mobile sizes", async 
     ).toBe(true);
     await page.screenshot({ path: `test-results/connection-${width}.png` });
   }
-  await page
-    .getByRole("textbox", { name: "Access token", exact: true })
-    .fill("wrong-token");
-  await page.getByRole("button", { name: "Connect", exact: true }).click();
-  await expect(page.getByRole("alert")).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
 });
 
 test("empty chat and composer stay reachable in a short mobile window", async ({

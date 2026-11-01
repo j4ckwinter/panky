@@ -6,7 +6,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  use: { baseURL: "http://127.0.0.1:5174", trace: "retain-on-failure" },
+  use: { baseURL: "http://localhost:5174", trace: "retain-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
@@ -16,7 +16,8 @@ export default defineConfig({
         AUTH_TOKEN: token,
         PORT: "3101",
         DATABASE_PATH: ":memory:",
-        ALLOWED_ORIGINS: "http://127.0.0.1:5174",
+        AUTH_ORIGIN: "http://localhost:5174",
+        ALLOWED_ORIGINS: "http://localhost:5174",
         MODEL_PROVIDER: "mock",
       },
       reuseExistingServer: false,
@@ -24,8 +25,8 @@ export default defineConfig({
     {
       command:
         "pnpm --filter @panky/web dev --host 127.0.0.1 --port 5174 --strictPort",
-      url: "http://127.0.0.1:5174",
-      env: { VITE_API_URL: "http://127.0.0.1:3101" },
+      url: "http://localhost:5174",
+      env: { PANKY_API_TARGET: "http://127.0.0.1:3101" },
       reuseExistingServer: false,
     },
   ],

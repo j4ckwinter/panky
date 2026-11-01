@@ -166,12 +166,17 @@ button:disabled {
   font-size: 12px;
 }
 .sidebar-bottom {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  justify-content: space-between;
   gap: var(--spacing-pancake-8);
   border-top: 1px solid var(--color-pancake-border);
   padding-top: var(--spacing-pancake-24);
+}
+.sidebar-bottom > :first-child {
+  grid-column: 1 / -1;
+  justify-self: start;
+  max-width: 100%;
 }
 .disconnect-button {
   min-width: 0;
@@ -600,4 +605,51 @@ button:disabled {
     border-top: 1px solid var(--color-pancake-control-border);
     padding: var(--spacing-pancake-32) 0 0;
   }
+}
+
+.auth-description {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--color-pancake-text-secondary);
+}
+.auth-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-pancake-8);
+  line-height: 1.5;
+}
+.auth-confirm input {
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.sessions-dialog {
+  color: inherit;
+  background: var(--color-pancake-surface-primary, #fbf8f0);
+  border: 1px solid var(--color-pancake-control-border);
+  border-radius: 20px;
+  padding: var(--spacing-pancake-24);
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.sessions-dialog::backdrop {
+  background: rgb(0 0 0 / 35%);
+}
+.session-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.session-list li {
+  display: flex;
+  gap: var(--spacing-pancake-16);
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-pancake-16) 0;
+  border-bottom: 1px solid var(--color-pancake-control-border);
+}
+.session-list p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }

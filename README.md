@@ -2,7 +2,7 @@
 
 A personal chat workspace. Select a deterministic mock provider or a local Ollama model on the Windows PC. Both use the same bounded task loop and one real tool: reading the current date and time.
 
-The React frontend calls a separate Node backend. SQLite stores conversations on the backend host. Production access follows `browser → Vercel frontend → HTTPS tunnel → local backend`; the browser makes authenticated requests directly to the tunnel origin.
+The React frontend calls a separate Node backend. SQLite stores conversations on the backend host. Production access follows `browser → Vercel /api proxy → HTTPS tunnel → PC backend`. The browser uses a first-party session cookie; the model and conversation database remain on the PC.
 
 ## Run locally
 
@@ -20,11 +20,11 @@ Generate a token with `openssl rand -hex 32`, save it as `AUTH_TOKEN` in `apps/s
 pnpm dev
 ```
 
-Open http://localhost:5173 and enter the token in **Access token**. Choose **Connect**, then **New conversation**, enter a message, and select **Send message**. Enter sends the message; Shift+Enter adds a new line. The reply arrives incrementally from the backend. Reload, reconnect with the token, and select the conversation to restore history.
+Open http://localhost:5173. On first use, enter `AUTH_TOKEN` once under **Set up Panky** and choose **Create passkey**. Your device will ask you to approve creation. Later sign-ins use **Sign in with passkey**. Sessions last 30 days; refresh keeps you signed in and opens a blank chat. Select saved conversations from the sidebar.
 
-The token is kept only in browser memory, so refresh requires signing in again. This trades persistent login convenience for avoiding credentials in browser storage. Conversation data remains in SQLite regardless of browser sign-in state.
+Set `AUTH_ORIGIN=http://localhost:5173` on this local backend and `PANKY_API_TARGET=http://127.0.0.1:3001` in the web environment. Use that exact browser origin: passkeys require a domain name, so use `localhost`, not an IP address. Local passkeys and production passkeys are separate. Use a local mock backend and separate database for development; the PC's production authentication origin must stay fixed.
 
-Run either app independently with `pnpm --filter @panky/web dev` or `pnpm --filter @panky/server dev`. For production builds, use `pnpm build`; start the compiled backend with `pnpm --filter @panky/server start`. Preview the built web app with `pnpm --filter @panky/web preview` and add its exact origin to the backend allowlist if using a different port.
+Run either app independently with `pnpm --filter @panky/web dev` or `pnpm --filter @panky/server dev`. For production builds, use `pnpm build`; start the compiled backend with `pnpm --filter @panky/server start`. Preview the built web app with `pnpm --filter @panky/web preview` and set both `AUTH_ORIGIN` and the backend allowlist to its exact localhost origin if using a different port.
 
 ## Try the date-and-time tool
 
@@ -65,6 +65,7 @@ Server environment variables are loaded from `apps/server/.env` by the package s
 
 | Variable               | Default / requirement                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------------------------- |
+| `AUTH_ORIGIN`          | Exact browser origin for passkeys and cookie requests; local default `http://localhost:5173`            |
 | `AUTH_TOKEN`           | Required, at least 32 characters; generate a random token                                               |
 | `HOST`                 | `127.0.0.1`; keep loopback when using the tunnel                                                        |
 | `PORT`                 | `3001`                                                                                                  |
@@ -78,13 +79,29 @@ Server environment variables are loaded from `apps/server/.env` by the package s
 | `HISTORY_MAX_CHARS`    | `16000`; context character budget, from 8000 to 128000                                                  |
 | `MAX_TASK_DURATION_MS` | `30000`; task deadline in milliseconds, from 100 to 300000                                              |
 
-Frontend `VITE_API_URL` is a public backend origin, defaulting to `http://localhost:3001`. Set it to your HTTPS tunnel origin for deployment. Vite embeds it at build time, so changes require a rebuild. Never define a frontend variable containing the access token. HTTPS is required except for loopback development URLs.
+The frontend sends cookie-authenticated requests to its own `/api` path. During development, Vite proxies to `PANKY_API_TARGET` (falling back to the older `VITE_API_URL` or loopback port 3001). Vercel uses the explicit external rewrite in `apps/web/vercel.json` to the existing PC tunnel. Changing a frontend environment variable does not change that production rewrite. No token is embedded in the frontend.
 
 ## Authentication and persistence
 
-All API endpoints, including health and streaming, require an `Authorization: Bearer …` header. The token is a pre-shared single-user credential, not a complete OAuth login system. Bearer header transport follows [RFC 6750](https://www.rfc-editor.org/rfc/rfc6750). Use HTTPS remotely, rotate the token by changing the server environment and restarting, and reconnect with the new token. There are no authentication cookies, so this works across the Vercel and tunnel origins without third-party cookies. Tokens never belong in URLs or logs.
+Browser access uses passkeys and opaque, revocable sessions stored in SQLite. Session cookies are HttpOnly, SameSite=Strict, and Secure for HTTPS deployments; they have a 30-day absolute expiry. Javascript cannot read them. Cookie-authenticated writes require an exact `AUTH_ORIGIN` match independently of CORS. Passkey challenges are browser-bound, single-use and expire after five minutes; server restarts discard pending challenges. User verification is required.
 
-CORS allows only configured frontend origins. Preflight requests are permitted without a token; actual API requests still require authentication. CORS is not authentication, and non-browser clients also require the token.
+Only the owner can enroll: the first passkey requires the backend's `AUTH_TOKEN`. There is no public registration. Keep this token in a password manager for recovery. **Recover access** requires that token and explicit confirmation; it removes all passkeys and sessions, but preserves conversations. Then create a replacement passkey. **Sessions** lists sign-ins and lets you revoke a lost device; **Sign out** revokes the current session. Revocation prevents subsequent requests; it does not retract data already received.
+
+Bearer authentication remains available for command-line clients and evaluations, including health and streaming. The token still grants full API access, so passkeys do not remove the need to protect it. Rotate it in the backend environment and restart if it is exposed. Revoking browser sessions does not rotate this token. CORS is not authentication. Tokens never belong in URLs, logs or browser storage.
+
+### Upgrade the Windows backend and production frontend
+
+This change requires coordinated deployment; a new frontend cannot authenticate against the old backend.
+
+1. Back up the PC database with the backend stopped, including SQLite sidecar files.
+2. Pull the new code, run `pnpm install --frozen-lockfile` and `pnpm build`.
+3. Set `AUTH_ORIGIN=https://panky.vercel.app` in the PC server environment. Keep that exact origin in `ALLOWED_ORIGINS`, retain `AUTH_TOKEN` privately and keep Ollama on loopback.
+4. Restart the PC backend, keep its ngrok tunnel running, then deploy the frontend with its `/api` rewrite.
+5. Open the production site and enroll the owner passkey using the PC token. Test sign-out, passkey sign-in, refresh, streaming, cancellation and session revocation on the phone.
+
+The authentication tables are additive. Existing conversations and bearer clients remain compatible. A stable frontend hostname is essential: changing it requires a separate passkey enrollment. For rollback, restore the previous frontend/backend together; existing bearer access remains available. Do not restore an old auth database casually, since that can restore revoked sessions.
+
+Automated Chromium tests exercise the Vite proxy and virtual passkeys with an isolated backend. They do not establish iPhone biometric behavior or Vercel's deployed cookie/streaming behavior; those require the deployment checks above.
 
 Only one task can run at a time across all conversations. A conflicting submission returns HTTP 409 without adding messages. User, assistant, and task records are created together; streamed assistant text is saved as it is produced. Completion is recorded before the final stream event. A disconnected browser aborts generation and leaves an **interrupted** assistant record with any saved partial text. Backend startup marks unfinished task and streaming-message records interrupted and records that recovery in task activity. No tools are restarted. A disconnect after completion may lose the final browser event, but refreshing history reveals the completed record.
 
@@ -106,7 +123,7 @@ Tests use isolated in-memory or temporary SQLite databases. Do not run verificat
 
 ## Original Mac remote-access setup
 
-This section records the original Milestone 1 setup; the current PC setup is documented below. The frontend runs on Vercel and the backend originally ran on the Mac. Both the backend and the tunnel must remain running, and the Mac must stay awake and connected. You need Vercel and ngrok accounts; no purchased domain is required.
+This section records the original token-based Milestone 1 setup, not the current passkey deployment procedure. Use **Upgrade the Windows backend and production frontend** above for this release; the PC model setup is documented below. The frontend runs on Vercel and the backend originally ran on the Mac. Both the backend and the tunnel must remain running, and the Mac must stay awake and connected. You need Vercel and ngrok accounts; no purchased domain is required.
 
 ### 1. Start the ngrok tunnel
 
@@ -196,7 +213,7 @@ The history budget counts characters, not tokens, and cannot guarantee fit in th
 
 ### Move saved conversations from the Mac
 
-Stop Panky on both machines. Back up the Mac's `apps/server/data` directory, including SQLite sidecar files, and securely copy the complete directory to `apps/server/data` on the PC. Back up any existing PC data first; do not overwrite it or merge databases implicitly. Set `DATABASE_PATH=./data/panky.sqlite`, then start one backend process. Existing task/activity tables remain compatible. Re-enter your backend token after browser refresh. Transfer configuration privately or generate a new token, and retain the exact frontend origin allowlist.
+Stop Panky on both machines. Back up the Mac's `apps/server/data` directory, including SQLite sidecar files, and securely copy the complete directory to `apps/server/data` on the PC. Back up any existing PC data first; do not overwrite it or merge databases implicitly. Set `DATABASE_PATH=./data/panky.sqlite`, then start one backend process. Existing task/activity tables remain compatible. Passkey sessions are part of the database; copying it also copies registered credentials and sessions. Keep AUTH_ORIGIN tied to the intended site, transfer configuration privately, and retain the exact frontend origin allowlist.
 
 ### Remote access from the PC
 
@@ -208,13 +225,13 @@ Ngrok is installed through the Microsoft Store on Windows. Configure its account
 ngrok http http://127.0.0.1:3001 --url=https://upcountry-scheme-excretory.ngrok-free.dev --inspect=false
 ```
 
-Keep this terminal and the Panky backend running, and keep the PC awake and connected. Ollama stays on loopback port 11434; only Panky's authenticated API is tunneled. Keep `ALLOWED_ORIGINS` set to the exact Vercel frontend origin plus any required local development origins. The Panky access token is stored only in the ignored backend environment file and must be re-entered after browser refresh. It is separate from the ngrok account token.
+Keep this terminal and the Panky backend running, and keep the PC awake and connected. Ollama stays on loopback port 11434; only Panky's authenticated API is tunneled. Keep `ALLOWED_ORIGINS` set to the exact Vercel frontend origin plus any required local development origins. The Panky token is stored in the ignored backend environment file and is used for initial passkey setup, recovery and bearer API clients. It is separate from the ngrok account token.
 
 Remote API verification on 1 November 2026 confirmed the public hostname reaches the PC's `ollama` provider with `panky-qwen3:4b`: authenticated health returned 200, missing authentication returned 401, an unlisted origin returned 403, and the deployed origin's preflight returned 204. The updated production frontend and GitHub CI passed for commit `f44a9bc`. No automated verification conversations were created in the live database. The owner confirmed that the deployed browser streams real-model replies, shows clock-tool activity, and restores the conversation after refresh and reconnection.
 
 ### Develop on the MacBook while the PC serves Panky
 
-Push committed code from one machine and pull it on the other. Keep each machine's ignored environment files and databases separate; Git does not transfer them. For UI work on the Mac, set `apps/web/.env` to `VITE_API_URL=https://upcountry-scheme-excretory.ngrok-free.dev`, run the web app, and enter the PC backend's current token in the UI. The PC allowlist includes `http://localhost:5173` and `http://127.0.0.1:5173`. This uses the PC's live conversations and model; use a separate local mock backend and isolated database for automated tests. Backend changes must be pulled, built and restarted on the PC before they affect the remote app. Keep the Mac's old ngrok tunnel stopped.
+Push committed code from one machine and pull it on the other. Environment files and databases are ignored and remain separate. For passkey UI development, run a local mock backend with `AUTH_ORIGIN=http://localhost:5173` and point Vite's `PANKY_API_TARGET` at it. The production PC uses `AUTH_ORIGIN=https://panky.vercel.app`; do not change it to a Mac localhost origin. Test real-model integration after pulling, building and restarting the backend on the PC. Keep the Mac's old ngrok tunnel stopped.
 
 ### Repeat the real-model evaluation
 

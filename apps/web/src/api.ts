@@ -36,9 +36,11 @@ function backendUrl() {
   return url.origin;
 }
 
-export function createApi(token: string) {
-  const base = backendUrl();
-  const hostname = new URL(base).hostname;
+export const sessionExpiredEvent = "panky:session-expired";
+
+export function createApi(token?: string) {
+  const base = token ? backendUrl() : "";
+  const hostname = new URL(base || window.location.origin).hostname;
   const ngrok = [".ngrok-free.dev", ".ngrok-free.app", ".ngrok.app"].some(
     (suffix) => hostname.endsWith(suffix),
   );
@@ -48,11 +50,11 @@ export function createApi(token: string) {
       response = await fetch(`${base}/api${path}`, {
         ...init,
         signal: init.signal ?? AbortSignal.timeout(15_000),
-        credentials: "omit",
+        credentials: token ? "omit" : "same-origin",
         redirect: "error",
         headers: {
-          Authorization: `Bearer ${token}`,
-          ...(ngrok ? { "ngrok-skip-browser-warning": "1" } : {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(!token || ngrok ? { "ngrok-skip-browser-warning": "1" } : {}),
           ...init.headers,
         },
       });
@@ -62,12 +64,16 @@ export function createApi(token: string) {
       );
     }
     if (!response.ok) {
+      if (response.status === 401 && !token)
+        window.dispatchEvent(new Event(sessionExpiredEvent));
       const parsed = errorSchema.safeParse(
         await response.json().catch(() => null),
       );
       const message =
         response.status === 401
-          ? "Access token rejected. Disconnect and connect with the current token."
+          ? token
+            ? "Access token rejected. Disconnect and connect with the current token."
+            : "Your session has ended. Sign in again."
           : parsed.success
             ? parsed.data.error
             : `Request failed (${response.status}).`;
