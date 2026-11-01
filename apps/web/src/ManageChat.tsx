@@ -1,3 +1,4 @@
+import { DialogHeading } from "./DialogHeading";
 import { BannerToast, Button, Stack, TextField } from "@jack.winter/pancake-ui";
 import type { Conversation } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
@@ -41,31 +42,13 @@ export function ManageChat({
       }}
     >
       <Stack gap="space16">
-        <div className="dialog-heading">
-          <h2 id="manage-chat-title">
-            {confirmDelete ? "Delete chat?" : "Manage chat"}
-          </h2>
-          <Button
-            variant="ghost"
-            className="dialog-close"
-            aria-label="Close"
-            title="Close"
-            disabled={pending}
-            onClick={onClose}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              aria-hidden="true"
-            >
-              <path d="m6 6 12 12M18 6 6 18" />
-            </svg>
-          </Button>
-        </div>
+        <DialogHeading
+          id="manage-chat-title"
+          onClose={onClose}
+          disabled={pending}
+        >
+          {confirmDelete ? "Delete chat?" : "Manage chat"}
+        </DialogHeading>
         {error && (
           <BannerToast tone="error" title="Could not update chat">
             {error}

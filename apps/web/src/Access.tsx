@@ -1,10 +1,5 @@
-import {
-  BannerToast,
-  Button,
-  Stack,
-  Text,
-  TextField,
-} from "@jack.winter/pancake-ui";
+import { DialogHeading } from "./DialogHeading";
+import { BannerToast, Button, Stack, TextField } from "@jack.winter/pancake-ui";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "./api";
 import {
@@ -88,9 +83,9 @@ export function Access({
       }}
     >
       <Stack gap="space16">
-        <Text as="h2" variant="title" id="access-title">
+        <DialogHeading id="access-title" onClose={onClose}>
           People with access
-        </Text>
+        </DialogHeading>
         <p className="auth-description">
           Invite someone using their Google account email. Chats stay private to
           each account.
@@ -101,7 +96,7 @@ export function Access({
             if (!loading) void update(() => invite(email.trim()));
           }}
         >
-          <Stack gap="space16">
+          <div className="invite-form-row">
             <TextField
               label="Google account email"
               type="email"
@@ -113,7 +108,7 @@ export function Access({
             <Button type="submit" disabled={loading || !email.trim()}>
               Invite
             </Button>
-          </Stack>
+          </div>
         </form>
         {error && (
           <BannerToast tone="error" title="Could not update access">
@@ -166,21 +161,23 @@ export function Access({
                 Remove access for {removing}? Their sessions will end. Their
                 saved chats will remain private.
               </p>
-              <Button
-                disabled={loading}
-                onClick={() => {
-                  void update(() => revokeAccess(removing));
-                }}
-              >
-                Remove access
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={loading}
-                onClick={() => setRemoving(null)}
-              >
-                Keep access
-              </Button>
+              <div className="dialog-actions">
+                <Button
+                  disabled={loading}
+                  onClick={() => {
+                    void update(() => revokeAccess(removing));
+                  }}
+                >
+                  Remove access
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={loading}
+                  onClick={() => setRemoving(null)}
+                >
+                  Keep access
+                </Button>
+              </div>
             </Stack>
           </div>
         )}
@@ -196,13 +193,6 @@ export function Access({
             Try again
           </Button>
         )}
-        <Button
-          className="visible-action"
-          variant="secondary"
-          onClick={onClose}
-        >
-          Close
-        </Button>
       </Stack>
     </dialog>
   );

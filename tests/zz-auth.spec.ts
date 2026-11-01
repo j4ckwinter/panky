@@ -92,6 +92,15 @@ test("owner invites a friend, chats stay private, and removing access ends their
     .fill(friendEmail);
   await people.getByRole("button", { name: "Invite", exact: true }).click();
   await expect(people.getByText(friendEmail, { exact: true })).toBeVisible();
+  await page.screenshot({ path: "test-results/people-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await people.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "test-results/people-mobile.png" });
+  await page.setViewportSize({ width: 1280, height: 720 });
   const context = await browser.newContext({ baseURL: origin });
   try {
     await mockGoogle(context, friendEmail);
@@ -140,6 +149,8 @@ test("owner invites a friend, chats stay private, and removing access ends their
         exact: true,
       })
       .click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: "test-results/people-confirm-mobile.png" });
     await people
       .getByRole("button", { name: "Remove access", exact: true })
       .click();
@@ -155,4 +166,38 @@ test("owner invites a friend, chats stay private, and removing access ends their
   } finally {
     await context.close();
   }
+});
+
+test("compact device dialog closes with Escape and can sign out this device", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await login(page);
+  await page.getByRole("button", { name: "Account", exact: true }).click();
+  await page.getByRole("button", { name: "Sessions", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Signed-in devices" });
+  await expect(
+    dialog.getByRole("button", { name: "Sign out this device", exact: true }),
+  ).toBeEnabled();
+  await page.screenshot({ path: "test-results/sessions-desktop.png" });
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole("button", { name: "Account", exact: true }).click();
+  await page.getByRole("button", { name: "Sessions", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    dialog.getByRole("button", { name: "Sign out this device", exact: true }),
+  ).toBeEnabled();
+  expect(
+    await dialog.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "test-results/sessions-mobile.png" });
+  await dialog
+    .getByRole("button", { name: "Sign out this device", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Sign in with Google", exact: true }),
+  ).toBeVisible();
 });

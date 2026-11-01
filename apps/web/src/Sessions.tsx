@@ -1,4 +1,5 @@
-import { BannerToast, Button, Stack, Text } from "@jack.winter/pancake-ui";
+import { DialogHeading } from "./DialogHeading";
+import { BannerToast, Button, Stack } from "@jack.winter/pancake-ui";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "./api";
 import {
@@ -77,9 +78,9 @@ export function Sessions({
       }}
     >
       <Stack gap="space16">
-        <Text as="h2" variant="title" id="sessions-title">
+        <DialogHeading id="sessions-title" onClose={onClose}>
           Signed-in devices
-        </Text>
+        </DialogHeading>
         <p className="auth-description">Sign out a device to end its access.</p>
         {error && (
           <BannerToast tone="error" title="Could not update sessions">
@@ -125,13 +126,6 @@ export function Sessions({
             Try again
           </Button>
         )}
-        <Button
-          className="visible-action"
-          variant="secondary"
-          onClick={onClose}
-        >
-          Close
-        </Button>
       </Stack>
     </dialog>
   );

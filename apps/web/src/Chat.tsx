@@ -202,12 +202,23 @@ export function Chat({
             </svg>
           </Button>
           <Button
-            className="mobile-menu visible-action"
-            variant="secondary"
+            className="mobile-menu sidebar-close"
+            variant="ghost"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close conversations"
+            title="Close conversations"
           >
-            Close
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
           </Button>
         </div>
         <Button
