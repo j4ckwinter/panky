@@ -14,7 +14,7 @@ type GoogleIdentity = {
     element: HTMLElement,
     options: {
       type: "standard";
-      theme: "filled_black";
+      theme: "outline";
       size: "large";
       text: "signin_with";
       shape: "pill";
@@ -120,7 +120,7 @@ export function GoogleSignIn({
           element.replaceChildren();
           identity.renderButton(element, {
             type: "standard",
-            theme: "filled_black",
+            theme: "outline",
             size: "large",
             text: "signin_with",
             shape: "pill",

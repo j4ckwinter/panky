@@ -124,9 +124,10 @@ export function App() {
             {!checking && status?.configured && (
               <>
                 <p className="auth-description">
-                  Use your invited Google account. Stay signed in for 30 days.
+                  Continue with your Google account.
                 </p>
                 <GoogleSignIn onSignedIn={signedIn} />
+                <p className="connect-access-note">By invitation only.</p>
               </>
             )}
             {!checking && status && !status.configured && (

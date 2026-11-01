@@ -88,17 +88,31 @@ button:disabled {
   color: var(--color-pancake-control-focus);
 }
 .connect-card {
-  border-left: 1px solid var(--color-pancake-control-border);
-  padding: var(--spacing-pancake-24) 0 var(--spacing-pancake-24)
-    var(--spacing-pancake-48);
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-20);
+  padding: var(--spacing-pancake-40) var(--spacing-pancake-32)
+    var(--spacing-pancake-32);
   min-width: 0;
+  background: var(--color-pancake-surface);
+  box-shadow: 0 8px 32px rgb(55 69 59 / 4%);
 }
 .connect-card h1 {
-  font-size: 24px;
-  letter-spacing: -0.5px;
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.75px;
+  color: var(--color-pancake-deep);
 }
-.connect-card form button {
-  border-radius: var(--radius-pancake-12);
+.connect-card .auth-description {
+  margin-top: -12px;
+  font-size: 14px;
+}
+.connect-access-note {
+  margin: 0;
+  padding-top: var(--spacing-pancake-20);
+  border-top: 1px solid var(--color-pancake-border);
+  color: var(--color-pancake-olive);
+  font-size: 12px;
+  text-align: center;
 }
 .chat-layout {
   display: grid;
@@ -601,9 +615,7 @@ button:disabled {
     font-size: clamp(72px, 18vw, 104px);
   }
   .connect-card {
-    border-left: 0;
-    border-top: 1px solid var(--color-pancake-control-border);
-    padding: var(--spacing-pancake-32) 0 0;
+    padding: var(--spacing-pancake-32) var(--spacing-pancake-24);
   }
 }
 
