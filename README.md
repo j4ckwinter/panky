@@ -20,9 +20,29 @@ Generate a token with `openssl rand -hex 32`, save it as `AUTH_TOKEN` in `apps/s
 pnpm dev
 ```
 
-Open http://localhost:5173. On first use, enter `AUTH_TOKEN` once under **Set up Panky** and choose **Create passkey**. Your device will ask you to approve creation. Later sign-ins use **Sign in with passkey**. Sessions last 30 days; refresh keeps you signed in and opens a blank chat. Select saved conversations from the sidebar.
+Open http://localhost:5173 and choose **Sign in with Google**. Only the configured owner can sign in initially. Sessions last 30 days; refresh keeps you signed in and opens a blank chat. Select your saved conversations from the sidebar.
 
-Set `AUTH_ORIGIN=http://localhost:5173` on this local backend and `PANKY_API_TARGET=http://127.0.0.1:3001` in the web environment. Use that exact browser origin: passkeys require a domain name, so use `localhost`, not an IP address. Local passkeys and production passkeys are separate. Use a local mock backend and separate database for development; the PC's production authentication origin must stay fixed.
+Set `AUTH_ORIGIN=http://localhost:5173` on the local backend and `PANKY_API_TARGET=http://127.0.0.1:3001` in the web environment. Use that exact browser origin. Local and production backends have separate databases, users and sessions. Use the local mock backend for development.
+
+### Configure Google sign-in
+
+Create a Google OAuth client of type **Web application** in Google Cloud / Google Auth Platform. Configure the app's branding and audience, then add these **Authorized JavaScript origins**:
+
+- `http://localhost:5173`
+- `https://panky.vercel.app`
+
+If the app is in testing, add the owner's account as a test user. Additional Google test users may be needed while the consent configuration remains in testing; Panky's invitation list is an independent access check. This uses Google's JavaScript popup/button flow, so no Panky redirect URI or client secret is required.
+
+Set the backend environment:
+
+```dotenv
+OWNER_EMAIL=jackwinter.10@gmail.com
+GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
+```
+
+Keep `AUTH_TOKEN` as a private operational credential. Restart the backend after changing its environment. Without a Google client ID, the page reports that Google sign-in is not configured; it does not provide a bypass. The client ID is public and is returned by the backend, so no separate frontend Google environment variable is needed.
+
+Google setup: https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid
 
 Run either app independently with `pnpm --filter @panky/web dev` or `pnpm --filter @panky/server dev`. For production builds, use `pnpm build`; start the compiled backend with `pnpm --filter @panky/server start`. Preview the built web app with `pnpm --filter @panky/web preview` and set both `AUTH_ORIGIN` and the backend allowlist to its exact localhost origin if using a different port.
 
@@ -65,7 +85,9 @@ Server environment variables are loaded from `apps/server/.env` by the package s
 
 | Variable               | Default / requirement                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------------------------- |
-| `AUTH_ORIGIN`          | Exact browser origin for passkeys and cookie requests; local default `http://localhost:5173`            |
+| `AUTH_ORIGIN` | Exact browser origin for Google sign-in and cookies; default `http://localhost:5173` |
+| `OWNER_EMAIL` | Initial owner email; required when Google sign-in is configured |
+| `GOOGLE_CLIENT_ID` | Google OAuth web client ID; absent means browser sign-in is disabled |
 | `AUTH_TOKEN`           | Required, at least 32 characters; generate a random token                                               |
 | `HOST`                 | `127.0.0.1`; keep loopback when using the tunnel                                                        |
 | `PORT`                 | `3001`                                                                                                  |
@@ -83,25 +105,29 @@ The frontend sends cookie-authenticated requests to its own `/api` path. During 
 
 ## Authentication and persistence
 
-Browser access uses passkeys and opaque, revocable sessions stored in SQLite. Session cookies are HttpOnly, SameSite=Strict, and Secure for HTTPS deployments; they have a 30-day absolute expiry. Javascript cannot read them. Cookie-authenticated writes require an exact `AUTH_ORIGIN` match independently of CORS. Passkey challenges are browser-bound, single-use and expire after five minutes; server restarts discard pending challenges. User verification is required.
+Browser access uses Google Identity Services and opaque, revocable sessions stored in SQLite. The backend checks Google's signature, issuer, audience, expiry, verified email and a browser-bound single-use nonce. Users are bound to Google's stable subject identifier, not an unverified email submitted by the browser. Gmail and Google Workspace identities with authoritative email claims are supported; third-party Google-account email addresses are rejected.
 
-Only the owner can enroll: the first passkey requires the backend's `AUTH_TOKEN`. There is no public registration. Keep this token in a password manager for recovery. **Recover access** requires that token and explicit confirmation; it removes all passkeys and sessions, but preserves conversations. Then create a replacement passkey. **Sessions** lists sign-ins and lets you revoke a lost device; **Sign out** revokes the current session. Revocation prevents subsequent requests; it does not retract data already received.
+Only `OWNER_EMAIL` is admitted initially. The owner can use **People** to allow a friend's email or remove access. This grants permission; it does not send an invitation email. Friends must sign in with the exact approved Google account. Removing access deactivates the user and revokes their sessions. Re-inviting restores the same account and its existing chats; a different Google subject cannot take over an old account through a matching email. Changing an established owner email in configuration fails startup rather than silently transferring ownership.
 
-Bearer authentication remains available for command-line clients and evaluations, including health and streaming. The token still grants full API access, so passkeys do not remove the need to protect it. Rotate it in the backend environment and restart if it is exposed. Revoking browser sessions does not rotate this token. CORS is not authentication. Tokens never belong in URLs, logs or browser storage.
+Each user sees only their own conversations, messages, task activity and sessions. Authorization is enforced on history, message submission and task cancellation. The owner can manage access but cannot read friends' chats through the app. Existing conversations are migrated to the reserved owner account. Device revocation is limited to the caller's own sessions.
+
+Session cookies are HttpOnly, SameSite=Strict, and Secure for HTTPS deployments, with a 30-day absolute expiry. Cookie-authenticated writes require exact `AUTH_ORIGIN` independently of CORS. Google challenges expire after five minutes and are consumed once. Server restarts discard pending challenges. Access changes invalidate pending sign-ins. Revocation prevents subsequent requests; an already authorized response may finish.
+
+Bearer authentication remains available for command-line clients and evaluations. `AUTH_TOKEN` authenticates as the owner only; it does not grant access to members' conversations. Never share it with friends. The old passkey login/recovery endpoints no longer work, and old passkey session cookies cannot authenticate. Existing passkey tables remain inert for compatibility; Google sign-in creates separate user/session tables.
 
 ### Upgrade the Windows backend and production frontend
 
-This change requires coordinated deployment; a new frontend cannot authenticate against the old backend.
+This change requires coordinated deployment; the new frontend cannot authenticate against the old backend.
 
-1. Back up the PC database with the backend stopped, including SQLite sidecar files.
+1. Stop the PC backend and back up the database and any SQLite sidecar files.
 2. Pull the new code, run `pnpm install --frozen-lockfile` and `pnpm build`.
-3. Set `AUTH_ORIGIN=https://panky.vercel.app` in the PC server environment. Keep that exact origin in `ALLOWED_ORIGINS`, retain `AUTH_TOKEN` privately and keep Ollama on loopback.
-4. Restart the PC backend, keep its ngrok tunnel running, then deploy the frontend with its `/api` rewrite.
-5. Open the production site and enroll the owner passkey using the PC token. Test sign-out, passkey sign-in, refresh, streaming, cancellation and session revocation on the phone.
+3. Set `OWNER_EMAIL=jackwinter.10@gmail.com`, the real `GOOGLE_CLIENT_ID`, and `AUTH_ORIGIN=https://panky.vercel.app` in the PC server environment. Retain the exact Vercel origin in `ALLOWED_ORIGINS`.
+4. Restart the backend, keep the PC tunnel running, then deploy the frontend with its `/api` rewrite.
+5. Sign in as the owner and verify session restoration, streaming and cancellation on your phone. Invite a second account and verify private histories and removal of access.
 
-The authentication tables are additive. Existing conversations and bearer clients remain compatible. A stable frontend hostname is essential: changing it requires a separate passkey enrollment. For rollback, restore the previous frontend/backend together; existing bearer access remains available. Do not restore an old auth database casually, since that can restore revoked sessions.
+The conversation migration is additive and assigns legacy chats to the owner. Back up before upgrading. **Do not roll back to the single-user backend after friends create chats:** it does not enforce ownership and could expose all conversations. A rollback then requires isolating member data or retaining the ownership checks.
 
-Automated Chromium tests exercise the Vite proxy and virtual passkeys with an isolated backend. They do not establish iPhone biometric behavior or Vercel's deployed cookie/streaming behavior; those require the deployment checks above.
+Automated browser tests use a test-only server with an injected Google verifier and a stub GIS button; production startup always uses Google's fixed JWKS endpoint and cryptographic verification. Separate backend tests use locally signed JWTs to verify signature, issuer, audience and expiry rejection. These tests do not prove Google Cloud configuration, real account consent, or deployed Vercel cookie/streaming behavior; those require the deployment checks above.
 
 Only one task can run at a time across all conversations. A conflicting submission returns HTTP 409 without adding messages. User, assistant, and task records are created together; streamed assistant text is saved as it is produced. Completion is recorded before the final stream event. A disconnected browser aborts generation and leaves an **interrupted** assistant record with any saved partial text. Backend startup marks unfinished task and streaming-message records interrupted and records that recovery in task activity. No tools are restarted. A disconnect after completion may lose the final browser event, but refreshing history reveals the completed record.
 
@@ -123,7 +149,7 @@ Tests use isolated in-memory or temporary SQLite databases. Do not run verificat
 
 ## Original Mac remote-access setup
 
-This section records the original token-based Milestone 1 setup, not the current passkey deployment procedure. Use **Upgrade the Windows backend and production frontend** above for this release; the PC model setup is documented below. The frontend runs on Vercel and the backend originally ran on the Mac. Both the backend and the tunnel must remain running, and the Mac must stay awake and connected. You need Vercel and ngrok accounts; no purchased domain is required.
+This section records the original token-based Milestone 1 setup, not the current Google sign-in deployment procedure. Use **Upgrade the Windows backend and production frontend** above for this release; the PC model setup is documented below. The frontend runs on Vercel and the backend originally ran on the Mac. Both the backend and the tunnel must remain running, and the Mac must stay awake and connected. You need Vercel and ngrok accounts; no purchased domain is required.
 
 ### 1. Start the ngrok tunnel
 
@@ -213,7 +239,7 @@ The history budget counts characters, not tokens, and cannot guarantee fit in th
 
 ### Move saved conversations from the Mac
 
-Stop Panky on both machines. Back up the Mac's `apps/server/data` directory, including SQLite sidecar files, and securely copy the complete directory to `apps/server/data` on the PC. Back up any existing PC data first; do not overwrite it or merge databases implicitly. Set `DATABASE_PATH=./data/panky.sqlite`, then start one backend process. Existing task/activity tables remain compatible. Passkey sessions are part of the database; copying it also copies registered credentials and sessions. Keep AUTH_ORIGIN tied to the intended site, transfer configuration privately, and retain the exact frontend origin allowlist.
+Stop Panky on both machines. Back up the Mac's `apps/server/data` directory, including SQLite sidecar files, and securely copy the complete directory to `apps/server/data` on the PC. Back up any existing PC data first; do not overwrite it or merge databases implicitly. Set `DATABASE_PATH=./data/panky.sqlite`, then start one backend process. Existing task/activity tables remain compatible. Google accounts and sessions are part of the database; copying it also copies invitations and sessions. Keep AUTH_ORIGIN tied to the intended site, transfer configuration privately, and retain the exact frontend origin allowlist.
 
 ### Remote access from the PC
 
@@ -225,13 +251,13 @@ Ngrok is installed through the Microsoft Store on Windows. Configure its account
 ngrok http http://127.0.0.1:3001 --url=https://upcountry-scheme-excretory.ngrok-free.dev --inspect=false
 ```
 
-Keep this terminal and the Panky backend running, and keep the PC awake and connected. Ollama stays on loopback port 11434; only Panky's authenticated API is tunneled. Keep `ALLOWED_ORIGINS` set to the exact Vercel frontend origin plus any required local development origins. The Panky token is stored in the ignored backend environment file and is used for initial passkey setup, recovery and bearer API clients. It is separate from the ngrok account token.
+Keep this terminal and the Panky backend running, and keep the PC awake and connected. Ollama stays on loopback port 11434; only Panky's authenticated API is tunneled. Keep `ALLOWED_ORIGINS` set to the exact Vercel frontend origin plus any required local development origins. The Panky token is stored in the ignored backend environment file and is used only for owner-scoped bearer API clients. It is separate from the ngrok account token.
 
 Remote API verification on 1 November 2026 confirmed the public hostname reaches the PC's `ollama` provider with `panky-qwen3:4b`: authenticated health returned 200, missing authentication returned 401, an unlisted origin returned 403, and the deployed origin's preflight returned 204. The updated production frontend and GitHub CI passed for commit `f44a9bc`. No automated verification conversations were created in the live database. The owner confirmed that the deployed browser streams real-model replies, shows clock-tool activity, and restores the conversation after refresh and reconnection.
 
 ### Develop on the MacBook while the PC serves Panky
 
-Push committed code from one machine and pull it on the other. Environment files and databases are ignored and remain separate. For passkey UI development, run a local mock backend with `AUTH_ORIGIN=http://localhost:5173` and point Vite's `PANKY_API_TARGET` at it. The production PC uses `AUTH_ORIGIN=https://panky.vercel.app`; do not change it to a Mac localhost origin. Test real-model integration after pulling, building and restarting the backend on the PC. Keep the Mac's old ngrok tunnel stopped.
+Push committed code from one machine and pull it on the other. Environment files and databases are ignored and remain separate. For Google sign-in UI development, run a local mock backend with `AUTH_ORIGIN=http://localhost:5173` and point Vite's `PANKY_API_TARGET` at it. The production PC uses `AUTH_ORIGIN=https://panky.vercel.app`; do not change it to a Mac localhost origin. Test real-model integration after pulling, building and restarting the backend on the PC. Keep the Mac's old ngrok tunnel stopped.
 
 ### Repeat the real-model evaluation
 

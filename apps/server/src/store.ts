@@ -43,6 +43,15 @@ export class Store {
       CREATE INDEX IF NOT EXISTS runs_conversation ON task_runs(conversationId);
       UPDATE messages SET status = 'interrupted' WHERE status = 'streaming';
     `);
+    const columns = this.db.prepare("PRAGMA table_info(conversations)").all();
+    if (!columns.some((column) => column.name === "ownerId")) {
+      this.db.exec(
+        "ALTER TABLE conversations ADD COLUMN ownerId TEXT NOT NULL DEFAULT 'owner'",
+      );
+    }
+    this.db.exec(
+      "CREATE INDEX IF NOT EXISTS conversations_owner ON conversations(ownerId)",
+    );
     for (const row of this.db
       .prepare("SELECT * FROM task_runs WHERE status = 'running'")
       .all()) {
@@ -64,12 +73,12 @@ export class Store {
     this.db.close();
   }
 
-  conversations(): Conversation[] {
+  conversations(ownerId = "owner"): Conversation[] {
     return this.db
       .prepare(
-        "SELECT * FROM conversations ORDER BY updatedAt DESC, rowid DESC",
+        "SELECT * FROM conversations WHERE ownerId = ? ORDER BY updatedAt DESC, rowid DESC",
       )
-      .all()
+      .all(ownerId)
       .map((row) => conversationSchema.parse(row));
   }
 
@@ -80,7 +89,15 @@ export class Store {
     return row ? conversationSchema.parse(row) : undefined;
   }
 
-  createConversation(): Conversation {
+  ownsConversation(id: string, ownerId: string): boolean {
+    return Boolean(
+      this.db
+        .prepare("SELECT id FROM conversations WHERE id = ? AND ownerId = ?")
+        .get(id, ownerId),
+    );
+  }
+
+  createConversation(ownerId = "owner"): Conversation {
     const now = new Date().toISOString();
     const conversation = {
       id: randomUUID(),
@@ -89,8 +106,10 @@ export class Store {
       updatedAt: now,
     };
     this.db
-      .prepare("INSERT INTO conversations VALUES (?, ?, ?, ?)")
-      .run(conversation.id, conversation.title, now, now);
+      .prepare(
+        "INSERT INTO conversations (id,title,createdAt,updatedAt,ownerId) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(conversation.id, conversation.title, now, now, ownerId);
     return conversation;
   }
 

@@ -6,86 +6,59 @@ import {
 } from "@playwright/test";
 
 export const token = "panky-browser-test-token-never-use-in-production";
-export async function addAuthenticator(page: Page) {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("WebAuthn.enable");
-  const { authenticatorId } = await cdp.send(
-    "WebAuthn.addVirtualAuthenticator",
-    {
-      options: {
-        protocol: "ctap2",
-        transport: "internal",
-        hasResidentKey: true,
-        hasUserVerification: true,
-        isUserVerified: true,
-        automaticPresenceSimulation: true,
-      },
-    },
+export const ownerEmail = "owner@gmail.com";
+export async function mockGoogle(context: BrowserContext, email = ownerEmail) {
+  await context.route("https://accounts.google.com/gsi/client", (route) =>
+    route.fulfill({
+      contentType: "application/javascript",
+      body: `(() => {
+      let config;
+      window.google = { accounts: { id: {
+        initialize(options) { config = options; },
+        renderButton(container) {
+          const button = document.createElement('button');
+          button.textContent = 'Sign in with Google';
+          button.type = 'button';
+          button.onclick = () => config.callback({credential: JSON.stringify({
+            sub: ${JSON.stringify("google-" + email)}, email: ${JSON.stringify(email)}, email_verified: true, nonce: config.nonce
+          })});
+          container.replaceChildren(button);
+        },
+        disableAutoSelect() {},
+        cancel() {}
+      }}};
+    })();`,
+    }),
   );
-  return { cdp, authenticatorId };
 }
 
-async function enroll(page: Page) {
-  const authenticator = await addAuthenticator(page);
-  await page.goto("/");
-  await page
-    .getByRole("textbox", { name: "Setup token", exact: true })
-    .fill(token);
-  await page
-    .getByRole("button", { name: "Create passkey", exact: true })
-    .click();
-  await expect(page.getByLabel("Message", { exact: true })).toBeEnabled();
-  const { credentials } = await authenticator.cdp.send(
-    "WebAuthn.getCredentials",
-    {
-      authenticatorId: authenticator.authenticatorId,
-    },
-  );
-  return credentials;
-}
-
-type Credentials = Awaited<ReturnType<typeof enroll>>;
-let ownerCookies: Awaited<ReturnType<BrowserContext["cookies"]>> = [];
+type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 export const test = base.extend<
   Record<never, never>,
-  { ownerCredentials: Credentials }
+  { ownerCookies: Cookies }
 >({
-  ownerCredentials: [
+  ownerCookies: [
     async ({ browser }, use) => {
       const context = await browser.newContext({
         baseURL: "http://localhost:5174",
       });
+      await mockGoogle(context);
       const page = await context.newPage();
-      const reset = await context.request.post(
-        "http://127.0.0.1:3101/api/auth/recover",
-        {
-          headers: { Origin: "http://localhost:5174" },
-          data: { token },
-        },
-      );
-      expect(reset.ok()).toBeTruthy();
-      const credentials = await enroll(page);
-      ownerCookies = await context.cookies();
+      await page.goto("/");
+      await login(page);
+      const cookies = await context.cookies();
       await context.close();
-      await use(credentials);
+      await use(cookies);
     },
     { scope: "worker" },
   ],
-  page: async ({ page, ownerCredentials }, use, testInfo) => {
+  page: async ({ page, ownerCookies }, use, testInfo) => {
+    await mockGoogle(page.context());
     if (
       !testInfo.file.endsWith("zz-auth.spec.ts") &&
       !testInfo.title.startsWith("connection page")
-    ) {
+    )
       await page.context().addCookies(ownerCookies);
-    }
-    const { cdp, authenticatorId } = await addAuthenticator(page);
-    for (const credential of ownerCredentials) {
-      credential.signCount += 100;
-      await cdp.send("WebAuthn.addCredential", {
-        authenticatorId,
-        credential,
-      });
-    }
     await use(page);
   },
 });
@@ -93,7 +66,7 @@ export const test = base.extend<
 export async function login(page: Page) {
   const composer = page.getByLabel("Message", { exact: true });
   const button = page.getByRole("button", {
-    name: "Sign in with passkey",
+    name: "Sign in with Google",
     exact: true,
   });
   await expect(composer.or(button)).toBeVisible();

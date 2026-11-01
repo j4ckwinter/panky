@@ -390,7 +390,7 @@ test("connection page keeps the form usable at desktop and mobile sizes", async 
       page.getByRole("heading", { name: "Sign in", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Sign in with passkey", exact: true }),
+      page.getByRole("button", { name: "Sign in with Google", exact: true }),
     ).toBeVisible();
     expect(
       await page.evaluate(

@@ -612,16 +612,6 @@ button:disabled {
   line-height: 1.5;
   color: var(--color-pancake-text-secondary);
 }
-.auth-confirm {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-pancake-8);
-  line-height: 1.5;
-}
-.auth-confirm input {
-  flex-shrink: 0;
-  margin-top: 5px;
-}
 .sessions-dialog {
   color: inherit;
   background: var(--color-pancake-surface-primary, #fbf8f0);
@@ -651,5 +641,37 @@ button:disabled {
 .session-list p {
   margin: 4px 0 0;
   font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-account {
+  grid-column: 1 / -1;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+.sidebar-bottom .access-button {
+  grid-column: 1 / -1;
+}
+.google-sign-in {
+  width: 100%;
+  min-width: 0;
+}
+.google-sign-in:empty {
+  display: none;
+}
+.access-list li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.access-confirm {
+  padding: var(--spacing-pancake-16);
+  border: 1px solid var(--color-pancake-control-border);
+  border-radius: 12px;
+}
+.access-confirm p {
+  margin: 0;
   overflow-wrap: anywhere;
 }

@@ -18,10 +18,14 @@ export function Chat({
   api,
   onDisconnect,
   onSessions,
+  onAccess,
+  email,
 }: {
   api: Api;
   onDisconnect: () => void;
   onSessions: () => void;
+  onAccess?: () => void;
+  email: string;
 }) {
   const chat = useChat(api);
   const { draft, setDraft } = chat;
@@ -237,6 +241,18 @@ export function Chat({
           <StatusChip tone="warning" title={chat.providerLabel}>
             {chat.providerLabel}
           </StatusChip>
+          <p className="sidebar-account" title={email}>
+            {email}
+          </p>
+          {onAccess && (
+            <Button
+              variant="secondary"
+              className="access-button"
+              onClick={onAccess}
+            >
+              People
+            </Button>
+          )}
           <Button variant="secondary" onClick={onSessions}>
             Sessions
           </Button>

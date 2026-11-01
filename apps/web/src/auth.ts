@@ -1,18 +1,18 @@
 import {
+  accessSchema,
   authStatusSchema,
   deviceSessionsSchema,
   errorSchema,
+  googleOptionsSchema,
 } from "@panky/shared";
-import {
-  type PublicKeyCredentialCreationOptionsJSON,
-  type PublicKeyCredentialRequestOptionsJSON,
-  startAuthentication,
-  startRegistration,
-} from "@simplewebauthn/browser";
-
-export type { AuthStatus, DeviceSession } from "@panky/shared";
-
 import { ApiError } from "./api";
+
+export type {
+  Access,
+  AuthStatus,
+  AuthUser,
+  DeviceSession,
+} from "@panky/shared";
 
 async function request(path: string, body?: unknown): Promise<unknown> {
   const response = await fetch(`/api/auth${path}`, {
@@ -43,67 +43,34 @@ async function request(path: string, body?: unknown): Promise<unknown> {
   return data;
 }
 
-function object(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new Error("Panky returned an invalid authentication response.");
-  return value as Record<string, unknown>;
-}
-
 export async function authStatus() {
   return authStatusSchema.parse(await request("/status"));
 }
-
-export async function registerPasskey(token: string) {
-  const options = object(await request("/register/options", { token }));
-  if (
-    typeof options.challenge !== "string" ||
-    !options.rp ||
-    !options.user ||
-    !Array.isArray(options.pubKeyCredParams)
-  )
-    throw new Error("Panky returned invalid passkey options.");
-  const response = await startRegistration({
-    optionsJSON: options as unknown as PublicKeyCredentialCreationOptionsJSON,
-  });
-  await request("/register/verify", { response });
+export async function googleOptions() {
+  return googleOptionsSchema.parse(await request("/google/options", {}));
 }
-
-export async function signIn() {
-  const options = object(await request("/login/options", {}));
-  if (typeof options.challenge !== "string")
-    throw new Error("Panky returned invalid passkey options.");
-  const response = await startAuthentication({
-    optionsJSON: options as unknown as PublicKeyCredentialRequestOptionsJSON,
-  });
-  await request("/login/verify", { response });
+export async function verifyGoogle(credential: string) {
+  await request("/google/verify", { credential });
 }
-
 export async function signOut() {
   await request("/logout", {});
 }
-
-export async function recover(token: string) {
-  await request("/recover", { token });
-}
-
 export async function sessions() {
   return deviceSessionsSchema.parse(await request("/sessions")).sessions;
 }
-
 export async function revokeSession(id: string) {
   await request("/sessions/revoke", { id });
 }
-
+export async function access() {
+  return accessSchema.parse(await request("/access"));
+}
+export async function invite(email: string) {
+  await request("/access/invite", { email });
+}
+export async function revokeAccess(email: string) {
+  await request("/access/revoke", { email });
+}
 export function signInError(error: unknown) {
-  if (
-    error instanceof Error &&
-    (error.name === "NotAllowedError" ||
-      error.name === "AbortError" ||
-      (error.cause instanceof Error &&
-        error.cause.name === "NotAllowedError") ||
-      ("code" in error && error.code === "ERROR_CEREMONY_ABORTED"))
-  )
-    return "Passkey sign-in was cancelled or timed out. You can try again.";
   return error instanceof Error
     ? error.message
     : "Could not sign in. Try again.";

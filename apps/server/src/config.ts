@@ -21,7 +21,22 @@ const configSchema = z.object({
       isIP(url.hostname.replace(/^\[|\]$/g, "")) === 0 &&
       (url.protocol === "https:" || url.hostname === "localhost")
     );
-  }, "Sign-in requires an HTTPS domain or HTTP localhost; IP addresses cannot be passkey relying parties."),
+  }, "Sign-in requires an HTTPS domain or HTTP localhost; use localhost for local development."),
+  GOOGLE_CLIENT_ID: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .string()
+      .regex(/^[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/)
+      .optional(),
+  ),
+  OWNER_EMAIL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .email()
+      .max(320)
+      .transform((email) => email.toLowerCase())
+      .optional(),
+  ),
   HOST: z.string().min(1).default("127.0.0.1"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   DATABASE_PATH: z.string().min(1).default("./data/panky.sqlite"),
@@ -81,6 +96,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       `Invalid server configuration: ${fields.join(", ")}. See .env.example.`,
     );
   }
+  if (result.data.GOOGLE_CLIENT_ID && !result.data.OWNER_EMAIL)
+    throw new Error(
+      "Invalid server configuration: OWNER_EMAIL is required with GOOGLE_CLIENT_ID.",
+    );
   if (
     result.data.MODEL_PROVIDER === "ollama" &&
     (!env.MODEL_NAME || /(?:^|[:-])cloud$/i.test(result.data.MODEL_NAME))

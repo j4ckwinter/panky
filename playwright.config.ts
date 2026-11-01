@@ -10,7 +10,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: "pnpm --filter @panky/server dev",
+      command: "pnpm exec tsx tests/server.ts",
       port: 3101,
       env: {
         AUTH_TOKEN: token,

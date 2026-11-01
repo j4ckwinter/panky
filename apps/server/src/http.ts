@@ -8,6 +8,7 @@ import {
 import { type StreamEvent, submissionSchema } from "@panky/shared";
 import { z } from "zod";
 import { Auth } from "./auth.js";
+import type { GoogleVerifier } from "./google.js";
 import { Chat, HttpError } from "./chat.js";
 import type { Config } from "./config.js";
 import { MockProvider, type ModelProvider } from "./provider.js";
@@ -61,9 +62,10 @@ export function createApp(
       })
     : new MockProvider(),
   tools?: readonly Tool[],
+  googleVerifier?: GoogleVerifier,
 ) {
   const store = new Store(config.DATABASE_PATH);
-  const auth = new Auth(config);
+  const auth = new Auth(config, googleVerifier);
   const chat = new Chat(store, provider, config, tools);
   const expectedToken = createHash("sha256")
     .update(`Bearer ${config.AUTH_TOKEN}`)
@@ -114,15 +116,12 @@ export function createApp(
     const suppliedToken = createHash("sha256")
       .update(request.headers.authorization ?? "")
       .digest();
-    if (
-      !timingSafeEqual(suppliedToken, expectedToken) &&
-      !auth.authenticate(request)
-    ) {
+    const bearer = timingSafeEqual(suppliedToken, expectedToken);
+    const user = bearer ? null : auth.authenticate(request);
+    const userId = bearer ? "owner" : user?.id;
+    if (!userId) {
       response.setHeader("WWW-Authenticate", "Bearer");
-      throw new HttpError(
-        401,
-        "Authentication required. Enter your backend access token.",
-      );
+      throw new HttpError(401, "Sign in to continue.");
     }
     if (url.pathname === "/api/health" && request.method === "GET") {
       json(response, 200, {
@@ -133,9 +132,10 @@ export function createApp(
       return;
     }
     if (url.pathname === "/api/conversations") {
-      if (request.method === "GET") json(response, 200, store.conversations());
+      if (request.method === "GET")
+        json(response, 200, store.conversations(userId));
       else if (request.method === "POST")
-        json(response, 201, store.createConversation());
+        json(response, 201, store.createConversation(userId));
       else throw new HttpError(405, "Method not allowed.");
       return;
     }
@@ -145,6 +145,9 @@ export function createApp(
         throw new HttpError(405, "Method not allowed.");
       const runId = z.uuid().safeParse(cancellation[1]);
       if (!runId.success) throw new HttpError(400, "Invalid task ID.");
+      const run = store.run(runId.data);
+      if (!run || !store.ownsConversation(run.conversationId, userId))
+        throw new HttpError(404, "Task not found.");
       json(response, 200, { run: await chat.cancel(runId.data) });
       return;
     }
@@ -154,6 +157,8 @@ export function createApp(
     if (!match) throw new HttpError(404, "Endpoint not found.");
     const id = z.uuid().safeParse(match[1]);
     if (!id.success) throw new HttpError(400, "Invalid conversation ID.");
+    if (!store.ownsConversation(id.data, userId))
+      throw new HttpError(404, "Conversation not found.");
     const conversation = store.conversation(id.data);
     if (!conversation) throw new HttpError(404, "Conversation not found.");
     if (!match[2] && request.method === "GET") {
@@ -167,6 +172,8 @@ export function createApp(
     }
     if (match[2] && request.method === "POST") {
       const { content, includeActivity } = await readSubmission(request);
+      if (!bearer && auth.authenticate(request)?.id !== userId)
+        throw new HttpError(401, "Sign in to continue.");
       const controller = new AbortController();
       const disconnect = () => controller.abort();
       response.once("close", disconnect);

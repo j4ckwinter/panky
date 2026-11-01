@@ -109,9 +109,14 @@ export type Message = z.infer<typeof messageSchema>;
 export type StreamEvent = z.infer<typeof streamEventSchema>;
 
 export {
+  type Access,
   type AuthStatus,
+  type AuthUser,
+  accessSchema,
   authStatusSchema,
+  authUserSchema,
   type DeviceSession,
   deviceSessionSchema,
   deviceSessionsSchema,
+  googleOptionsSchema,
 } from "./auth.js";

@@ -12,7 +12,6 @@
   "dependencies": {
     "@jack.winter/pancake-ui": "0.1.1",
     "@panky/shared": "workspace:*",
-    "@simplewebauthn/browser": "^14.0.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

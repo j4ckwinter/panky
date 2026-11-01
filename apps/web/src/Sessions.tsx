@@ -80,10 +80,7 @@ export function Sessions({
         <Text as="h2" variant="title" id="sessions-title">
           Signed-in devices
         </Text>
-        <p className="auth-description">
-          Sign out a device to end its access. It will need a passkey to sign in
-          again.
-        </p>
+        <p className="auth-description">Sign out a device to end its access.</p>
         {error && (
           <BannerToast tone="error" title="Could not update sessions">
             {error}
