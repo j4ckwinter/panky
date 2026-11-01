@@ -109,6 +109,8 @@ test("reload interrupts a reply and does not submit it again", async ({
     .getByRole("textbox", { name: "Access token", exact: true })
     .fill(token);
   await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(page.getByRole("article")).toHaveCount(0);
+  await page.getByRole("button", { name: /Interrupt this reply/ }).click();
   await expect(
     page.getByText(/Reply interrupted\. This partial reply was saved/),
   ).toBeVisible();

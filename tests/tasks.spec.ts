@@ -91,6 +91,13 @@ test("real clock tool result appears in the mock reply and survives refresh with
     .getByRole("textbox", { name: "Access token", exact: true })
     .fill(token);
   await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "What is the current date and time?",
+      exact: true,
+    })
+    .first()
+    .click();
   await expect(activity).toContainText(iso);
   const restored = historySchema.parse(
     await (
@@ -163,6 +170,7 @@ test("Cancel task stops a live reply and persists cancellation across refresh", 
     .getByRole("textbox", { name: "Access token", exact: true })
     .fill(token);
   await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await page.getByRole("button", { name: /Cancellation check/ }).click();
   await expect(
     activity.getByText("Cancelled", { exact: true }).first(),
   ).toBeVisible();

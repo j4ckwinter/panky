@@ -22,7 +22,7 @@ async function send(page: Page, content: string) {
   ).toBeEnabled();
 }
 
-test("new tabs start blank without creating records; reload restores only that tab's chat", async ({
+test("new tabs and reconnects start blank without creating records", async ({
   page,
   context,
 }) => {
@@ -52,12 +52,20 @@ test("new tabs start blank without creating records; reload restores only that t
   await send(second, "Second window conversation");
   await page.reload();
   await login(page);
+  await expect(page.getByRole("article")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "First window conversation", exact: true })
+    .click();
   await expect(
     page.getByRole("article", { name: "Your message", exact: true }),
   ).toHaveText(/First window conversation/);
   await expect(page.getByRole("article")).toHaveCount(2);
   await second.reload();
   await login(second);
+  await expect(second.getByRole("article")).toHaveCount(0);
+  await second
+    .getByRole("button", { name: "Second window conversation", exact: true })
+    .click();
   await expect(
     second.getByRole("article", { name: "Your message", exact: true }),
   ).toHaveText(/Second window conversation/);
@@ -67,6 +75,7 @@ test("new tabs start blank without creating records; reload restores only that t
   await page.reload();
   await login(page);
   await expect(page.getByRole("article")).toHaveCount(0);
+  expect(creates).toBe(1);
   await second.close();
 });
 
@@ -285,6 +294,12 @@ test("each reply owns its task activity after more messages and reload", async (
   ).toHaveCount(0);
   await page.reload();
   await login(page);
+  await page
+    .getByRole("button", {
+      name: "What is the current date and time?",
+      exact: true,
+    })
+    .click();
   await expect(replies).toHaveCount(2);
   await expect(firstActivity).toHaveCount(1);
   await expect(secondActivity).toHaveCount(1);

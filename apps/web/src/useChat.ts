@@ -9,13 +9,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Api } from "./api";
 import { errorMessage } from "./api";
 
-function rememberConversation(id: string | null) {
-  window.history.replaceState(
-    { ...window.history.state, pankyConversationId: id },
-    "",
-  );
-}
-
 export function useChat(api: Api) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
@@ -64,7 +57,6 @@ export function useChat(api: Api) {
         const selected = list.find((item) => item.id === id)?.id;
         const history = selected ? await api.history(selected) : null;
         if (!mounted.current) return;
-        rememberConversation(selected ?? null);
         setConversations(list);
         setCurrent(history?.conversation ?? null);
         setMessages(history?.messages ?? []);
@@ -78,8 +70,7 @@ export function useChat(api: Api) {
 
   useEffect(() => {
     mounted.current = true;
-    const saved = window.history.state?.pankyConversationId;
-    void refresh(typeof saved === "string" ? saved : undefined);
+    void refresh();
     return () => {
       mounted.current = false;
       active.current?.abort();
@@ -111,7 +102,6 @@ export function useChat(api: Api) {
     return run(async () => {
       const history = await api.history(id);
       if (!mounted.current) return;
-      rememberConversation(history.conversation.id);
       setCurrent(history.conversation);
       setMessages(history.messages);
       setRuns(history.runs);
@@ -121,7 +111,6 @@ export function useChat(api: Api) {
 
   function create() {
     if (lock.current || cancelLock.current) return;
-    rememberConversation(null);
     setCurrent(null);
     setMessages([]);
     setRuns([]);
@@ -139,7 +128,6 @@ export function useChat(api: Api) {
           delete next.new;
           return next;
         });
-        rememberConversation(conversation.id);
         setCurrent(conversation);
         setConversations((list) => [conversation, ...list]);
       }
