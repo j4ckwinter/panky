@@ -4,6 +4,8 @@ i spent a fortune on my graphics card, so i figured i should make it useful. i'm
 
 it's called Panky. the model runs locally through Ollama, the chats stay on the PC, and the interface uses [Pancake UI](https://github.com/j4ckwinter/pancake-ui). mostly, it's an excuse to see how useful i can make this thing.
 
+<img src="docs/assets/panky.gif" alt="Panky chat demo" width="320" />
+
 ## try it out
 
 use Node 24+ and pnpm 12.16.1. from this checkout:
