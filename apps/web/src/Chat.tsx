@@ -443,6 +443,7 @@ export function Chat({
             )}
             <form
               className="composer"
+              autoComplete="off"
               onSubmit={(event) => {
                 event.preventDefault();
                 if (!unavailable && draft.trim()) void chat.send(draft.trim());
@@ -451,6 +452,7 @@ export function Chat({
               <Textarea
                 ref={input}
                 label="Message"
+                autoComplete="off"
                 rows={1}
                 maxLength={8000}
                 value={draft}
