@@ -153,3 +153,40 @@ test("next draft survives a completed reply without being submitted", async ({
     page.getByRole("article", { name: "Your message", exact: true }),
   ).toHaveCount(1);
 });
+
+test("copy response and code write the expected text and report clipboard failures", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/");
+  await login(page);
+  await page
+    .getByLabel("Message", { exact: true })
+    .fill(
+      "Code example\n\n```javascript\nconst answer = 42;\n```\n\nEnd of example.",
+    );
+  await page.getByLabel("Send message", { exact: true }).click();
+  const reply = page.getByRole("article", {
+    name: "Panky response",
+    exact: true,
+  });
+  await expect(reply.getByLabel("Copy response")).toBeVisible();
+  await reply.getByLabel("Copy code").click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "const answer = 42;\n",
+  );
+  await expect(reply.locator(".code-toolbar")).toContainText("javascript");
+  await reply.getByLabel("Copy response").click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
+    "```javascript\nconst answer = 42;",
+  );
+  await expect(reply.locator(".reply-actions")).toContainText("Copied");
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = async () => {
+      throw new Error("Denied");
+    };
+  });
+  await reply.getByLabel("Copy response").click();
+  await expect(reply.locator(".reply-actions")).toContainText("Could not copy");
+});

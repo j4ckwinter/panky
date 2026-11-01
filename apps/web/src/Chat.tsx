@@ -11,6 +11,7 @@ import type { Api } from "./api";
 import { ActionMenu } from "./ActionMenu";
 import { Brand } from "./Brand";
 import { PankyMark } from "./PankyMark";
+import { CopyButton } from "./CopyButton";
 import { Markdown } from "./Markdown";
 import { TaskActivity } from "./TaskActivity";
 import { useChat } from "./useChat";
@@ -415,6 +416,16 @@ export function Chat({
                               : "Reply in progress. Refresh history to check for updates."}
                           </p>
                         )}
+                        {message.role === "assistant" &&
+                          message.content &&
+                          message.status !== "streaming" && (
+                            <div className="reply-actions">
+                              <CopyButton
+                                label="Copy response"
+                                text={() => message.content}
+                              />
+                            </div>
+                          )}
                         {task && (
                           <TaskActivity
                             task={task}
