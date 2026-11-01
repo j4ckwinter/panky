@@ -35,6 +35,7 @@ test("Google sessions survive reload, stay out of scripts, and logout revokes ac
   await expect(
     page.getByRole("heading", { name: "Start a chat" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Account", exact: true }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Sign in with Google", exact: true }),
@@ -79,6 +80,7 @@ test("owner invites a friend, chats stay private, and removing access ends their
   await expect(
     page.getByRole("button", { name: "Refresh history", exact: true }),
   ).toBeEnabled();
+  await page.getByRole("button", { name: "Account", exact: true }).click();
   await page.getByRole("button", { name: "People", exact: true }).click();
   const people = page.getByRole("dialog", { name: "People with access" });
   await people
@@ -118,6 +120,7 @@ test("owner invites a friend, chats stay private, and removing access ends their
         exact: true,
       }),
     ).toHaveCount(0);
+    await page.getByRole("button", { name: "Account", exact: true }).click();
     await page.getByRole("button", { name: "People", exact: true }).click();
     await people
       .getByRole("button", {

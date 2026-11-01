@@ -3,12 +3,12 @@ import {
   Button,
   Inline,
   LoadingIndicator,
-  StatusChip,
   Text,
   Textarea,
 } from "@jack.winter/pancake-ui";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Api } from "./api";
+import { ActionMenu } from "./ActionMenu";
 import { Brand } from "./Brand";
 import { PankyMark } from "./PankyMark";
 import { Markdown } from "./Markdown";
@@ -239,32 +239,37 @@ export function Chat({
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <StatusChip tone="warning" title={chat.providerLabel}>
-            {chat.providerLabel}
-          </StatusChip>
-          <p className="sidebar-account" title={email}>
-            {email}
-          </p>
-          {onAccess && (
+          <ActionMenu label="Account" className="account-menu">
+            <p className="account-email">{email}</p>
+            <p className="account-provider">{chat.providerLabel}</p>
+            {onAccess && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSidebarOpen(false);
+                  onAccess();
+                }}
+              >
+                People
+              </Button>
+            )}
             <Button
-              variant="secondary"
-              className="access-button"
-              onClick={onAccess}
+              variant="ghost"
+              onClick={() => {
+                setSidebarOpen(false);
+                onSessions();
+              }}
             >
-              People
+              Sessions
             </Button>
-          )}
-          <Button variant="secondary" onClick={onSessions}>
-            Sessions
-          </Button>
-          <Button
-            variant="secondary"
-            className="disconnect-button visible-action"
-            onClick={onDisconnect}
-            disabled={chat.pending}
-          >
-            Sign out
-          </Button>
+            <Button
+              variant="ghost"
+              onClick={onDisconnect}
+              disabled={chat.pending}
+            >
+              Sign out
+            </Button>
+          </ActionMenu>
         </div>
       </aside>
       <main className="chat-main" inert={sidebarOpen}>
