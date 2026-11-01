@@ -267,7 +267,13 @@ test("each reply owns its task activity after more messages and reload", async (
     .nth(1)
     .getByRole("region", { name: "Task activity", exact: true });
   await expect(firstActivity).toHaveCount(1);
+  await expect(firstActivity.locator("summary").first()).toContainText(
+    "Used 1 tool",
+  );
   await expect(secondActivity).toHaveCount(1);
+  await expect(secondActivity.locator("summary").first()).toHaveText(
+    "Response details",
+  );
   await firstActivity.locator("summary").first().click();
   await firstActivity.getByText("View tool result", { exact: true }).click();
   await expect(

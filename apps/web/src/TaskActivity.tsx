@@ -70,18 +70,27 @@ export function TaskActivity({
   activities: Activity[];
 }) {
   const status = statuses[task.status];
+  const entries = activities.filter((activity) => activity.runId === task.id);
+  const toolCount = entries.filter(
+    (activity) => activity.kind === "tool_completed",
+  ).length;
+  const label =
+    toolCount > 0
+      ? `Used ${toolCount} tool${toolCount === 1 ? "" : "s"}`
+      : "Response details";
   return (
     <section className="task-activity" aria-label="Task activity">
       <details key={`${task.id}:${task.status}`} className="task-details">
         <summary>
-          <span>Activity</span>
-          <span className={`task-status task-status-${task.status}`}>
-            {status.label}
-          </span>
+          <span>{label}</span>
+          {(task.status !== "completed" || toolCount > 0) && (
+            <span className={`task-status task-status-${task.status}`}>
+              {status.label}
+            </span>
+          )}
         </summary>
         <ol className="task-events" aria-label="Task timeline">
-          {activities
-            .filter((activity) => activity.runId === task.id)
+          {entries
             .sort((a, b) => a.sequence - b.sequence)
             .map((activity) => (
               <li key={activity.id} className="task-event">

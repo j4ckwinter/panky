@@ -288,8 +288,8 @@ button:disabled {
   padding-bottom: var(--spacing-pancake-24);
 }
 .message {
-  margin: var(--spacing-pancake-16) 0 var(--spacing-pancake-24);
-  padding: var(--spacing-pancake-16) 0;
+  margin: var(--spacing-pancake-12) 0 var(--spacing-pancake-16);
+  padding: var(--spacing-pancake-8) 0;
   border-radius: var(--radius-pancake-20);
 }
 .message-user {
@@ -904,4 +904,12 @@ button.visible-action:focus-visible,
   margin: 0;
   border: 0;
   border-radius: 0;
+}
+
+.message-meta .panky-mark {
+  --mark-size: 24px;
+}
+.message-meta {
+  gap: 8px;
+  font-size: 12px;
 }
