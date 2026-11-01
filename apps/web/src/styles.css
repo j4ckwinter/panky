@@ -260,9 +260,34 @@ button:disabled {
   min-height: 100%;
 }
 .jump-to-latest {
-  display: flex;
-  justify-content: center;
-  padding-bottom: var(--spacing-pancake-8);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+.jump-to-latest .jump-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid var(--color-pancake-border);
+  border-radius: 50%;
+  background: var(--color-pancake-surface);
+  color: var(--color-pancake-deep);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+}
+.jump-to-latest .jump-button:hover {
+  background: var(--color-pancake-canvas);
+}
+@media (pointer: coarse) {
+  .jump-to-latest .jump-button {
+    width: 40px;
+    height: 40px;
+  }
 }
 .welcome {
   max-width: 640px;
@@ -322,6 +347,7 @@ button:disabled {
   color: var(--color-pancake-error-strong);
 }
 .composer-area {
+  position: relative;
   width: 100%;
   max-width: 824px;
   align-self: center;

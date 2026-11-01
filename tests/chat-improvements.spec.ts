@@ -149,10 +149,17 @@ test("streaming respects reading position and Jump to latest resumes following",
     element.scrollTop = 0;
   });
   const jump = page.getByRole("button", {
-    name: "Jump to latest ↓",
+    name: "Jump to latest",
     exact: true,
   });
   await expect(jump).toBeVisible();
+  const composerBefore = await page.locator(".composer").boundingBox();
+  const buttonBounds = await jump.boundingBox();
+  expect(buttonBounds?.width).toBeLessThanOrEqual(40);
+  expect(buttonBounds?.height).toBe(buttonBounds?.width);
+  expect((buttonBounds?.y ?? 0) + (buttonBounds?.height ?? 0)).toBeLessThan(
+    composerBefore?.y ?? 0,
+  );
   const initialLength = (await reply.textContent())?.length ?? 0;
   await expect
     .poll(async () => (await reply.textContent())?.length ?? 0)
@@ -161,6 +168,9 @@ test("streaming respects reading position and Jump to latest resumes following",
   await page.screenshot({ path: "test-results/reading-position.png" });
   await jump.click();
   await expect(jump).toHaveCount(0);
+  expect((await page.locator(".composer").boundingBox())?.y).toBe(
+    composerBefore?.y,
+  );
   await expect(
     page.getByRole("button", {
       name: "Refresh history",
@@ -345,7 +355,7 @@ test("each reply owns its task activity after more messages and reload", async (
     )
     .toBeLessThan(48);
   await expect(
-    page.getByRole("button", { name: "Jump to latest ↓", exact: true }),
+    page.getByRole("button", { name: "Jump to latest", exact: true }),
   ).toHaveCount(0);
   await page.screenshot({ path: "test-results/per-reply-desktop.png" });
   await page.setViewportSize({ width: 390, height: 844 });

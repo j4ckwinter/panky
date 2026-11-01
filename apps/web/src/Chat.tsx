@@ -531,8 +531,26 @@ export function Chat({
           <div className="composer-area">
             {showJump && (
               <div className="jump-to-latest">
-                <Button variant="secondary" onClick={jumpToLatest}>
-                  Jump to latest ↓
+                <Button
+                  variant="secondary"
+                  className="jump-button"
+                  aria-label="Jump to latest"
+                  title="Jump to latest"
+                  onClick={jumpToLatest}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 5v14m-6-6 6 6 6-6" />
+                  </svg>
                 </Button>
               </div>
             )}
