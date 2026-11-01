@@ -22,7 +22,7 @@ export function Chat({
   onDisconnect: () => void;
 }) {
   const chat = useChat(api);
-  const [draft, setDraft] = useState("");
+  const { draft, setDraft } = chat;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebar = useRef<HTMLElement>(null);
   const menu = useRef<HTMLButtonElement>(null);
@@ -126,7 +126,6 @@ export function Chat({
         <Button
           size={48}
           onClick={() => {
-            setDraft("");
             setSidebarOpen(false);
             void chat.create();
           }}
@@ -152,7 +151,6 @@ export function Chat({
               }
               disabled={chat.pending}
               onClick={() => {
-                setDraft("");
                 setSidebarOpen(false);
                 void chat.select(conversation.id);
               }}
@@ -341,8 +339,7 @@ export function Chat({
             className="composer"
             onSubmit={(event) => {
               event.preventDefault();
-              if (!unavailable && draft.trim())
-                void chat.send(draft.trim(), () => setDraft(""));
+              if (!unavailable && draft.trim()) void chat.send(draft.trim());
             }}
           >
             <Textarea

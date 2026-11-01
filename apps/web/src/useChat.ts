@@ -19,6 +19,12 @@ function rememberConversation(id: string | null) {
 export function useChat(api: Api) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const draftKey = current?.id ?? "new";
+  const draft = drafts[draftKey] ?? "";
+  function setDraft(value: string) {
+    setDrafts((items) => ({ ...items, [draftKey]: value }));
+  }
   const [messages, setMessages] = useState<Message[]>([]);
   const [runs, setRuns] = useState<TaskRun[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -123,11 +129,16 @@ export function useChat(api: Api) {
     setError("");
   }
 
-  function send(content: string, onAccepted: () => void) {
+  function send(content: string) {
     return run(async () => {
       const conversation = current ?? (await api.create());
       if (!mounted.current) return;
       if (!current) {
+        setDrafts((items) => {
+          const next = { ...items, [conversation.id]: items.new ?? content };
+          delete next.new;
+          return next;
+        });
         rememberConversation(conversation.id);
         setCurrent(conversation);
         setConversations((list) => [conversation, ...list]);
@@ -145,7 +156,11 @@ export function useChat(api: Api) {
             runId = event.run.id;
             setRuns((items) => [...items, event.run]);
             setMessages((items) => [...items, event.user, event.assistant]);
-            onAccepted();
+            setDrafts((items) => {
+              const next = { ...items };
+              delete next[conversation.id];
+              return next;
+            });
             break;
           case "delta":
             setMessages((items) =>
@@ -249,6 +264,8 @@ export function useChat(api: Api) {
     }
   }
   return {
+    draft,
+    setDraft,
     conversations,
     current,
     messages,

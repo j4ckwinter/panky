@@ -172,3 +172,78 @@ test("streaming respects reading position and Jump to latest resumes following",
     .toBe(0);
   await page.screenshot({ path: "test-results/fresh-chat.png" });
 });
+
+test("drafts stay with each conversation and the fresh chat until accepted", async ({
+  page,
+}) => {
+  await connect(page);
+  await send(page, "Draft conversation A");
+  const input = page.getByLabel("Message", { exact: true });
+  await input.fill("Unsent A\nsecond line");
+  await page
+    .getByRole("button", { name: "New conversation", exact: true })
+    .click();
+  await expect(input).toHaveValue("");
+  await input.fill("Unsent fresh chat");
+  await page
+    .getByRole("button", { name: "Draft conversation A", exact: true })
+    .click();
+  await expect(input).toHaveValue("Unsent A\nsecond line");
+  await page
+    .getByRole("button", { name: "New conversation", exact: true })
+    .click();
+  await expect(input).toHaveValue("Unsent fresh chat");
+  await send(page, "Draft conversation B");
+  await expect(input).toHaveValue("");
+  await input.fill("Unsent B");
+  await page
+    .getByRole("button", { name: "Draft conversation A", exact: true })
+    .click();
+  await expect(input).toHaveValue("Unsent A\nsecond line");
+  await page
+    .getByRole("button", { name: "Refresh history", exact: true })
+    .click();
+  await expect(input).toHaveValue("Unsent A\nsecond line");
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Refresh history", exact: true }),
+  ).toBeEnabled();
+  await expect(input).toHaveValue("");
+  await page
+    .getByRole("button", { name: "Draft conversation B", exact: true })
+    .click();
+  await expect(input).toHaveValue("Unsent B");
+  await page
+    .getByRole("button", { name: "New conversation", exact: true })
+    .click();
+  await expect(input).toHaveValue("");
+  expect(
+    await page.evaluate(() =>
+      JSON.stringify({ ...localStorage, ...sessionStorage }),
+    ),
+  ).not.toContain("Unsent");
+});
+
+test("failed conversation creation keeps the fresh draft", async ({ page }) => {
+  await connect(page);
+  await page.route("**/api/conversations", (route) =>
+    route.request().method() === "POST"
+      ? route.abort("connectionrefused")
+      : route.continue(),
+  );
+  await page
+    .getByLabel("Message", { exact: true })
+    .fill("Creation failed draft");
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByLabel("Message", { exact: true })).toHaveValue(
+    "Creation failed draft",
+  );
+  await expect(page.getByRole("article")).toHaveCount(0);
+  await page.unroute("**/api/conversations");
+  await send(page, "Creation failed draft");
+  await expect(page.getByLabel("Message", { exact: true })).toHaveValue("");
+  await expect(
+    page.getByRole("article", { name: "Your message", exact: true }),
+  ).toHaveCount(1);
+});
