@@ -297,6 +297,16 @@ test("each reply owns its task activity after more messages and reload", async (
   await page.locator(".chat-scroll").evaluate((element) => {
     element.scrollTop = 0;
   });
+  await expect
+    .poll(() =>
+      page
+        .locator(".chat-scroll")
+        .evaluate((element) => element.scrollHeight - element.clientHeight),
+    )
+    .toBeLessThan(48);
+  await expect(
+    page.getByRole("button", { name: "Jump to latest ↓", exact: true }),
+  ).toHaveCount(0);
   await page.screenshot({ path: "test-results/per-reply-desktop.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   await secondActivity.scrollIntoViewIfNeeded();
@@ -320,6 +330,8 @@ test("composer aligns send with input and grows for multiline drafts on desktop 
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await input.fill("A short message");
+    const composer = await page.locator(".composer").boundingBox();
+    expect(composer?.y).toBeLessThan(844 * 0.8);
     await expect(
       page.getByText("Enter to send · Shift+Enter for a new line", {
         exact: true,
@@ -386,6 +398,27 @@ test("connection page keeps the form usable at desktop and mobile sizes", async 
     .fill("wrong-token");
   await page.getByRole("button", { name: "Connect", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("empty chat and composer stay reachable in a short mobile window", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 400 });
+  await connect(page);
+  const welcome = page.getByRole("heading", {
+    name: "Start a chat",
+    exact: true,
+  });
+  await welcome.scrollIntoViewIfNeeded();
+  await expect(welcome).toBeInViewport();
+  const input = page.getByLabel("Message", { exact: true });
+  await input.scrollIntoViewIfNeeded();
+  await expect(input).toBeInViewport();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
