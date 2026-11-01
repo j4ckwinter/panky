@@ -253,71 +253,73 @@ export function Chat({
               </section>
             ) : (
               <div className="message-list" aria-label="Messages">
-                {chat.messages.map((message) => (
-                  <article
-                    key={message.id}
-                    className={`message message-${message.role}`}
-                    aria-label={
-                      message.role === "user"
-                        ? "Your message"
-                        : "Panky response"
-                    }
-                  >
-                    <div className="message-meta">
-                      {message.role === "assistant" ? (
-                        <PankyMark small />
-                      ) : (
-                        <span
-                          className="message-avatar user"
-                          aria-hidden="true"
-                        >
-                          Y
-                        </span>
+                {chat.messages.map((message) => {
+                  const task = chat.runs.find(
+                    (run) => run.assistantMessageId === message.id,
+                  );
+                  return (
+                    <article
+                      key={message.id}
+                      className={`message message-${message.role}`}
+                      aria-label={
+                        message.role === "user"
+                          ? "Your message"
+                          : "Panky response"
+                      }
+                    >
+                      <div className="message-meta">
+                        {message.role === "assistant" ? (
+                          <PankyMark small />
+                        ) : (
+                          <span
+                            className="message-avatar user"
+                            aria-hidden="true"
+                          >
+                            Y
+                          </span>
+                        )}
+                        <strong>
+                          {message.role === "user" ? "You" : "Panky"}
+                        </strong>
+                        {message.role === "assistant" && (
+                          <span className="mock-label">MOCK</span>
+                        )}
+                      </div>
+                      <div className="message-content">
+                        {message.content ||
+                          (message.status === "streaming"
+                            ? "Getting a thought together…"
+                            : "No reply text was saved.")}
+                      </div>
+                      {message.status === "interrupted" && (
+                        <p className="interrupted">
+                          {task?.status === "cancelled"
+                            ? "Task cancelled. Any partial reply was saved."
+                            : task?.status === "failed"
+                              ? "Task failed. See task activity for details."
+                              : "Reply interrupted. This partial reply was saved; nothing was retried."}
+                        </p>
                       )}
-                      <strong>
-                        {message.role === "user" ? "You" : "Panky"}
-                      </strong>
-                      {message.role === "assistant" && (
-                        <span className="mock-label">MOCK</span>
+                      {message.status === "streaming" && (
+                        <p className="streaming-label">
+                          {chat.streaming
+                            ? "Writing a mock reply…"
+                            : "Reply in progress. Refresh history to check for updates."}
+                        </p>
                       )}
-                    </div>
-                    <div className="message-content">
-                      {message.content ||
-                        (message.status === "streaming"
-                          ? "Getting a thought together…"
-                          : "No reply text was saved.")}
-                    </div>
-                    {message.status === "interrupted" && (
-                      <p className="interrupted">
-                        {chat.runs.find(
-                          (task) => task.assistantMessageId === message.id,
-                        )?.status === "cancelled"
-                          ? "Task cancelled. Any partial reply was saved."
-                          : chat.runs.find(
-                                (task) =>
-                                  task.assistantMessageId === message.id,
-                              )?.status === "failed"
-                            ? "Task failed. See task activity for details."
-                            : "Reply interrupted. This partial reply was saved; nothing was retried."}
-                      </p>
-                    )}
-                    {message.status === "streaming" && (
-                      <p className="streaming-label">
-                        {chat.streaming
-                          ? "Writing a mock reply…"
-                          : "Reply in progress. Refresh history to check for updates."}
-                      </p>
-                    )}
-                  </article>
-                ))}
+                      {task && (
+                        <TaskActivity
+                          task={task}
+                          activities={chat.activities}
+                          cancelling={chat.cancelling}
+                          onCancel={(id) => void chat.cancel(id)}
+                        />
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             )}
-            <TaskActivity
-              runs={chat.runs}
-              activities={chat.activities}
-              cancelling={chat.cancelling}
-              onCancel={(id) => void chat.cancel(id)}
-            />
           </div>
         </div>
         <div className="composer-area">

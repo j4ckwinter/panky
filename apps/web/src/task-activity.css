@@ -1,6 +1,6 @@
 .task-activity {
   max-width: 760px;
-  margin: var(--spacing-pancake-24) auto 0;
+  margin: var(--spacing-pancake-16) 0 0 var(--spacing-pancake-44);
   padding: var(--spacing-pancake-16);
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-12);
@@ -16,20 +16,14 @@
   outline-offset: 4px;
   border-radius: var(--radius-pancake-8);
 }
-.latest-task > summary {
+.task-details > summary {
   font-weight: 600;
 }
-.latest-task > summary > span {
+.task-details > summary > span {
   margin-right: var(--spacing-pancake-12);
 }
 .task-controls {
   margin-top: var(--spacing-pancake-12);
-}
-.task-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-pancake-12);
 }
 .task-events {
   list-style: none;
@@ -93,16 +87,8 @@
 .task-error {
   color: var(--color-pancake-error-strong);
 }
-.previous-tasks {
-  border-top: 1px solid var(--color-pancake-border);
-  padding-top: var(--spacing-pancake-12);
-  margin-top: var(--spacing-pancake-16);
-  font-size: 13px;
-}
-.previous-tasks > summary,
-.previous-tasks > details > summary {
-  padding: var(--spacing-pancake-8) 0;
-}
-.previous-tasks .task-record {
-  padding: var(--spacing-pancake-8);
+@media (max-width: 640px) {
+  .task-activity {
+    margin-left: 0;
+  }
 }

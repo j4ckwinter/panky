@@ -247,3 +247,63 @@ test("failed conversation creation keeps the fresh draft", async ({ page }) => {
     page.getByRole("article", { name: "Your message", exact: true }),
   ).toHaveCount(1);
 });
+
+test("each reply owns its task activity after more messages and reload", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 1100 });
+  await connect(page);
+  await send(page, "What is the current date and time?");
+  await send(page, "A separate thought");
+  const replies = page.getByRole("article", {
+    name: "Panky response",
+    exact: true,
+  });
+  await expect(replies).toHaveCount(2);
+  const firstActivity = replies
+    .nth(0)
+    .getByRole("region", { name: "Task activity", exact: true });
+  const secondActivity = replies
+    .nth(1)
+    .getByRole("region", { name: "Task activity", exact: true });
+  await expect(firstActivity).toHaveCount(1);
+  await expect(secondActivity).toHaveCount(1);
+  await firstActivity.locator("summary").first().click();
+  await firstActivity.getByText("View tool result", { exact: true }).click();
+  await expect(
+    firstActivity.getByLabel("Tool result", { exact: true }),
+  ).toContainText("timestamp");
+  const result = await firstActivity
+    .getByLabel("Tool result", { exact: true })
+    .textContent();
+  await secondActivity.locator("summary").first().click();
+  await expect(
+    secondActivity.getByText("Conversation prepared", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    secondActivity.getByText("View tool result", { exact: true }),
+  ).toHaveCount(0);
+  await page.reload();
+  await login(page);
+  await expect(replies).toHaveCount(2);
+  await expect(firstActivity).toHaveCount(1);
+  await expect(secondActivity).toHaveCount(1);
+  await firstActivity.locator("summary").first().click();
+  await firstActivity.getByText("View tool result", { exact: true }).click();
+  await expect(
+    firstActivity.getByLabel("Tool result", { exact: true }),
+  ).toHaveText(result ?? "");
+  await firstActivity.locator("summary").first().click();
+  await page.locator(".chat-scroll").evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await page.screenshot({ path: "test-results/per-reply-desktop.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await secondActivity.scrollIntoViewIfNeeded();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "test-results/per-reply-mobile.png" });
+});

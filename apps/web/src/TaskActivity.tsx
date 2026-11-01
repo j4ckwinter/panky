@@ -64,37 +64,32 @@ function ActivityEntry({ activity }: { activity: Activity }) {
 }
 
 export function TaskActivity({
-  runs,
+  task,
   activities,
   cancelling,
   onCancel,
 }: {
-  runs: TaskRun[];
+  task: TaskRun;
   activities: Activity[];
   cancelling: boolean;
   onCancel: (id: string) => void;
 }) {
-  if (!runs.length) return null;
-  const latest = runs.at(-1);
-  function renderTask(task: TaskRun, showHeading = true) {
-    const status = statuses[task.status];
-    return (
-      <div className="task-record">
-        {showHeading && (
-          <div className="task-heading">
-            <StatusChip tone={status.tone}>{status.label}</StatusChip>
-            {task.status === "running" && (
-              <Button
-                variant="secondary"
-                onClick={() => onCancel(task.id)}
-                disabled={cancelling}
-                aria-label="Cancel task"
-              >
-                {cancelling ? "Cancelling…" : "Cancel task"}
-              </Button>
-            )}
-          </div>
-        )}
+  const status = statuses[task.status];
+  return (
+    <section className="task-activity" aria-label="Task activity">
+      <details
+        key={`${task.id}:${task.status}`}
+        className="task-details"
+        open={
+          task.status === "running" ||
+          task.status === "failed" ||
+          task.status === "interrupted"
+        }
+      >
+        <summary>
+          <span>Task activity</span>
+          <StatusChip tone={status.tone}>{status.label}</StatusChip>
+        </summary>
         <ol className="task-events" aria-label="Task timeline">
           {activities
             .filter((activity) => activity.runId === task.id)
@@ -117,60 +112,18 @@ export function TaskActivity({
             automatically.
           </p>
         )}
-      </div>
-    );
-  }
-  return (
-    <section className="task-activity" aria-label="Task activity">
-      {latest && (
-        <>
-          <details
-            key={`${latest.id}:${latest.status}`}
-            className="latest-task"
-            open={
-              latest.status === "running" ||
-              latest.status === "failed" ||
-              latest.status === "interrupted"
-            }
+      </details>
+      {task.status === "running" && (
+        <div className="task-controls">
+          <Button
+            variant="secondary"
+            onClick={() => onCancel(task.id)}
+            disabled={cancelling}
+            aria-label="Cancel task"
           >
-            <summary>
-              <span>Task activity</span>
-              <StatusChip tone={statuses[latest.status].tone}>
-                {statuses[latest.status].label}
-              </StatusChip>
-            </summary>
-            {renderTask(latest, false)}
-          </details>
-          {latest.status === "running" && (
-            <div className="task-controls">
-              <Button
-                variant="secondary"
-                onClick={() => onCancel(latest.id)}
-                disabled={cancelling}
-                aria-label="Cancel task"
-              >
-                {cancelling ? "Cancelling…" : "Cancel task"}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-      {runs.length > 1 && (
-        <details className="previous-tasks">
-          <summary>Previous tasks ({runs.length - 1})</summary>
-          {runs
-            .slice(0, -1)
-            .reverse()
-            .map((task) => (
-              <details key={task.id}>
-                <summary>
-                  {statuses[task.status].label} ·{" "}
-                  {new Date(task.createdAt).toLocaleString()}
-                </summary>
-                {renderTask(task)}
-              </details>
-            ))}
-        </details>
+            {cancelling ? "Cancelling…" : "Cancel task"}
+          </Button>
+        </div>
       )}
     </section>
   );
