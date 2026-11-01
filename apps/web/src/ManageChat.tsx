@@ -33,7 +33,7 @@ export function ManageChat({
   return (
     <dialog
       ref={dialog}
-      className="sessions-dialog"
+      className="sessions-dialog manage-chat-dialog"
       aria-labelledby="manage-chat-title"
       onCancel={(event) => {
         event.preventDefault();
@@ -41,9 +41,31 @@ export function ManageChat({
       }}
     >
       <Stack gap="space16">
-        <h2 id="manage-chat-title">
-          {confirmDelete ? "Delete chat?" : "Manage chat"}
-        </h2>
+        <div className="dialog-heading">
+          <h2 id="manage-chat-title">
+            {confirmDelete ? "Delete chat?" : "Manage chat"}
+          </h2>
+          <Button
+            variant="ghost"
+            className="dialog-close"
+            aria-label="Close"
+            title="Close"
+            disabled={pending}
+            onClick={onClose}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </Button>
+        </div>
         {error && (
           <BannerToast tone="error" title="Could not update chat">
             {error}
@@ -55,21 +77,23 @@ export function ManageChat({
               Delete “{conversation.title}” and all its messages? This cannot be
               undone.
             </p>
-            <Button
-              disabled={pending}
-              onClick={async () => {
-                if (await onDelete()) onClose();
-              }}
-            >
-              Delete permanently
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={pending}
-              onClick={() => setConfirmDelete(false)}
-            >
-              Keep chat
-            </Button>
+            <div className="dialog-actions">
+              <Button
+                disabled={pending}
+                onClick={async () => {
+                  if (await onDelete()) onClose();
+                }}
+              >
+                Delete permanently
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={pending}
+                onClick={() => setConfirmDelete(false)}
+              >
+                Keep chat
+              </Button>
+            </div>
           </>
         ) : (
           <>
@@ -88,25 +112,27 @@ export function ManageChat({
                   disabled={pending}
                   onChange={(event) => setTitle(event.currentTarget.value)}
                 />
-                <Button type="submit" disabled={pending || !title.trim()}>
-                  Save name
-                </Button>
+                <div className="dialog-actions">
+                  <Button type="submit" disabled={pending || !title.trim()}>
+                    Save name
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    disabled={pending}
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </Stack>
             </form>
             <Button
               variant="secondary"
               disabled={pending}
+              className="delete-chat-action"
               onClick={() => setConfirmDelete(true)}
             >
               Delete chat
-            </Button>
-            <Button
-              className="visible-action"
-              variant="secondary"
-              disabled={pending}
-              onClick={onClose}
-            >
-              Close
             </Button>
           </>
         )}

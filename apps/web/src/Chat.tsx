@@ -503,22 +503,24 @@ export function Chat({
                               : "Reply in progress. Refresh history to check for updates."}
                           </p>
                         )}
-                        {message.role === "assistant" &&
-                          message.content &&
-                          message.status !== "streaming" && (
-                            <div className="reply-actions">
-                              <CopyButton
-                                label="Copy response"
-                                text={() => message.content}
-                              />
-                            </div>
+                        <div className="response-footer">
+                          {message.role === "assistant" &&
+                            message.content &&
+                            message.status !== "streaming" && (
+                              <div className="reply-actions">
+                                <CopyButton
+                                  label="Copy response"
+                                  text={() => message.content}
+                                />
+                              </div>
+                            )}
+                          {task && (
+                            <TaskActivity
+                              task={task}
+                              activities={chat.activities}
+                            />
                           )}
-                        {task && (
-                          <TaskActivity
-                            task={task}
-                            activities={chat.activities}
-                          />
-                        )}
+                        </div>
                       </article>
                     );
                   })}

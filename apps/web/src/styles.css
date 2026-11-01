@@ -975,3 +975,274 @@ button.visible-action:focus-visible,
     gap: 4px;
   }
 }
+
+.chat-layout .sidebar {
+  padding: 12px 8px 8px;
+  gap: 8px;
+}
+.sidebar-brand {
+  padding: 0 4px 8px;
+}
+.sidebar .brand {
+  font-size: 17px;
+  letter-spacing: -0.5px;
+  gap: 8px;
+}
+.sidebar .brand .panky-mark {
+  --mark-size: 26px;
+}
+.sidebar .new-chat-button {
+  min-width: 0;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 10px;
+  font-size: 14px;
+  border-radius: 8px;
+  background: transparent;
+}
+.chat-search {
+  position: relative;
+  margin: 0 2px 12px;
+}
+.chat-search label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.chat-search input {
+  min-height: 36px;
+  height: 36px;
+  padding: 6px 10px;
+  border-color: var(--color-pancake-border);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 14px;
+}
+.conversation-row {
+  position: relative;
+  gap: 0;
+  border-radius: 8px;
+}
+.conversation-row .conversation-link {
+  min-height: 36px;
+  padding: 8px 36px 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 20px;
+}
+.conversation-row .manage-chat-button {
+  position: absolute;
+  right: 2px;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border-radius: 6px;
+  background: transparent;
+}
+@media (hover: hover) {
+  .conversation-row .manage-chat-button {
+    opacity: 0;
+  }
+  .conversation-row:hover .manage-chat-button,
+  .conversation-row:focus-within .manage-chat-button {
+    opacity: 1;
+  }
+}
+.chat-layout .sidebar-bottom {
+  display: block;
+  padding-top: 8px;
+  border-top: 0;
+}
+.account-menu > button {
+  min-width: 0;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  background: transparent;
+}
+.action-menu-panel {
+  border-radius: 12px;
+  padding: 4px;
+}
+.action-menu-panel > button {
+  min-width: 0;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  background: transparent;
+}
+.action-menu-panel > button:hover,
+.account-menu > button:hover,
+.sidebar .new-chat-button:hover {
+  background: var(--color-pancake-surface-muted);
+}
+.chat-header {
+  min-height: 56px;
+  padding: 8px 20px;
+}
+.chat-heading h1 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+.chat-header .header-icon-button,
+.sidebar .desktop-sidebar-toggle {
+  min-width: 32px;
+  width: 32px;
+  min-height: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0;
+}
+.response-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 6px;
+}
+.response-footer:empty {
+  display: none;
+}
+.response-footer .reply-actions {
+  margin: 0;
+}
+.response-footer .task-activity {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding-top: 3px;
+}
+.copy-control button {
+  min-width: 28px;
+  width: 28px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+.copy-control button:hover {
+  background: var(--color-pancake-surface-muted);
+}
+.code-toolbar {
+  min-height: 36px;
+}
+.message-meta {
+  color: var(--color-pancake-olive);
+}
+.message-meta .panky-mark {
+  --mark-size: 20px;
+}
+.message-content {
+  padding-top: 8px;
+  line-height: 1.65;
+}
+.message-user {
+  border-radius: 20px;
+}
+.composer {
+  border-radius: 24px;
+}
+.manage-chat-dialog {
+  width: min(400px, calc(100% - 32px));
+  padding: 20px;
+  border-radius: 16px;
+}
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dialog-heading h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 24px;
+}
+.manage-chat-dialog .dialog-close {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  background: transparent;
+  border-radius: 8px;
+}
+.manage-chat-dialog p {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.manage-chat-dialog input {
+  height: 40px;
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.dialog-actions {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dialog-actions button {
+  width: auto;
+  min-width: 0;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.manage-chat-dialog .delete-chat-action {
+  align-self: flex-start;
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  color: var(--color-pancake-error-strong);
+  background: transparent;
+  font-size: 13px;
+}
+@media (max-width: 640px) {
+  .chat-header {
+    min-height: 56px;
+    padding: 8px;
+  }
+  .chat-heading h1 {
+    font-size: 14px;
+  }
+  .chat-header .header-icon-button,
+  .mobile-header-menu > button {
+    min-width: 40px;
+    width: 40px;
+    min-height: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: transparent;
+  }
+  .copy-control button {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+  .response-footer .task-activity {
+    padding-top: 7px;
+  }
+  .manage-chat-dialog input {
+    font-size: 16px;
+  }
+  .dialog-actions button {
+    min-height: 40px;
+    height: 40px;
+  }
+}
