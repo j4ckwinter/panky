@@ -1,26 +1,68 @@
 import { setTimeout } from "node:timers/promises";
-import type { Message } from "@panky/shared";
+import { z } from "zod";
 
+export type ContextMessage = {
+  role: "user" | "assistant" | "tool";
+  content: string;
+  callId?: string;
+};
+export type ToolDefinition = {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+};
+export const providerEventSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("delta"), text: z.string().max(16000) }).strict(),
+  z
+    .object({
+      type: z.literal("tool_call"),
+      callId: z.string().min(1).max(100),
+      name: z.string().min(1).max(100),
+      arguments: z.unknown(),
+    })
+    .strict(),
+  z.object({ type: z.literal("complete") }).strict(),
+  z.object({ type: z.literal("error") }).strict(),
+]);
+export type ProviderEvent = z.infer<typeof providerEventSchema>;
 export interface ModelProvider {
   stream(
-    history: readonly Message[],
+    history: readonly ContextMessage[],
+    tools: readonly ToolDefinition[],
     signal: AbortSignal,
-  ): AsyncIterable<string>;
+  ): AsyncIterable<ProviderEvent>;
 }
-
 export class MockProvider implements ModelProvider {
   constructor(private readonly delayMs = 35) {}
-
   async *stream(
-    history: readonly Message[],
+    history: readonly ContextMessage[],
+    _tools: readonly ToolDefinition[],
     signal: AbortSignal,
-  ): AsyncIterable<string> {
+  ): AsyncIterable<ProviderEvent> {
+    signal.throwIfAborted();
     const prompt =
       history.findLast((message) => message.role === "user")?.content ?? "";
-    const response = `This is a mock response from Panky. You said: “${prompt}”\n\nYour conversation is saved on your backend. I’m ready for a real model in a later milestone; for now, this reply is deterministic and no AI model or tools were used.`;
-    for (const chunk of response.match(/.{1,24}/gsu) ?? []) {
-      await setTimeout(this.delayMs, undefined, { signal });
-      yield chunk;
+    const toolResult = history.at(-1);
+    const demo =
+      prompt.trim().toLowerCase().replace(/\s+/gu, " ") ===
+      "what is the current date and time?";
+    if (demo && toolResult?.role !== "tool") {
+      yield {
+        type: "tool_call",
+        callId: "current-datetime",
+        name: "get_current_datetime",
+        arguments: {},
+      };
+      return;
     }
+    const response =
+      demo && toolResult?.role === "tool"
+        ? `The current date and time returned by get_current_datetime is ${toolResult.content}.`
+        : `This is a mock response from Panky. You said: “${prompt}”\n\nYour conversation is saved on your backend. I’m ready for a real model in a later milestone; for now, this reply is deterministic and no AI model or tools were used.`;
+    for (const text of response.match(/.{1,24}/gsu) ?? []) {
+      await setTimeout(this.delayMs, undefined, { signal });
+      yield { type: "delta", text };
+    }
+    yield { type: "complete" };
   }
 }

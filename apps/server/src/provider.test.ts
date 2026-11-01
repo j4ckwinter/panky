@@ -18,10 +18,12 @@ test("maximum-length prompts stream in bounded chunks without losing Unicode or 
   const chunks: string[] = [];
   for await (const chunk of new MockProvider(0).stream(
     [message],
+    [],
     new AbortController().signal,
   )) {
-    assert.equal(Buffer.from(chunk, "utf8").toString("utf8"), chunk);
-    chunks.push(chunk);
+    if (chunk.type !== "delta") continue;
+    assert.equal(Buffer.from(chunk.text, "utf8").toString("utf8"), chunk.text);
+    chunks.push(chunk.text);
   }
   assert(
     chunks.length <= 350,

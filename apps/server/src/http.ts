@@ -11,6 +11,7 @@ import { Chat, HttpError } from "./chat.js";
 import type { Config } from "./config.js";
 import { MockProvider, type ModelProvider } from "./provider.js";
 import { Store } from "./store.js";
+import type { Tool } from "./tools.js";
 
 function json(response: ServerResponse, status: number, data: unknown) {
   response.writeHead(status, {
@@ -43,7 +44,7 @@ async function readSubmission(request: IncomingMessage) {
   if (!result.success)
     throw new HttpError(
       400,
-      "Message must contain 1–8000 characters and only a content field.",
+      "Message must contain 1–8000 characters with an optional includeActivity boolean.",
     );
   return result.data;
 }
@@ -51,9 +52,10 @@ async function readSubmission(request: IncomingMessage) {
 export function createApp(
   config: Config,
   provider: ModelProvider = new MockProvider(),
+  tools?: readonly Tool[],
 ) {
   const store = new Store(config.DATABASE_PATH);
-  const chat = new Chat(store, provider);
+  const chat = new Chat(store, provider, config, tools);
   const expectedToken = createHash("sha256")
     .update(`Bearer ${config.AUTH_TOKEN}`)
     .digest();
@@ -124,6 +126,15 @@ export function createApp(
       else throw new HttpError(405, "Method not allowed.");
       return;
     }
+    const cancellation = /^\/api\/runs\/([^/]+)\/cancel$/.exec(url.pathname);
+    if (cancellation) {
+      if (request.method !== "POST")
+        throw new HttpError(405, "Method not allowed.");
+      const runId = z.uuid().safeParse(cancellation[1]);
+      if (!runId.success) throw new HttpError(400, "Invalid task ID.");
+      json(response, 200, { run: await chat.cancel(runId.data) });
+      return;
+    }
     const match = /^\/api\/conversations\/([^/]+)(\/messages)?$/.exec(
       url.pathname,
     );
@@ -133,11 +144,16 @@ export function createApp(
     const conversation = store.conversation(id.data);
     if (!conversation) throw new HttpError(404, "Conversation not found.");
     if (!match[2] && request.method === "GET") {
-      json(response, 200, { conversation, messages: store.messages(id.data) });
+      json(response, 200, {
+        conversation,
+        messages: store.messages(id.data),
+        runs: store.runs(id.data),
+        activities: store.activities(id.data),
+      });
       return;
     }
     if (match[2] && request.method === "POST") {
-      const { content } = await readSubmission(request);
+      const { content, includeActivity } = await readSubmission(request);
       const controller = new AbortController();
       const disconnect = () => controller.abort();
       response.once("close", disconnect);
@@ -153,7 +169,13 @@ export function createApp(
           await once(response, "drain", { signal: controller.signal });
       };
       try {
-        await chat.start(id.data, content, send, controller.signal);
+        await chat.start(
+          id.data,
+          content,
+          send,
+          controller.signal,
+          includeActivity,
+        );
         response.end();
       } finally {
         response.off("close", disconnect);

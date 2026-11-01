@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Api } from "./api";
 import { Brand } from "./Brand";
 import { PankyMark } from "./PankyMark";
+import { TaskActivity } from "./TaskActivity";
 import { useChat } from "./useChat";
 
 export function Chat({
@@ -25,6 +26,7 @@ export function Chat({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const end = useRef<HTMLDivElement>(null);
   const lastMessage = chat.messages.at(-1);
+  const latestRun = chat.runs.at(-1);
   useEffect(() => {
     if (lastMessage) end.current?.scrollIntoView({ block: "end" });
   }, [lastMessage]);
@@ -153,6 +155,11 @@ export function Chat({
                   Start a conversation
                 </Button>
               )}
+              <p className="demo-prompt">
+                Try: “What is the current date and time?”
+                <br />
+                The mock provider can call a real date and time tool.
+              </p>
               <StatusChip tone="warning" className="welcome-provider">
                 Mock provider
               </StatusChip>
@@ -188,8 +195,15 @@ export function Chat({
                   </div>
                   {message.status === "interrupted" && (
                     <p className="interrupted">
-                      Reply interrupted. This partial reply was saved; nothing
-                      was retried.
+                      {chat.runs.find(
+                        (task) => task.assistantMessageId === message.id,
+                      )?.status === "cancelled"
+                        ? "Task cancelled. Any partial reply was saved."
+                        : chat.runs.find(
+                              (task) => task.assistantMessageId === message.id,
+                            )?.status === "failed"
+                          ? "Task failed. See task activity for details."
+                          : "Reply interrupted. This partial reply was saved; nothing was retried."}
                     </p>
                   )}
                   {message.status === "streaming" && (
@@ -203,6 +217,12 @@ export function Chat({
               ))}
             </div>
           )}
+          <TaskActivity
+            runs={chat.runs}
+            activities={chat.activities}
+            cancelling={chat.cancelling}
+            onCancel={(id) => void chat.cancel(id)}
+          />
           <div ref={end} />
         </div>
         <div className="composer-area">
@@ -258,7 +278,9 @@ export function Chat({
           </form>
           {(chat.error ||
             !chat.connected ||
-            lastMessage?.status === "interrupted") && (
+            (lastMessage?.status === "interrupted" &&
+              latestRun?.status !== "cancelled" &&
+              latestRun?.status !== "failed")) && (
             <p className="composer-note">
               Refresh history before sending again. Your messages are never
               retried automatically.

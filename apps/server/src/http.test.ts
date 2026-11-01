@@ -276,7 +276,7 @@ test("disconnect preserves partial reply as interrupted and releases the slot", 
 test("provider failures persist interruption and allow another response", async () => {
   const provider: ModelProvider = {
     async *stream() {
-      yield "partial";
+      yield { type: "delta", text: "partial" };
       throw new Error("private provider details");
     },
   };
@@ -304,6 +304,11 @@ test("startup recovers unfinished messages without rerunning the provider", () =
   assert.equal(
     recovered.messages(conversation.id)[1]?.content,
     "persisted partial",
+  );
+  assert.equal(recovered.runs(conversation.id)[0]?.status, "interrupted");
+  assert.equal(
+    recovered.activities(conversation.id).at(-1)?.kind,
+    "run_finished",
   );
   recovered.close();
 });

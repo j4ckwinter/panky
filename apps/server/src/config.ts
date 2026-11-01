@@ -23,6 +23,19 @@ const configSchema = z.object({
     .pipe(z.array(originSchema).min(1)),
   MODEL_PROVIDER: z.literal("mock").default("mock"),
   MODEL_NAME: z.string().trim().min(1).max(100).default("panky-mock"),
+  MAX_TASK_STEPS: z.coerce.number().int().min(1).max(32).default(8),
+  HISTORY_MAX_CHARS: z.coerce
+    .number()
+    .int()
+    .min(8000)
+    .max(128000)
+    .default(16000),
+  MAX_TASK_DURATION_MS: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(300000)
+    .default(30000),
   MODEL_ENDPOINT: z.url().optional(),
 });
 

@@ -1,4 +1,5 @@
 import {
+  cancelResponseSchema,
   conversationSchema,
   conversationsSchema,
   errorSchema,
@@ -95,6 +96,15 @@ export function createApi(token: string) {
         ).json(),
       );
     },
+    async cancel(id: string) {
+      return cancelResponseSchema.parse(
+        await (
+          await request(`/runs/${encodeURIComponent(id)}/cancel`, {
+            method: "POST",
+          })
+        ).json(),
+      );
+    },
     async send(
       id: string,
       content: string,
@@ -109,7 +119,7 @@ export function createApi(token: string) {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
           },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ content, includeActivity: true }),
           signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]),
         },
       );

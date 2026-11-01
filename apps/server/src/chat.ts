@@ -1,6 +1,9 @@
 import type { StreamEvent } from "@panky/shared";
+import type { Config } from "./config.js";
+import { boundedHistory, runLoop, TaskError } from "./loop.js";
 import type { ModelProvider } from "./provider.js";
 import type { Store } from "./store.js";
+import { dateTimeTool, type Tool } from "./tools.js";
 
 export class HttpError extends Error {
   constructor(
@@ -10,25 +13,24 @@ export class HttpError extends Error {
     super(message);
   }
 }
-
 export class Chat {
-  private active: AbortController | undefined;
+  private active: { controller: AbortController; runId?: string } | undefined;
   private finished: Promise<void> | undefined;
-
   constructor(
     private readonly store: Store,
     private readonly provider: ModelProvider,
+    private readonly config: Config,
+    private readonly tools: readonly Tool[] = [dateTimeTool],
   ) {}
-
   get busy() {
     return this.active !== undefined;
   }
-
   start(
     conversationId: string,
     content: string,
     send: (event: StreamEvent) => Promise<void>,
     signal: AbortSignal,
+    includeActivity = false,
   ): Promise<void> {
     if (this.active)
       throw new HttpError(
@@ -38,67 +40,122 @@ export class Chat {
     if (!this.store.conversation(conversationId))
       throw new HttpError(404, "Conversation not found.");
     const controller = new AbortController();
-    this.active = controller;
-    const abort = () => controller.abort();
+    const active: NonNullable<Chat["active"]> = { controller };
+    this.active = active;
+    const abort = () => controller.abort("interrupted");
     signal.addEventListener("abort", abort, { once: true });
-    if (signal.aborted) controller.abort();
+    if (signal.aborted) abort();
+    const timeout = setTimeout(
+      () => controller.abort("timeout"),
+      this.config.MAX_TASK_DURATION_MS,
+    );
     this.finished = this.respond(
       conversationId,
       content,
       send,
-      controller.signal,
+      active,
+      includeActivity,
     ).finally(() => {
+      clearTimeout(timeout);
       signal.removeEventListener("abort", abort);
       this.active = undefined;
       this.finished = undefined;
     });
     return this.finished;
   }
-
+  async cancel(id: string) {
+    const run = this.store.run(id);
+    if (!run) throw new HttpError(404, "Task not found.");
+    if (run.status === "running" && this.active?.runId === id) {
+      this.active.controller.abort("cancelled");
+      await this.finished;
+    }
+    return this.store.run(id);
+  }
   async stop() {
-    this.active?.abort();
+    this.active?.controller.abort("interrupted");
     await this.finished;
   }
-
   private async respond(
     conversationId: string,
     content: string,
     send: (event: StreamEvent) => Promise<void>,
-    signal: AbortSignal,
+    active: NonNullable<Chat["active"]>,
+    includeActivity: boolean,
   ) {
+    const signal = active.controller.signal;
     signal.throwIfAborted();
-    const { user, assistant } = this.store.beginResponse(
+    const { user, assistant, run } = this.store.beginResponse(
       conversationId,
       content,
     );
+    active.runId = run.id;
+    let status: "completed" | "failed" | "cancelled" | "interrupted" =
+      "completed";
+    let error: string | null = null;
     try {
-      await send({ type: "start", user, assistant });
-      for await (const text of this.provider.stream(
+      await send({ type: "start", user, assistant, run });
+      const context = boundedHistory(
         this.store.messages(conversationId),
+        this.config.HISTORY_MAX_CHARS,
+      );
+      const activity = async (event: Parameters<Store["addActivity"]>[1]) => {
+        const saved = this.store.addActivity(run.id, event);
+        if (includeActivity) await send({ type: "activity", activity: saved });
+      };
+      await activity({
+        kind: "run_started",
+        historyChars: context.historyChars,
+        omittedMessages: context.omittedMessages,
+      });
+      await runLoop({
+        history: context.history,
+        provider: this.provider,
+        tools: this.tools,
+        config: this.config,
         signal,
-      )) {
-        signal.throwIfAborted();
-        assistant.content += text;
-        this.store.saveMessage(assistant);
-        await send({ type: "delta", text });
-      }
+        activity,
+        delta: async (text) => {
+          assistant.content += text;
+          this.store.saveMessage(assistant);
+          await send({ type: "delta", text });
+        },
+      });
       signal.throwIfAborted();
-      assistant.status = "completed";
-      this.store.saveMessage(assistant);
-      await send({ type: "done", message: assistant });
-    } catch (error) {
-      if (assistant.status !== "completed") {
-        assistant.status = "interrupted";
-        this.store.saveMessage(assistant);
-      }
-      if (!signal.aborted) {
-        await send({
-          type: "error",
-          error:
-            "The response was interrupted. Refresh history to see saved messages; nothing will be resent automatically.",
-        }).catch(() => undefined);
-      }
-      if (error instanceof HttpError) throw error;
+    } catch (caught) {
+      status = signal.aborted
+        ? signal.reason === "cancelled"
+          ? "cancelled"
+          : signal.reason === "timeout"
+            ? "failed"
+            : "interrupted"
+        : "failed";
+      error =
+        status === "cancelled"
+          ? "Task cancelled."
+          : status === "interrupted"
+            ? "The connection closed before this task finished."
+            : signal.reason === "timeout"
+              ? "The task exceeded its time limit."
+              : caught instanceof TaskError
+                ? caught.message
+                : "The provider could not complete this task.";
+    }
+    const activity = this.store.finishRun(run, assistant, status, error);
+    if (includeActivity) {
+      await send({ type: "activity", activity }).catch(() => undefined);
+      await send({ type: "done", message: assistant, run }).catch(
+        () => undefined,
+      );
+    } else if (status === "completed") {
+      await send({ type: "done", message: assistant, run }).catch(
+        () => undefined,
+      );
+    } else {
+      await send({
+        type: "error",
+        error: error ?? "The response was interrupted.",
+      }).catch(() => undefined);
     }
   }
 }

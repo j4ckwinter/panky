@@ -1,4 +1,10 @@
-import type { Conversation, Message, StreamEvent } from "@panky/shared";
+import type {
+  Activity,
+  Conversation,
+  Message,
+  StreamEvent,
+  TaskRun,
+} from "@panky/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Api } from "./api";
 import { errorMessage } from "./api";
@@ -7,6 +13,10 @@ export function useChat(api: Api) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [runs, setRuns] = useState<TaskRun[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [cancelling, setCancelling] = useState(false);
+  const cancelLock = useRef(false);
   const [pending, setPending] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [serverBusy, setServerBusy] = useState(false);
@@ -17,7 +27,7 @@ export function useChat(api: Api) {
   const mounted = useRef(true);
 
   const run = useCallback(async (operation: () => Promise<void>) => {
-    if (lock.current) return;
+    if (lock.current || cancelLock.current) return;
     lock.current = true;
     setPending(true);
     setError("");
@@ -44,6 +54,8 @@ export function useChat(api: Api) {
         setConversations(list);
         setCurrent(history?.conversation ?? null);
         setMessages(history?.messages ?? []);
+        setRuns(history?.runs ?? []);
+        setActivities(history?.activities ?? []);
         setServerBusy(health.busy);
         setConnected(true);
       }),
@@ -86,6 +98,8 @@ export function useChat(api: Api) {
       if (!mounted.current) return;
       setCurrent(history.conversation);
       setMessages(history.messages);
+      setRuns(history.runs);
+      setActivities(history.activities);
     });
   }
 
@@ -96,6 +110,8 @@ export function useChat(api: Api) {
       setConversations((list) => [conversation, ...list]);
       setCurrent(conversation);
       setMessages([]);
+      setRuns([]);
+      setActivities([]);
     });
   }
 
@@ -106,11 +122,14 @@ export function useChat(api: Api) {
       active.current = controller;
       setStreaming(true);
       let assistantId: string | undefined;
+      let runId: string | undefined;
       const receive = (event: StreamEvent) => {
         if (!mounted.current) return;
         switch (event.type) {
           case "start":
             assistantId = event.assistant.id;
+            runId = event.run.id;
+            setRuns((items) => [...items, event.run]);
             setMessages((items) => [...items, event.user, event.assistant]);
             onAccepted();
             break;
@@ -123,7 +142,22 @@ export function useChat(api: Api) {
               ),
             );
             break;
+          case "activity":
+            setActivities((items) =>
+              items.some((item) => item.id === event.activity.id)
+                ? items
+                : [...items, event.activity],
+            );
+            break;
           case "done":
+            setServerBusy(false);
+            setRuns((items) =>
+              items.map((item) =>
+                item.id === event.run.id ? event.run : item,
+              ),
+            );
+            if (event.run.error && event.run.status !== "cancelled")
+              setError(event.run.error);
             setMessages((items) =>
               items.map((item) =>
                 item.id === event.message.id ? event.message : item,
@@ -143,7 +177,19 @@ export function useChat(api: Api) {
           setCurrent(list.find((item) => item.id === current.id) ?? current);
         }
       } catch (cause) {
-        if (mounted.current)
+        if (mounted.current) {
+          setRuns((items) =>
+            items.map((item) =>
+              item.id === runId && item.status === "running"
+                ? {
+                    ...item,
+                    status: "interrupted",
+                    error:
+                      "Connection interrupted. Refresh history to confirm the saved task status.",
+                  }
+                : item,
+            ),
+          );
           setMessages((items) =>
             items.map((item) =>
               item.id === assistantId && item.status === "streaming"
@@ -151,21 +197,50 @@ export function useChat(api: Api) {
                 : item,
             ),
           );
+        }
         throw cause;
       } finally {
         active.current = null;
         if (mounted.current) {
           setStreaming(false);
-          setServerBusy(false);
         }
       }
     });
+  }
+  async function cancel(id: string) {
+    if (cancelLock.current || (lock.current && !active.current)) return;
+    cancelLock.current = true;
+    setCancelling(true);
+    try {
+      const { run: task } = await api.cancel(id);
+      if (!mounted.current) return;
+      if (task.status !== "running") setServerBusy(false);
+      setRuns((items) =>
+        items.map((item) => (item.id === task.id ? task : item)),
+      );
+      if (!active.current && current) {
+        const history = await api.history(current.id);
+        if (!mounted.current) return;
+        setMessages(history.messages);
+        setRuns(history.runs);
+        setActivities(history.activities);
+      }
+    } catch (cause) {
+      if (mounted.current) setError(errorMessage(cause));
+    } finally {
+      cancelLock.current = false;
+      if (mounted.current) setCancelling(false);
+    }
   }
   return {
     conversations,
     current,
     messages,
-    pending,
+    runs,
+    activities,
+    cancelling,
+    cancel,
+    pending: pending || cancelling,
     streaming,
     serverBusy,
     connected,
