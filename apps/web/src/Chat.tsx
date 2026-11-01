@@ -24,6 +24,44 @@ export function Chat({
   const chat = useChat(api);
   const [draft, setDraft] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebar = useRef<HTMLElement>(null);
+  const menu = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const panel = sidebar.current;
+    const trigger = menu.current;
+    const focusable = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ??
+          [],
+      );
+    focusable()[0]?.focus();
+    const closeOnDesktop = () => {
+      if (window.matchMedia("(min-width: 641px)").matches)
+        setSidebarOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+      if (event.key !== "Tab") return;
+      const buttons = focusable();
+      const first = buttons[0];
+      const last = buttons.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", closeOnDesktop);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", closeOnDesktop);
+      if (window.matchMedia("(max-width: 640px)").matches) trigger?.focus();
+    };
+  }, [sidebarOpen]);
   const end = useRef<HTMLDivElement>(null);
   const lastMessage = chat.messages.at(-1);
   const latestRun = chat.runs.at(-1);
@@ -34,11 +72,32 @@ export function Chat({
     chat.pending || chat.serverBusy || !chat.current || !chat.connected;
   return (
     <div className="chat-layout">
+      {sidebarOpen && (
+        <div
+          className="sidebar-backdrop"
+          aria-hidden="true"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <aside
+        ref={sidebar}
+        id="conversation-sidebar"
+        role={sidebarOpen ? "dialog" : undefined}
+        aria-modal={sidebarOpen || undefined}
         className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}
         aria-label="Conversations"
       >
-        <Brand />
+        <div className="sidebar-brand">
+          <Brand />
+          <Button
+            className="mobile-menu"
+            variant="ghost"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close conversations"
+          >
+            Close
+          </Button>
+        </div>
         <Button
           size={48}
           onClick={() => {
@@ -92,10 +151,12 @@ export function Chat({
           </Button>
         </div>
       </aside>
-      <main className="chat-main">
+      <main className="chat-main" inert={sidebarOpen}>
         <header className="chat-header">
           <div className="chat-heading">
             <Button
+              ref={menu}
+              aria-controls="conversation-sidebar"
               className="mobile-menu"
               variant="ghost"
               aria-expanded={sidebarOpen}
@@ -243,7 +304,7 @@ export function Chat({
           >
             <Textarea
               label="Message"
-              rows={3}
+              rows={2}
               maxLength={8000}
               value={draft}
               placeholder={
@@ -263,10 +324,23 @@ export function Chat({
                 event.preventDefault();
                 if (!event.repeat) event.currentTarget.form?.requestSubmit();
               }}
+              aria-describedby="composer-help"
               disabled={chat.pending || !chat.current}
             />
             <div className="composer-bottom">
-              <span>Saved on your backend</span>
+              <span id="composer-help">
+                {!chat.connected
+                  ? "Connection lost. Refresh history to reconnect."
+                  : chat.streaming
+                    ? "Panky is replying. You can use Cancel task to stop."
+                    : chat.serverBusy
+                      ? "Another tab is running a task. Wait for it to finish."
+                      : chat.pending
+                        ? "Updating conversation…"
+                        : !chat.current
+                          ? "Start a conversation to write a message."
+                          : "Enter to send · Shift+Enter for a new line"}
+              </span>
               <Button
                 type="submit"
                 disabled={unavailable || !draft.trim()}

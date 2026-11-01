@@ -96,8 +96,9 @@ export function App() {
               </Stack>
             </form>
             <p className="connect-footnote">
-              This first version uses deterministic mock replies. No AI model is
-              running, and no tools are executed.
+              Replies come from a mock provider. Panky can use a real date and
+              time tool, and saves conversations and task activity on your
+              backend.
             </p>
           </Stack>
         </section>

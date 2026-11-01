@@ -1,5 +1,6 @@
 import { Button, StatusChip } from "@jack.winter/pancake-ui";
 import type { Activity, TaskRun } from "@panky/shared";
+import "./task-activity.css";
 
 const statuses = {
   running: { label: "Running", tone: "info" },
@@ -13,39 +14,52 @@ function ActivityEntry({ activity }: { activity: Activity }) {
   switch (activity.kind) {
     case "run_started":
       return (
-        <span>
-          Context prepared · {activity.historyChars.toLocaleString()} characters
-          {activity.omittedMessages > 0
-            ? ` · ${activity.omittedMessages} older messages omitted`
-            : ""}
-        </span>
+        <>
+          <strong>Conversation prepared</strong>
+          <span className="task-event-note">
+            {activity.historyChars.toLocaleString()} characters of context
+            {activity.omittedMessages > 0
+              ? ` · ${activity.omittedMessages} older messages omitted`
+              : ""}
+          </span>
+        </>
       );
     case "model_step":
-      return <span>Mock provider · step {activity.step}</span>;
+      return <strong>Mock reply · step {activity.step}</strong>;
     case "tool_requested":
       return (
         <>
-          <strong>
-            Tool requested: <code>{activity.name}</code>
-          </strong>
-          <pre aria-label="Tool arguments">
-            {JSON.stringify(activity.arguments, null, 2)}
-          </pre>
+          <strong>Tool requested</strong>
+          <span className="task-event-note">
+            <code>{activity.name}</code>
+          </span>
+          <details className="task-payload">
+            <summary>View tool arguments</summary>
+            <pre aria-label="Tool arguments">
+              {JSON.stringify(activity.arguments, null, 2)}
+            </pre>
+          </details>
         </>
       );
     case "tool_completed":
       return (
         <>
-          <strong>
-            Tool result: <code>{activity.name}</code>
-          </strong>
-          <pre aria-label="Tool result">
-            {JSON.stringify(activity.result, null, 2)}
-          </pre>
+          <strong>Tool result saved</strong>
+          <span className="task-event-note">
+            <code>{activity.name}</code>
+          </span>
+          <details className="task-payload">
+            <summary>View tool result</summary>
+            <pre aria-label="Tool result">
+              {JSON.stringify(activity.result, null, 2)}
+            </pre>
+          </details>
         </>
       );
     case "run_finished":
-      return <span>Task {statuses[activity.status].label.toLowerCase()}</span>;
+      return (
+        <strong>Task {statuses[activity.status].label.toLowerCase()}</strong>
+      );
   }
 }
 
@@ -81,12 +95,12 @@ export function TaskActivity({
             )}
           </div>
         )}
-        <ol className="task-events">
+        <ol className="task-events" aria-label="Task timeline">
           {activities
             .filter((activity) => activity.runId === task.id)
             .sort((a, b) => a.sequence - b.sequence)
             .map((activity) => (
-              <li key={activity.id}>
+              <li key={activity.id} className="task-event">
                 <ActivityEntry activity={activity} />
               </li>
             ))}
@@ -113,7 +127,11 @@ export function TaskActivity({
           <details
             key={`${latest.id}:${latest.status}`}
             className="latest-task"
-            open={latest.status === "running"}
+            open={
+              latest.status === "running" ||
+              latest.status === "failed" ||
+              latest.status === "interrupted"
+            }
           >
             <summary>
               <span>Task activity</span>

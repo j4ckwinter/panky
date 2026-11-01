@@ -195,3 +195,82 @@ test("Enter sends, Shift+Enter inserts a line, and composing Enter does not send
     page.getByRole("button", { name: "Refresh history", exact: true }),
   ).toBeEnabled();
 });
+
+test("mobile conversations close with Escape, backdrop and selection", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Access token", exact: true })
+    .fill(token);
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  const menu = page.getByRole("button", { name: "Conversations", exact: true });
+  await menu.click();
+  const drawer = page.getByRole("dialog", {
+    name: "Conversations",
+    exact: true,
+  });
+  await expect(drawer).toBeVisible();
+  await expect(
+    drawer.getByRole("button", { name: "Close conversations" }),
+  ).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(
+    drawer.getByRole("button", { name: "Disconnect" }),
+  ).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(
+    drawer.getByRole("button", { name: "Close conversations" }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(drawer).toHaveCount(0);
+  await expect(menu).toBeFocused();
+  await menu.click();
+  await page
+    .locator(".sidebar-backdrop")
+    .click({ position: { x: 380, y: 300 } });
+  await expect(menu).toBeFocused();
+  await menu.click();
+  await drawer
+    .getByRole("button", { name: "New conversation", exact: true })
+    .click();
+  await expect(drawer).toHaveCount(0);
+  await expect(page.getByLabel("Message", { exact: true })).toBeEnabled();
+  await expect(page.locator("#composer-help")).toContainText("Shift+Enter");
+  await menu.click();
+  await page.screenshot({
+    path: "test-results/drawer-mobile.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(drawer).toHaveCount(0);
+  await expect(page.getByLabel("Message", { exact: true })).toBeEnabled();
+});
+
+test("disconnected composer explains why sending is unavailable and preserves draft", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Access token", exact: true })
+    .fill(token);
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await page
+    .getByRole("button", { name: "New conversation", exact: true })
+    .click();
+  await page.getByLabel("Message", { exact: true }).fill("Keep this draft");
+  await page.route("http://127.0.0.1:3101/**", (route) =>
+    route.abort("connectionrefused"),
+  );
+  await expect(page.locator("#composer-help")).toContainText(
+    "Connection lost",
+    { timeout: 10000 },
+  );
+  await expect(
+    page.getByRole("button", { name: "Send message", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByLabel("Message", { exact: true })).toHaveValue(
+    "Keep this draft",
+  );
+});

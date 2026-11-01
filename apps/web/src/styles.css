@@ -325,7 +325,14 @@ button:disabled {
   padding-bottom: var(--spacing-pancake-24);
 }
 .message {
-  margin: var(--spacing-pancake-24) 0 var(--spacing-pancake-40);
+  margin: var(--spacing-pancake-16) 0 var(--spacing-pancake-24);
+  padding: var(--spacing-pancake-16);
+  border-radius: var(--radius-pancake-20);
+}
+.message-user {
+  background: var(--color-pancake-canvas);
+  border: 1px solid var(--color-pancake-border);
+  margin-left: var(--spacing-pancake-40);
 }
 .message-meta {
   display: flex;
@@ -388,7 +395,7 @@ button:disabled {
 }
 .composer textarea {
   background: var(--color-pancake-surface);
-  min-height: 88px;
+  min-height: 64px;
   max-height: 200px;
 }
 .composer-bottom {
@@ -397,6 +404,10 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
   margin-top: var(--spacing-pancake-12);
+}
+.composer-bottom > button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .composer-bottom > span,
 .composer-note {
@@ -453,16 +464,18 @@ button:disabled {
   }
   .sidebar-open {
     display: flex;
-    position: absolute;
+    position: fixed;
     z-index: 2;
-    top: 116px;
+    top: 0;
     left: 0;
     bottom: 0;
     width: min(300px, 90vw);
     box-shadow: 8px 0 24px #38454020;
   }
-  .sidebar-open > .brand {
-    display: none;
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   .mobile-menu {
     display: inline-flex;
@@ -502,7 +515,7 @@ button:disabled {
     padding: var(--spacing-pancake-12);
   }
   .composer-bottom > span {
-    max-width: 120px;
+    max-width: 180px;
   }
   .composer-note {
     font-size: 10px;
@@ -523,61 +536,14 @@ button:disabled {
   }
 }
 
-.task-activity {
-  max-width: 760px;
-  margin: var(--spacing-pancake-24) auto 0;
-  padding: var(--spacing-pancake-16);
-  border: 1px solid var(--color-pancake-border);
-  border-radius: 12px;
-  background: var(--color-pancake-canvas);
-  font-size: 13px;
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--color-pancake-ink) 35%, transparent);
 }
-.latest-task > summary {
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-}
-.latest-task > summary > span {
-  margin-right: var(--spacing-pancake-12);
-}
-.task-controls {
-  margin-top: var(--spacing-pancake-12);
-}
-.task-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-pancake-12);
-}
-.task-events {
-  padding-left: var(--spacing-pancake-16);
-  margin: var(--spacing-pancake-12) 0 0;
-}
-.task-events li {
-  padding: var(--spacing-pancake-4) 0;
-  overflow-wrap: anywhere;
-}
-.task-events pre {
-  margin: var(--spacing-pancake-8) 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-}
-.task-note,
-.task-error {
-  margin-bottom: 0;
-}
-.previous-tasks {
-  border-top: 1px solid var(--color-pancake-border);
-  padding-top: var(--spacing-pancake-12);
-  margin-top: var(--spacing-pancake-16);
-}
-.previous-tasks summary {
-  cursor: pointer;
-  padding: var(--spacing-pancake-8) 0;
-}
-.previous-tasks .task-record {
-  padding: var(--spacing-pancake-8);
+.composer:focus-within {
+  border-color: var(--color-pancake-control-focus);
 }
 .welcome .demo-prompt {
   font-size: 13px;

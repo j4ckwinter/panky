@@ -64,9 +64,19 @@ test("real clock tool result appears in the mock reply and survives refresh with
     page.getByRole("article", { name: "Panky response", exact: true }),
   ).toContainText(iso);
   await activity.locator("summary").first().click();
-  await expect(activity.getByLabel("Tool result")).toBeVisible();
+  await expect(
+    activity.getByLabel("Tool result", { exact: true }),
+  ).toBeHidden();
+  await activity.getByText("View tool result", { exact: true }).click();
+  await expect(
+    activity.getByLabel("Tool result", { exact: true }),
+  ).toBeVisible();
   await expect(activity).toContainText("get_current_datetime");
   await expect(activity).toContainText(iso);
+  await page.screenshot({
+    path: "test-results/task-expanded.png",
+    fullPage: true,
+  });
   await activity.locator("summary").first().click();
   await page.screenshot({
     path: "test-results/task-desktop.png",
