@@ -1,4 +1,4 @@
-import { Button, StatusChip } from "@jack.winter/pancake-ui";
+import { Button } from "@jack.winter/pancake-ui";
 import type { Activity, TaskRun } from "@panky/shared";
 import "./task-activity.css";
 
@@ -77,18 +77,12 @@ export function TaskActivity({
   const status = statuses[task.status];
   return (
     <section className="task-activity" aria-label="Task activity">
-      <details
-        key={`${task.id}:${task.status}`}
-        className="task-details"
-        open={
-          task.status === "running" ||
-          task.status === "failed" ||
-          task.status === "interrupted"
-        }
-      >
+      <details key={`${task.id}:${task.status}`} className="task-details">
         <summary>
-          <span>Task activity</span>
-          <StatusChip tone={status.tone}>{status.label}</StatusChip>
+          <span>Activity</span>
+          <span className={`task-status task-status-${task.status}`}>
+            {status.label}
+          </span>
         </summary>
         <ol className="task-events" aria-label="Task timeline">
           {activities
@@ -100,7 +94,6 @@ export function TaskActivity({
               </li>
             ))}
         </ol>
-        {task.error && <p className="task-error">{task.error}</p>}
         {task.status === "cancelled" && (
           <p className="task-note">
             Stopped at your request. Any completed tool results are saved.
@@ -113,6 +106,11 @@ export function TaskActivity({
           </p>
         )}
       </details>
+      {task.error && task.status !== "cancelled" && (
+        <p className="task-error" role="alert">
+          {task.error}
+        </p>
+      )}
       {task.status === "running" && (
         <div className="task-controls">
           <Button

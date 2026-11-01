@@ -1,11 +1,8 @@
 .task-activity {
   max-width: 760px;
   margin: var(--spacing-pancake-16) 0 0;
-  padding: var(--spacing-pancake-16);
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
-  background: var(--color-pancake-canvas);
-  font-size: var(--text-pancake-body);
+  padding: 0;
+  font-size: 12px;
 }
 .task-activity summary {
   cursor: pointer;
@@ -91,4 +88,20 @@
   .task-activity {
     margin-left: 0;
   }
+}
+
+.task-details > summary {
+  width: fit-content;
+  padding: var(--spacing-pancake-4) 0;
+  color: var(--color-pancake-olive);
+}
+.task-status {
+  font-weight: 400;
+}
+.task-status-failed,
+.task-status-interrupted {
+  color: var(--color-pancake-error-strong);
+}
+.task-details[open] {
+  padding-bottom: var(--spacing-pancake-8);
 }

@@ -14,9 +14,10 @@ type GoogleIdentity = {
     element: HTMLElement,
     options: {
       type: "standard";
-      theme: "outline";
+      theme: "filled_black";
       size: "large";
       text: "signin_with";
+      shape: "pill";
       width: number;
     },
   ): void;
@@ -71,6 +72,7 @@ export function GoogleSignIn({
   useEffect(() => {
     let alive = true;
     let submitted = false;
+    let resizeObserver: ResizeObserver | undefined;
     const element = container.current;
     setLoading(true);
     setVerifying(false);
@@ -109,13 +111,25 @@ export function GoogleSignIn({
             })();
           },
         });
-        identity.renderButton(element, {
-          type: "standard",
-          theme: "outline",
-          size: "large",
-          text: "signin_with",
-          width: Math.min(400, Math.floor(element.clientWidth || 280)),
-        });
+        let renderedWidth = 0;
+        const render = () => {
+          if (!alive || submitted) return;
+          const width = Math.min(400, Math.floor(element.clientWidth));
+          if (width < 1 || width === renderedWidth) return;
+          renderedWidth = width;
+          element.replaceChildren();
+          identity.renderButton(element, {
+            type: "standard",
+            theme: "filled_black",
+            size: "large",
+            text: "signin_with",
+            shape: "pill",
+            width,
+          });
+        };
+        render();
+        resizeObserver = new ResizeObserver(render);
+        resizeObserver.observe(element);
       } catch (cause) {
         if (alive) setError(signInError(cause));
       } finally {
@@ -124,6 +138,7 @@ export function GoogleSignIn({
     })();
     return () => {
       alive = false;
+      resizeObserver?.disconnect();
       element?.replaceChildren();
     };
   }, [attempt, onSignedIn]);

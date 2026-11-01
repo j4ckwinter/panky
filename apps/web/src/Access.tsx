@@ -196,7 +196,11 @@ export function Access({
             Try again
           </Button>
         )}
-        <Button variant="secondary" onClick={onClose}>
+        <Button
+          className="visible-action"
+          variant="secondary"
+          onClick={onClose}
+        >
           Close
         </Button>
       </Stack>

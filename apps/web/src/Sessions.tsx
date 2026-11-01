@@ -97,6 +97,7 @@ export function Sessions({
               </div>
               <Button
                 variant="secondary"
+                className="visible-action"
                 disabled={loading}
                 aria-label={
                   item.current
@@ -124,7 +125,11 @@ export function Sessions({
             Try again
           </Button>
         )}
-        <Button variant="secondary" onClick={onClose}>
+        <Button
+          className="visible-action"
+          variant="secondary"
+          onClick={onClose}
+        >
           Close
         </Button>
       </Stack>

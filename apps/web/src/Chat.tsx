@@ -11,6 +11,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Api } from "./api";
 import { Brand } from "./Brand";
 import { PankyMark } from "./PankyMark";
+import { Markdown } from "./Markdown";
 import { TaskActivity } from "./TaskActivity";
 import { useChat } from "./useChat";
 
@@ -176,8 +177,8 @@ export function Chat({
             </svg>
           </Button>
           <Button
-            className="mobile-menu"
-            variant="ghost"
+            className="mobile-menu visible-action"
+            variant="secondary"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close conversations"
           >
@@ -258,7 +259,7 @@ export function Chat({
           </Button>
           <Button
             variant="secondary"
-            className="disconnect-button"
+            className="disconnect-button visible-action"
             onClick={onDisconnect}
             disabled={chat.pending}
           >
@@ -383,7 +384,11 @@ export function Chat({
                           </div>
                         )}
                         <div className="message-content">
-                          {message.content ||
+                          {(message.role === "assistant" && message.content ? (
+                            <Markdown>{message.content}</Markdown>
+                          ) : (
+                            message.content
+                          )) ||
                             (message.status === "streaming"
                               ? "Preparing reply…"
                               : "No reply text was saved.")}
