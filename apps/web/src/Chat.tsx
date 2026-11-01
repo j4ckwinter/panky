@@ -47,6 +47,7 @@ export function Chat({
       ? "Another tab is running a task. Wait for it to finish."
       : "";
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const sidebar = useRef<HTMLElement>(null);
   const menu = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -57,7 +58,7 @@ export function Chat({
       Array.from(
         panel?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ??
           [],
-      );
+      ).filter((button) => button.getClientRects().length > 0);
     focusable()[0]?.focus();
     const closeOnDesktop = () => {
       if (window.matchMedia("(min-width: 641px)").matches)
@@ -123,7 +124,9 @@ export function Chat({
   }
   const unavailable = chat.pending || chat.serverBusy || !chat.connected;
   return (
-    <div className="chat-layout">
+    <div
+      className={`chat-layout${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
+    >
       {sidebarOpen && (
         <div
           className="sidebar-backdrop"
@@ -141,6 +144,31 @@ export function Chat({
       >
         <div className="sidebar-brand">
           <Brand />
+          <Button
+            className="desktop-sidebar-toggle"
+            variant="ghost"
+            size={40}
+            aria-label={
+              sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+            }
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!sidebarCollapsed}
+            aria-controls="conversation-history"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="16" rx="3" />
+              <path d="M9 4v16" />
+            </svg>
+          </Button>
           <Button
             className="mobile-menu"
             variant="ghost"
@@ -161,10 +189,27 @@ export function Chat({
           disabled={chat.pending}
           aria-label="New conversation"
         >
-          <span aria-hidden="true">＋</span> New chat
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6M16 3l5 5-10 10-5 1 1-5Z" />
+          </svg>
+          <span className="new-chat-label">New chat</span>
         </Button>
         <div className="sidebar-heading">Chats</div>
-        <nav className="conversation-list" aria-label="Conversation history">
+        <nav
+          id="conversation-history"
+          className="conversation-list"
+          aria-label="Conversation history"
+        >
           {chat.conversations.length === 0 && (
             <p className="muted sidebar-empty">No conversations yet.</p>
           )}
@@ -265,7 +310,7 @@ export function Chat({
                 strokeLinejoin="round"
                 aria-hidden="true"
               >
-                <path d="M20 7v5h-5M20 12a8 8 0 1 0-2 6M20 7l-3-3" />
+                <path d="M3 11a9 9 0 0 1 15.36-6.36L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.36 6.36L3 17M7 17H3v4" />
               </svg>
             </Button>
           </Inline>
@@ -292,9 +337,6 @@ export function Chat({
             <div ref={scrollContent}>
               {chat.messages.length === 0 ? (
                 <section className="welcome">
-                  <span className="welcome-mark" aria-hidden="true">
-                    p<span>✳</span>
-                  </span>
                   <h2>Start a chat</h2>
                 </section>
               ) : (
@@ -404,7 +446,7 @@ export function Chat({
               />
               <Button
                 className="send-button"
-                size={48}
+                size={40}
                 type="submit"
                 disabled={unavailable || !draft.trim()}
                 aria-label="Send message"

@@ -370,7 +370,7 @@ test("composer aligns send with input and grows for multiline drafts on desktop 
     await input.fill("");
     await expect
       .poll(() => input.evaluate((element) => element.clientHeight))
-      .toBe(48);
+      .toBe(40);
   }
 });
 
@@ -424,4 +424,31 @@ test("empty chat and composer stay reachable in a short mobile window", async ({
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+
+test("desktop sidebar collapses, expands and preserves the current draft", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await connect(page);
+  const input = page.getByLabel("Message", { exact: true });
+  await input.fill("Keep this while collapsing");
+  await page
+    .getByRole("button", { name: "Collapse sidebar", exact: true })
+    .click();
+  await expect(
+    page.getByRole("navigation", { name: "Conversation history" }),
+  ).toBeHidden();
+  await expect(input).toHaveValue("Keep this while collapsing");
+  await page.screenshot({ path: "test-results/chat-sidebar-collapsed.png" });
+  await page
+    .getByRole("button", { name: "Expand sidebar", exact: true })
+    .click();
+  await expect(
+    page.getByRole("navigation", { name: "Conversation history" }),
+  ).toBeVisible();
+  await expect(input).toHaveValue("Keep this while collapsing");
+  await page
+    .getByRole("button", { name: "Refresh history", exact: true })
+    .screenshot({ path: "test-results/refresh-icon.png" });
 });

@@ -325,33 +325,11 @@ button:disabled {
   text-align: center;
   padding: var(--spacing-pancake-16) 0;
 }
-.welcome-mark {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: var(--spacing-pancake-76);
-  height: var(--spacing-pancake-76);
-  border-radius: var(--radius-pancake-28);
-  background: var(--color-pancake-surface-accent);
-  color: var(--color-pancake-deep);
-  font-size: 60px;
-  font-weight: 700;
-  line-height: 1;
-  padding-bottom: 10px;
-  margin-bottom: var(--spacing-pancake-12);
-  transform: rotate(-8deg);
-}
-.welcome-mark > span {
-  position: absolute;
-  top: -14px;
-  right: -15px;
-  font-size: 32px;
-  color: var(--color-pancake-control-focus);
-}
 .welcome h2 {
-  font-size: clamp(28px, 3vw, 36px);
-  letter-spacing: -1px;
-  margin: var(--spacing-pancake-16) 0 0;
+  font-size: clamp(24px, 3vw, 28px);
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  margin: 0;
 }
 .message-list {
   width: 100%;
@@ -402,13 +380,13 @@ button:disabled {
 }
 .composer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px;
+  grid-template-columns: minmax(0, 1fr) 40px;
   align-items: end;
   gap: var(--spacing-pancake-8);
   border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-20);
-  background: var(--color-pancake-surface);
-  padding: var(--spacing-pancake-8);
+  border-radius: var(--radius-pancake-28);
+  background: var(--color-pancake-canvas);
+  padding: 6px;
   margin-top: var(--spacing-pancake-8);
 }
 .composer > div {
@@ -429,9 +407,9 @@ button:disabled {
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  min-height: 48px;
+  min-height: 40px;
   max-height: 160px;
-  padding: var(--spacing-pancake-12);
+  padding: var(--spacing-pancake-8) var(--spacing-pancake-12);
   line-height: 24px;
   resize: none;
 }
@@ -440,8 +418,8 @@ button:disabled {
   box-shadow: none;
 }
 .composer .send-button {
-  width: 48px;
-  min-width: 48px;
+  width: 40px;
+  min-width: 40px;
   padding: 0;
   border-radius: 50%;
 }
@@ -559,12 +537,6 @@ button:disabled {
   .welcome {
     padding: var(--spacing-pancake-24) 0;
   }
-  .welcome-mark {
-    width: 56px;
-    height: 56px;
-    font-size: 44px;
-    margin-bottom: var(--spacing-pancake-24);
-  }
   .composer-area {
     padding: var(--spacing-pancake-8) var(--spacing-pancake-12)
       var(--spacing-pancake-12);
@@ -661,4 +633,64 @@ button:disabled {
 }
 .chat-body-empty .composer-area {
   flex-shrink: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-pancake-8);
+}
+.sidebar-brand .brand {
+  font-size: 20px;
+}
+.sidebar-brand .panky-mark {
+  --mark-size: 32px;
+}
+.sidebar-brand .desktop-sidebar-toggle {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.chat-body-empty .chat-scroll {
+  padding-bottom: var(--spacing-pancake-16);
+}
+.chat-body-empty .welcome {
+  padding: 0;
+}
+.chat-body-empty .composer {
+  margin-top: 0;
+}
+.new-chat-button {
+  gap: var(--spacing-pancake-12);
+}
+@media (min-width: 641px) {
+  .sidebar-collapsed {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .sidebar-collapsed .sidebar {
+    padding: var(--spacing-pancake-16) var(--spacing-pancake-8);
+  }
+  .sidebar-collapsed .sidebar-brand {
+    justify-content: center;
+  }
+  .sidebar-collapsed .brand,
+  .sidebar-collapsed .sidebar-heading,
+  .sidebar-collapsed .conversation-list,
+  .sidebar-collapsed .sidebar-bottom,
+  .sidebar-collapsed .new-chat-label {
+    display: none;
+  }
+  .sidebar-collapsed .new-chat-button {
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    justify-content: center;
+  }
+}
+@media (max-width: 640px) {
+  .desktop-sidebar-toggle {
+    display: none;
+  }
 }
