@@ -9,6 +9,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Api } from "./api";
 import { errorMessage } from "./api";
 
+function rememberConversation(id: string | null) {
+  window.history.replaceState(
+    { ...window.history.state, pankyConversationId: id },
+    "",
+  );
+}
+
 export function useChat(api: Api) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
@@ -48,9 +55,10 @@ export function useChat(api: Api) {
           api.conversations(),
           api.health(),
         ]);
-        const selected = id ?? list[0]?.id;
+        const selected = list.find((item) => item.id === id)?.id;
         const history = selected ? await api.history(selected) : null;
         if (!mounted.current) return;
+        rememberConversation(selected ?? null);
         setConversations(list);
         setCurrent(history?.conversation ?? null);
         setMessages(history?.messages ?? []);
@@ -64,7 +72,8 @@ export function useChat(api: Api) {
 
   useEffect(() => {
     mounted.current = true;
-    void refresh();
+    const saved = window.history.state?.pankyConversationId;
+    void refresh(typeof saved === "string" ? saved : undefined);
     return () => {
       mounted.current = false;
       active.current?.abort();
@@ -96,6 +105,7 @@ export function useChat(api: Api) {
     return run(async () => {
       const history = await api.history(id);
       if (!mounted.current) return;
+      rememberConversation(history.conversation.id);
       setCurrent(history.conversation);
       setMessages(history.messages);
       setRuns(history.runs);
@@ -104,20 +114,24 @@ export function useChat(api: Api) {
   }
 
   function create() {
-    return run(async () => {
-      const conversation = await api.create();
-      if (!mounted.current) return;
-      setConversations((list) => [conversation, ...list]);
-      setCurrent(conversation);
-      setMessages([]);
-      setRuns([]);
-      setActivities([]);
-    });
+    if (lock.current || cancelLock.current) return;
+    rememberConversation(null);
+    setCurrent(null);
+    setMessages([]);
+    setRuns([]);
+    setActivities([]);
+    setError("");
   }
 
   function send(content: string, onAccepted: () => void) {
     return run(async () => {
-      if (!current) return;
+      const conversation = current ?? (await api.create());
+      if (!mounted.current) return;
+      if (!current) {
+        rememberConversation(conversation.id);
+        setCurrent(conversation);
+        setConversations((list) => [conversation, ...list]);
+      }
       const controller = new AbortController();
       active.current = controller;
       setStreaming(true);
@@ -170,11 +184,13 @@ export function useChat(api: Api) {
         }
       };
       try {
-        await api.send(current.id, content, controller.signal, receive);
+        await api.send(conversation.id, content, controller.signal, receive);
         const list = await api.conversations();
         if (mounted.current) {
           setConversations(list);
-          setCurrent(list.find((item) => item.id === current.id) ?? current);
+          setCurrent(
+            list.find((item) => item.id === conversation.id) ?? conversation,
+          );
         }
       } catch (cause) {
         if (mounted.current) {

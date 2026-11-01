@@ -68,8 +68,7 @@ export function Chat({
   useEffect(() => {
     if (lastMessage) end.current?.scrollIntoView({ block: "end" });
   }, [lastMessage]);
-  const unavailable =
-    chat.pending || chat.serverBusy || !chat.current || !chat.connected;
+  const unavailable = chat.pending || chat.serverBusy || !chat.connected;
   return (
     <div className="chat-layout">
       {sidebarOpen && (
@@ -208,14 +207,6 @@ export function Chat({
                 <br />
                 There’s room for it here.
               </p>
-              {!chat.current && (
-                <Button
-                  onClick={() => void chat.create()}
-                  disabled={chat.pending}
-                >
-                  Start a conversation
-                </Button>
-              )}
               <p className="demo-prompt">
                 Try: “What is the current date and time?”
                 <br />
@@ -307,11 +298,7 @@ export function Chat({
               rows={2}
               maxLength={8000}
               value={draft}
-              placeholder={
-                chat.current
-                  ? "Put a thought into words…"
-                  : "Start a conversation to say hello…"
-              }
+              placeholder="Put a thought into words…"
               onChange={(event) => setDraft(event.currentTarget.value)}
               onKeyDown={(event) => {
                 if (
@@ -325,7 +312,7 @@ export function Chat({
                 if (!event.repeat) event.currentTarget.form?.requestSubmit();
               }}
               aria-describedby="composer-help"
-              disabled={chat.pending || !chat.current}
+              disabled={chat.pending}
             />
             <div className="composer-bottom">
               <span id="composer-help">
@@ -337,9 +324,7 @@ export function Chat({
                       ? "Another tab is running a task. Wait for it to finish."
                       : chat.pending
                         ? "Updating conversation…"
-                        : !chat.current
-                          ? "Start a conversation to write a message."
-                          : "Enter to send · Shift+Enter for a new line"}
+                        : "Enter to send · Shift+Enter for a new line"}
               </span>
               <Button
                 type="submit"
