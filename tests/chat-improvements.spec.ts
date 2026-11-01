@@ -110,3 +110,65 @@ test("failed first submission preserves draft and does not create another conver
   expect(creates).toBe(1);
   expect(sends).toBe(2);
 });
+
+test("streaming respects reading position and Jump to latest resumes following", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 900, height: 650 });
+  await connect(page);
+  await page
+    .getByLabel("Message", { exact: true })
+    .fill(
+      "Reading position\n" +
+        "A line to read while the reply streams.\n".repeat(150),
+    );
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  const reply = page.getByRole("article", {
+    name: "Panky response",
+    exact: true,
+  });
+  await expect(reply).toContainText("This is a mock response");
+  const area = page.locator(".chat-scroll");
+  await area.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  const jump = page.getByRole("button", {
+    name: "Jump to latest ↓",
+    exact: true,
+  });
+  await expect(jump).toBeVisible();
+  const initialLength = (await reply.textContent())?.length ?? 0;
+  await expect
+    .poll(async () => (await reply.textContent())?.length ?? 0)
+    .toBeGreaterThan(initialLength + 300);
+  expect(await area.evaluate((element) => element.scrollTop)).toBeLessThan(5);
+  await page.screenshot({ path: "test-results/reading-position.png" });
+  await jump.click();
+  await expect(jump).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Refresh history", exact: true }),
+  ).toBeEnabled({ timeout: 20000 });
+  await expect
+    .poll(() =>
+      area.evaluate(
+        (element) =>
+          element.scrollHeight - element.scrollTop - element.clientHeight,
+      ),
+    )
+    .toBeLessThan(5);
+  await area.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await expect(jump).toBeVisible();
+  await page
+    .getByRole("button", { name: "New conversation", exact: true })
+    .click();
+  await expect(jump).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "What’s on your mind?" }),
+  ).toBeVisible();
+  await expect
+    .poll(() => area.evaluate((element) => element.scrollTop))
+    .toBe(0);
+  await page.screenshot({ path: "test-results/fresh-chat.png" });
+});

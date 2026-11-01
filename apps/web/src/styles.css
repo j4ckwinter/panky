@@ -272,6 +272,14 @@ button:disabled {
   min-height: 0;
   padding: var(--spacing-pancake-24) var(--spacing-pancake-32);
 }
+.chat-scroll > div {
+  min-height: 100%;
+}
+.jump-to-latest {
+  display: flex;
+  justify-content: center;
+  padding-bottom: var(--spacing-pancake-8);
+}
 .welcome {
   max-width: 640px;
   min-height: 100%;

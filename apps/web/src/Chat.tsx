@@ -7,7 +7,7 @@ import {
   Text,
   Textarea,
 } from "@jack.winter/pancake-ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Api } from "./api";
 import { Brand } from "./Brand";
 import { PankyMark } from "./PankyMark";
@@ -62,12 +62,38 @@ export function Chat({
       if (window.matchMedia("(max-width: 640px)").matches) trigger?.focus();
     };
   }, [sidebarOpen]);
-  const end = useRef<HTMLDivElement>(null);
+  const scrollArea = useRef<HTMLDivElement>(null);
+  const scrollContent = useRef<HTMLDivElement>(null);
+  const following = useRef(true);
+  const [showJump, setShowJump] = useState(false);
   const lastMessage = chat.messages.at(-1);
   const latestRun = chat.runs.at(-1);
-  useEffect(() => {
-    if (lastMessage) end.current?.scrollIntoView({ block: "end" });
-  }, [lastMessage]);
+  const conversationId = chat.current?.id;
+  const hasMessages = chat.messages.length > 0;
+  useLayoutEffect(() => {
+    following.current = true;
+    setShowJump(false);
+    const area = scrollArea.current;
+    if (area) area.scrollTop = hasMessages ? area.scrollHeight : 0;
+  }, [conversationId, hasMessages]);
+  useLayoutEffect(() => {
+    const area = scrollArea.current;
+    const content = scrollContent.current;
+    if (!area || !content) return;
+    const observer = new ResizeObserver(() => {
+      if (following.current)
+        area.scrollTop = hasMessages ? area.scrollHeight : 0;
+    });
+    observer.observe(content);
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, [hasMessages]);
+  function jumpToLatest() {
+    following.current = true;
+    setShowJump(false);
+    const area = scrollArea.current;
+    if (area) area.scrollTop = area.scrollHeight;
+  }
   const unavailable = chat.pending || chat.serverBusy || !chat.connected;
   return (
     <div className="chat-layout">
@@ -194,90 +220,116 @@ export function Chat({
             </BannerToast>
           </div>
         )}
-        <div className="chat-scroll">
-          {chat.messages.length === 0 ? (
-            <section className="welcome">
-              <span className="welcome-mark" aria-hidden="true">
-                p<span>✳</span>
-              </span>
-              <span className="eyebrow">HERE FOR YOUR NEXT THOUGHT</span>
-              <h2>What’s on your mind?</h2>
-              <p>
-                A question, a half-formed idea, a place to start.
-                <br />
-                There’s room for it here.
-              </p>
-              <p className="demo-prompt">
-                Try: “What is the current date and time?”
-                <br />
-                The mock provider can call a real date and time tool.
-              </p>
-              <StatusChip tone="warning" className="welcome-provider">
-                Mock provider
-              </StatusChip>
-            </section>
-          ) : (
-            <div className="message-list" aria-label="Messages">
-              {chat.messages.map((message) => (
-                <article
-                  key={message.id}
-                  className={`message message-${message.role}`}
-                  aria-label={
-                    message.role === "user" ? "Your message" : "Panky response"
-                  }
-                >
-                  <div className="message-meta">
-                    {message.role === "assistant" ? (
-                      <PankyMark small />
-                    ) : (
-                      <span className="message-avatar user" aria-hidden="true">
-                        Y
-                      </span>
+        <div
+          className="chat-scroll"
+          ref={scrollArea}
+          onScroll={(event) => {
+            const area = event.currentTarget;
+            const nearBottom =
+              area.scrollHeight - area.scrollTop - area.clientHeight < 48;
+            following.current = nearBottom;
+            setShowJump(!nearBottom);
+          }}
+        >
+          <div ref={scrollContent}>
+            {chat.messages.length === 0 ? (
+              <section className="welcome">
+                <span className="welcome-mark" aria-hidden="true">
+                  p<span>✳</span>
+                </span>
+                <span className="eyebrow">HERE FOR YOUR NEXT THOUGHT</span>
+                <h2>What’s on your mind?</h2>
+                <p>
+                  A question, a half-formed idea, a place to start.
+                  <br />
+                  There’s room for it here.
+                </p>
+                <p className="demo-prompt">
+                  Try: “What is the current date and time?”
+                  <br />
+                  The mock provider can call a real date and time tool.
+                </p>
+                <StatusChip tone="warning" className="welcome-provider">
+                  Mock provider
+                </StatusChip>
+              </section>
+            ) : (
+              <div className="message-list" aria-label="Messages">
+                {chat.messages.map((message) => (
+                  <article
+                    key={message.id}
+                    className={`message message-${message.role}`}
+                    aria-label={
+                      message.role === "user"
+                        ? "Your message"
+                        : "Panky response"
+                    }
+                  >
+                    <div className="message-meta">
+                      {message.role === "assistant" ? (
+                        <PankyMark small />
+                      ) : (
+                        <span
+                          className="message-avatar user"
+                          aria-hidden="true"
+                        >
+                          Y
+                        </span>
+                      )}
+                      <strong>
+                        {message.role === "user" ? "You" : "Panky"}
+                      </strong>
+                      {message.role === "assistant" && (
+                        <span className="mock-label">MOCK</span>
+                      )}
+                    </div>
+                    <div className="message-content">
+                      {message.content ||
+                        (message.status === "streaming"
+                          ? "Getting a thought together…"
+                          : "No reply text was saved.")}
+                    </div>
+                    {message.status === "interrupted" && (
+                      <p className="interrupted">
+                        {chat.runs.find(
+                          (task) => task.assistantMessageId === message.id,
+                        )?.status === "cancelled"
+                          ? "Task cancelled. Any partial reply was saved."
+                          : chat.runs.find(
+                                (task) =>
+                                  task.assistantMessageId === message.id,
+                              )?.status === "failed"
+                            ? "Task failed. See task activity for details."
+                            : "Reply interrupted. This partial reply was saved; nothing was retried."}
+                      </p>
                     )}
-                    <strong>{message.role === "user" ? "You" : "Panky"}</strong>
-                    {message.role === "assistant" && (
-                      <span className="mock-label">MOCK</span>
+                    {message.status === "streaming" && (
+                      <p className="streaming-label">
+                        {chat.streaming
+                          ? "Writing a mock reply…"
+                          : "Reply in progress. Refresh history to check for updates."}
+                      </p>
                     )}
-                  </div>
-                  <div className="message-content">
-                    {message.content ||
-                      (message.status === "streaming"
-                        ? "Getting a thought together…"
-                        : "No reply text was saved.")}
-                  </div>
-                  {message.status === "interrupted" && (
-                    <p className="interrupted">
-                      {chat.runs.find(
-                        (task) => task.assistantMessageId === message.id,
-                      )?.status === "cancelled"
-                        ? "Task cancelled. Any partial reply was saved."
-                        : chat.runs.find(
-                              (task) => task.assistantMessageId === message.id,
-                            )?.status === "failed"
-                          ? "Task failed. See task activity for details."
-                          : "Reply interrupted. This partial reply was saved; nothing was retried."}
-                    </p>
-                  )}
-                  {message.status === "streaming" && (
-                    <p className="streaming-label">
-                      {chat.streaming
-                        ? "Writing a mock reply…"
-                        : "Reply in progress. Refresh history to check for updates."}
-                    </p>
-                  )}
-                </article>
-              ))}
-            </div>
-          )}
-          <TaskActivity
-            runs={chat.runs}
-            activities={chat.activities}
-            cancelling={chat.cancelling}
-            onCancel={(id) => void chat.cancel(id)}
-          />
-          <div ref={end} />
+                  </article>
+                ))}
+              </div>
+            )}
+            <TaskActivity
+              runs={chat.runs}
+              activities={chat.activities}
+              cancelling={chat.cancelling}
+              onCancel={(id) => void chat.cancel(id)}
+            />
+          </div>
         </div>
         <div className="composer-area">
+          {showJump && (
+            <div className="jump-to-latest">
+              <Button variant="secondary" onClick={jumpToLatest}>
+                Jump to latest ↓
+              </Button>
+            </div>
+          )}
           {chat.pending && (
             <LoadingIndicator
               label={
