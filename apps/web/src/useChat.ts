@@ -10,6 +10,7 @@ import type { Api } from "./api";
 import { errorMessage } from "./api";
 
 export function useChat(api: Api) {
+  const [providerLabel, setProviderLabel] = useState("Connecting");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -63,6 +64,11 @@ export function useChat(api: Api) {
         setRuns(history?.runs ?? []);
         setActivities(history?.activities ?? []);
         setServerBusy(health.busy);
+        setProviderLabel(
+          health.provider === "mock"
+            ? "Demo mode"
+            : `Local AI · ${health.model}`,
+        );
         setConnected(true);
       }),
     [api, run],
@@ -85,6 +91,11 @@ export function useChat(api: Api) {
         .then((health) => {
           if (alive) {
             setServerBusy(health.busy);
+            setProviderLabel(
+              health.provider === "mock"
+                ? "Demo mode"
+                : `Local AI · ${health.model}`,
+            );
             setConnected(true);
           }
         })
@@ -252,6 +263,7 @@ export function useChat(api: Api) {
     }
   }
   return {
+    providerLabel,
     draft,
     setDraft,
     conversations,

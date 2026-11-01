@@ -10,6 +10,7 @@ import { z } from "zod";
 import { Chat, HttpError } from "./chat.js";
 import type { Config } from "./config.js";
 import { MockProvider, type ModelProvider } from "./provider.js";
+import { OllamaProvider } from "./ollama.js";
 import { Store } from "./store.js";
 import type { Tool } from "./tools.js";
 
@@ -51,7 +52,13 @@ async function readSubmission(request: IncomingMessage) {
 
 export function createApp(
   config: Config,
-  provider: ModelProvider = new MockProvider(),
+  provider: ModelProvider = config.MODEL_PROVIDER === "ollama"
+    ? new OllamaProvider({
+        endpoint: config.MODEL_ENDPOINT,
+        model: config.MODEL_NAME,
+        contextLength: config.MODEL_CONTEXT_LENGTH,
+      })
+    : new MockProvider(),
   tools?: readonly Tool[],
 ) {
   const store = new Store(config.DATABASE_PATH);
@@ -113,7 +120,7 @@ export function createApp(
       throw new HttpError(400, "Query parameters are not supported.");
     if (url.pathname === "/api/health" && request.method === "GET") {
       json(response, 200, {
-        provider: "mock",
+        provider: config.MODEL_PROVIDER,
         model: config.MODEL_NAME,
         busy: chat.busy,
       });

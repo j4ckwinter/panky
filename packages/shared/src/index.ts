@@ -100,7 +100,7 @@ export const streamEventSchema = z.discriminatedUnion("type", [
 ]);
 export const errorSchema = z.object({ error: z.string() });
 export const healthSchema = z.object({
-  provider: z.literal("mock"),
+  provider: z.enum(["mock", "ollama"]),
   model: z.string(),
   busy: z.boolean(),
 });

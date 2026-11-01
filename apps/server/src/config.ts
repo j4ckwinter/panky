@@ -4,6 +4,7 @@ const originSchema = z
   .string()
   .url()
   .refine((value) => {
+    if (!URL.canParse(value)) return false;
     const url = new URL(value);
     return ["http:", "https:"].includes(url.protocol) && url.origin === value;
   }, "Origins must be exact HTTP(S) origins without paths or credentials.");
@@ -21,7 +22,7 @@ const configSchema = z.object({
     .default("http://localhost:5173,http://127.0.0.1:5173")
     .transform((value) => value.split(",").map((origin) => origin.trim()))
     .pipe(z.array(originSchema).min(1)),
-  MODEL_PROVIDER: z.literal("mock").default("mock"),
+  MODEL_PROVIDER: z.enum(["mock", "ollama"]).default("mock"),
   MODEL_NAME: z.string().trim().min(1).max(100).default("panky-mock"),
   MAX_TASK_STEPS: z.coerce.number().int().min(1).max(32).default(8),
   HISTORY_MAX_CHARS: z.coerce
@@ -36,7 +37,28 @@ const configSchema = z.object({
     .min(100)
     .max(300000)
     .default(30000),
-  MODEL_ENDPOINT: z.url().optional(),
+  MODEL_CONTEXT_LENGTH: z.coerce
+    .number()
+    .int()
+    .min(2048)
+    .max(8192)
+    .default(4096),
+  MODEL_ENDPOINT: z
+    .url()
+    .default("http://127.0.0.1:11434")
+    .refine((value) => {
+      if (!URL.canParse(value)) return false;
+      const url = new URL(value);
+      return (
+        url.protocol === "http:" &&
+        ["127.0.0.1", "[::1]"].includes(url.hostname) &&
+        !url.username &&
+        !url.password &&
+        url.pathname === "/" &&
+        !url.search &&
+        !url.hash
+      );
+    }, "Ollama must use a private loopback HTTP origin."),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -49,6 +71,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ];
     throw new Error(
       `Invalid server configuration: ${fields.join(", ")}. See .env.example.`,
+    );
+  }
+  if (
+    result.data.MODEL_PROVIDER === "ollama" &&
+    (!env.MODEL_NAME || /(?:^|[:-])cloud$/i.test(result.data.MODEL_NAME))
+  ) {
+    throw new Error(
+      "Invalid server configuration: MODEL_NAME must name an explicitly selected local Ollama model. See .env.example.",
     );
   }
   return result.data;

@@ -7,7 +7,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "build": "pnpm -r build",
     "lint": "biome lint .",
     "format": "biome format --write .",
@@ -15,6 +15,7 @@
     "typecheck": "pnpm -r typecheck && tsc --noEmit",
     "test": "pnpm --filter @panky/server test",
     "test:e2e": "playwright test",
+    "evaluate:ollama": "tsx scripts/evaluate-ollama.ts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test"
   },
   "devDependencies": {

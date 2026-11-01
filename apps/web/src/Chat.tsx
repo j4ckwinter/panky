@@ -232,8 +232,8 @@ export function Chat({
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <StatusChip tone="warning" title="Replies are simulated.">
-            Demo mode
+          <StatusChip tone="warning" title={chat.providerLabel}>
+            {chat.providerLabel}
           </StatusChip>
           <Button
             variant="secondary"

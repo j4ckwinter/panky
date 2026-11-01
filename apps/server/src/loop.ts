@@ -115,11 +115,27 @@ export async function runLoop(options: {
       name: call.name,
       result,
     });
-    if (output) history.push({ role: "assistant", content: output });
-    history.push({ role: "tool", content: serialized, callId: call.callId });
+    history.push({
+      role: "assistant",
+      content: output,
+      toolCall: { ...call, arguments: call.arguments },
+    });
+    history.push({
+      role: "tool",
+      content: serialized,
+      callId: call.callId,
+      name: call.name,
+    });
     if (
-      history.reduce((sum, item) => sum + item.content.length, 0) >
-      config.HISTORY_MAX_CHARS
+      history.reduce(
+        (sum, item) =>
+          sum +
+          item.content.length +
+          (item.role === "assistant" && item.toolCall
+            ? JSON.stringify(item.toolCall).length
+            : 0),
+        0,
+      ) > config.HISTORY_MAX_CHARS
     )
       throw new TaskError("The task exceeded its context budget.");
   }

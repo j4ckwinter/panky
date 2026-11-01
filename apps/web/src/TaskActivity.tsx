@@ -25,7 +25,7 @@ function ActivityEntry({ activity }: { activity: Activity }) {
         </>
       );
     case "model_step":
-      return <strong>Mock reply · step {activity.step}</strong>;
+      return <strong>Model response · step {activity.step}</strong>;
     case "tool_requested":
       return (
         <>

@@ -13,7 +13,7 @@ try {
   });
   app.server.listen(config.PORT, config.HOST, () => {
     console.info(
-      `Panky backend listening on ${config.HOST}:${config.PORT} (mock provider).`,
+      `Panky backend listening on ${config.HOST}:${config.PORT} (${config.MODEL_PROVIDER} provider).`,
     );
   });
   let stopping = false;

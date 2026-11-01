@@ -1,11 +1,14 @@
 import { setTimeout } from "node:timers/promises";
 import { z } from "zod";
 
-export type ContextMessage = {
-  role: "user" | "assistant" | "tool";
-  content: string;
-  callId?: string;
-};
+export type ContextMessage =
+  | { role: "user"; content: string }
+  | {
+      role: "assistant";
+      content: string;
+      toolCall?: { callId: string; name: string; arguments: unknown };
+    }
+  | { role: "tool"; content: string; callId: string; name: string };
 export type ToolDefinition = {
   name: string;
   description: string;

@@ -1,6 +1,6 @@
 # Panky
 
-A personal chat workspace. Milestone 2 uses a deterministic mock provider with one real tool: reading the current date and time. No AI model or local AI runtime is involved.
+A personal chat workspace. Select a deterministic mock provider or a local Ollama model on the Windows PC. Both use the same bounded task loop and one real tool: reading the current date and time.
 
 The React frontend calls a separate Node backend. SQLite stores conversations on the backend host. Production access follows `browser → Vercel frontend → HTTPS tunnel → local backend`; the browser makes authenticated requests directly to the tunnel origin.
 
@@ -70,9 +70,10 @@ Server environment variables are loaded from `apps/server/.env` by the package s
 | `PORT`                 | `3001`                                                                                                  |
 | `DATABASE_PATH`        | `./data/panky.sqlite`, relative to the server working directory                                         |
 | `ALLOWED_ORIGINS`      | Explicit comma-separated frontend origins; local defaults `http://localhost:5173,http://127.0.0.1:5173` |
-| `MODEL_PROVIDER`       | `mock`; unsupported providers fail startup                                                              |
+| `MODEL_PROVIDER`       | `mock` or `ollama`; unsupported providers fail startup                                                  |
 | `MODEL_NAME`           | `panky-mock`                                                                                            |
-| `MODEL_ENDPOINT`       | Optional future provider endpoint; unused in mock mode                                                  |
+| `MODEL_ENDPOINT`       | `http://127.0.0.1:11434`; numeric loopback HTTP origin only, unused in mock mode                        |
+| `MODEL_CONTEXT_LENGTH` | `4096` tokens; allowed range 2048–8192, separate from the history character budget                      |
 | `MAX_TASK_STEPS`       | `8`; provider turns per task, from 1 to 32                                                              |
 | `HISTORY_MAX_CHARS`    | `16000`; context character budget, from 8000 to 128000                                                  |
 | `MAX_TASK_DURATION_MS` | `30000`; task deadline in milliseconds, from 100 to 300000                                              |
@@ -97,13 +98,13 @@ SQLite files contain plaintext conversations. Keep the data directory private. F
 
 `MAX_TASK_STEPS` limits provider turns, including the final completion turn. The clock demo needs two turns: request the tool, then consume its result and reply. `MAX_TASK_DURATION_MS` bounds task runtime. Cancellation is propagated to the provider and tool; the backend checks it again before executing another tool and retains the global task slot until the current work settles.
 
-`HISTORY_MAX_CHARS` limits the message text passed to the provider. This is a character budget, not a model token budget. It does not delete stored history. Older content can be omitted, so a model may not see earlier instructions; activity records how much history was included and how many messages were omitted. New tool results and intermediate assistant text also count toward this budget; exceeding it stops the task with a recorded failure. This simple policy must be evaluated again before introducing a real model.
+`HISTORY_MAX_CHARS` limits the message text passed to the provider. This is a character budget, not a model token budget. It does not delete stored history. Older content can be omitted, so a model may not see earlier instructions; activity records how much history was included and how many messages were omitted. New tool results and intermediate assistant text also count toward this budget; exceeding it stops the task with a recorded failure. Short-context real-model recall was verified in Milestone 3. Longer or multilingual conversations can still exceed the token window and need separate evaluation.
 
 Existing Milestone 1 databases receive additive task/activity tables at startup. Existing messages are retained and do not get invented historical tool activity. The new web client opts into activity events with `includeActivity: true`; older clients retain the text stream contract. Update backend code before deploying the new frontend. Back up the database before upgrading and run only one backend process against it.
 
 Tests use isolated in-memory or temporary SQLite databases. Do not run verification prompts against the live database; they create persistent conversations visible on login.
 
-## Prepare remote access
+## Original Mac remote-access setup
 
 The frontend runs on Vercel and the backend stays on your Mac. Both the backend and the tunnel must remain running, and the Mac must stay awake and connected. You need Vercel and ngrok accounts; no purchased domain is required.
 
@@ -151,4 +152,70 @@ Verification on 1 November 2026: [GitHub CI passed on Node 24](https://github.co
 
 The Mac, backend, and ngrok agent must remain running for remote chat to work. This setup is not an always-on hosted backend. The local Git repository includes `pnpm-lock.yaml`; environment secrets, conversation data, and generated files are ignored.
 
-Milestone 2 is implemented with a real clock tool, bounded execution, persisted activity, and cancellation. Verification passed on Node 26.13.0: `pnpm check` (29 backend tests), `pnpm build`, and `pnpm test:e2e` (7 Chromium tests). Desktop and 390px mobile screenshots were inspected. Independent review found no remaining actionable issues. All Milestone 2 verification used isolated test databases. The mock does not reason or call an AI service; the backend executes only the allowed clock tool. There is no Ollama installation or model download. The next milestone is **Local AI on the Windows PC**, which requires that PC to be available and has not been started.
+Milestone 2 is implemented with a real clock tool, bounded execution, persisted activity, and cancellation. Verification passed on Node 26.13.0: `pnpm check` (29 backend tests), `pnpm build`, and `pnpm test:e2e` (7 Chromium tests). Desktop and 390px mobile screenshots were inspected. Independent review found no remaining actionable issues. All Milestone 2 verification used isolated test databases. The mock does not reason or call an AI service; the backend executes only the allowed clock tool. Milestone 2 did not require Ollama or a model download. Milestone 3 is now in progress on the Windows PC; see the setup and verification notes below.
+
+## Windows local AI setup (Milestone 3)
+
+Install [Ollama for Windows](https://docs.ollama.com/windows), then open a new PowerShell terminal. Keep Ollama bound to `127.0.0.1:11434`. Set `OLLAMA_NO_CLOUD=1` and `OLLAMA_GO_TEMPLATE=1` in its process environment or user environment before restarting Ollama. The first keeps inference local; the second makes Ollama 0.40.13 apply the corrected Go template below. Quit an existing Ollama tray instance before starting a replacement server. Do not expose port 11434 through the tunnel or add browser origins to Ollama. Panky alone calls its [native chat API](https://docs.ollama.com/api/chat).
+
+To preserve the runtime settings for future launches, run these once, then quit and relaunch Ollama:
+
+```powershell
+[Environment]::SetEnvironmentVariable("OLLAMA_NO_CLOUD", "1", "User")
+[Environment]::SetEnvironmentVariable("OLLAMA_GO_TEMPLATE", "1", "User")
+```
+
+From the repository root:
+
+```powershell
+corepack pnpm install --frozen-lockfile
+# If pnpm is not on PATH, create project-local command shims:
+corepack enable --install-directory node_modules/.bin
+if (!(Test-Path apps/server/.env)) { Copy-Item apps/server/.env.example apps/server/.env }
+if (!(Test-Path apps/web/.env)) { Copy-Item apps/web/.env.example apps/web/.env }
+ollama pull qwen3:4b-instruct-2507-q4_K_M
+ollama create panky-qwen3:4b -f models/qwen3.Modelfile
+```
+
+Generate a token with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` in your own terminal and save it as `AUTH_TOKEN` in `apps/server/.env`. Set these backend values:
+
+```dotenv
+MODEL_PROVIDER=ollama
+MODEL_NAME=panky-qwen3:4b
+MODEL_ENDPOINT=http://127.0.0.1:11434
+MODEL_CONTEXT_LENGTH=4096
+HISTORY_MAX_CHARS=8000
+MAX_TASK_DURATION_MS=120000
+```
+
+Run `corepack pnpm dev`, connect at http://localhost:5173, and check that the sidebar displays `Local AI` and the configured model. Send `What is the current date and time?` and inspect Task activity for the actual tool result. Mock mode remains available with `MODEL_PROVIDER=mock` and `MODEL_NAME=panky-mock`.
+
+The selected model is a local variant of Qwen3 4B Instruct 2507, using the corrected template in `models/qwen3.Modelfile`. The inspected PC has an RTX 3080 with 10 GB VRAM. [qwen3:4b-instruct-2507-q4_K_M](https://ollama.com/library/qwen3:4b-instruct-2507-q4_K_M) is a 2.5 GB model with tool support. Avoid the generic `qwen3:4b` tag: it resolved to the thinking-only variant during evaluation. The custom template serializes tool definitions and call arguments as JSON to work around [Ollama issue 14601](https://github.com/ollama/ollama/issues/14601). It reuses the downloaded weights. The provider disables thinking, starts with 4096 context tokens, and does not retry. Only one tool request per model turn is supported. Multiple requests fail before executing a tool. Missing models, connection errors, malformed responses and tool failures appear in task activity. A failed tool ends the task; automatic recovery within that task is not implemented. A later user message may ask the model to try again.
+
+The history budget counts characters, not tokens, and cannot guarantee fit in the model context. Ollama can truncate context; keep prompts short and check retention with representative conversations. Historical tool records remain in activity; later tasks receive completed user/assistant text, while structured tool calls and results are supplied during the current task. GPU residency can be checked with `ollama ps` and `nvidia-smi`; do not infer it from a successful reply. See the [Ollama FAQ](https://docs.ollama.com/faq).
+
+### Move saved conversations from the Mac
+
+Stop Panky on both machines. Back up the Mac's `apps/server/data` directory, including SQLite sidecar files, and securely copy the complete directory to `apps/server/data` on the PC. Back up any existing PC data first; do not overwrite it or merge databases implicitly. Set `DATABASE_PATH=./data/panky.sqlite`, then start one backend process. Existing task/activity tables remain compatible. Re-enter your backend token after browser refresh. Transfer configuration privately or generate a new token, and retain the exact frontend origin allowlist.
+
+### Move remote access to the PC
+
+The prior deployment instructions above describe the Mac setup. On Windows, install ngrok using its [Windows instructions](https://ngrok.com/download/windows), configure its account token locally, then run `ngrok http http://127.0.0.1:3001 --inspect=false`. Use the existing assigned hostname if available. Keep `ALLOWED_ORIGINS` set to the exact Vercel frontend origin. Deploy the Milestone 3 frontend as part of the eventual migration: older frontend builds only accept the mock provider in the health response. If the tunnel hostname changes, also update `VITE_API_URL`. Rebuild/redeploy only with authorization. The PC and both processes must remain awake and connected.
+
+Remote migration is not verified until the deployed browser streams a real local-model reply, restores history after reconnect, and rejects unauthenticated access against the PC backend. No production database is used for automated verification.
+
+### Repeat the real-model evaluation
+
+After installing the model, run `corepack pnpm evaluate:ollama --run`. This opt-in command starts an ephemeral backend with an isolated in-memory database and prints JSON measurements. It checks exact instruction following, conversation recall, two clock-tool runs, an injected tool failure, and a user-requested retry. It reports first-text and total latency, exact stored output, tool results, Ollama version and GPU residency metadata. A failed assertion exits nonzero; these few examples do not establish general model reliability.
+
+### Measured local-model results
+
+On 1 November 2026, Ollama 0.40.13 with `panky-qwen3:4b` passed all seven real-model evaluation cases through Panky's authenticated HTTP API and an isolated in-memory database. The alias uses Qwen3 4B Instruct 2507 Q4_K_M, a 4096-token context and an 8000-character history budget. Exact instruction following, history recall, both clock-tool results, visible tool failure and an explicit user retry all passed. Stored output matched the streamed output in every case.
+
+The first reply after loading took 2355 ms, with its first text at 2324 ms. Warm text cases completed in 55 to 94 ms. Clock-tool runs completed in 301 to 318 ms; the retry after an injected tool failure completed in 324 ms. These are short prompts from one evaluation run, not throughput or long-context benchmarks. `ollama ps` reported 100% GPU residency and 3.2 GB for the model; `nvidia-smi` reported 4198 MiB total GPU memory use out of 10240 MiB.
+
+The generic `qwen3:4b` tag resolved to Thinking 2507 and failed the initial evaluation. Its stock template also rendered malformed tool definitions. The explicit Instruct variant plus the corrected template and Go-template runtime setting passed the same acceptance checks. Do not substitute the generic tag or remove the compatibility setting without repeating the evaluation.
+
+Verification passed on Node 24.20.0: `pnpm check` with 46 backend tests, `pnpm build`, and `pnpm test:e2e` with 19 Chromium tests. A separate real-model browser check verified the provider label, clock activity and cancellation after streamed text began. Desktop and 390px mobile screenshots were inspected. All verification used isolated databases.
+
+The local portion of Milestone 3 is verified. Remote web access from the PC remains deferred at the owner's request; the migration instructions are prepared above. Milestone 4 has not started.
