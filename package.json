@@ -1,0 +1,27 @@
+{
+  "name": "panky",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter './apps/*' dev",
+    "build": "pnpm -r build",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "typecheck": "pnpm -r typecheck && tsc --noEmit",
+    "test": "pnpm --filter @panky/server test",
+    "test:e2e": "playwright test",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.4",
+    "@playwright/test": "1.64.1",
+    "@types/node": "26.6.6",
+    "typescript": "6.0.3",
+    "tsx": "4.21.0"
+  }
+}

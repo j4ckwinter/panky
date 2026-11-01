@@ -1,0 +1,139 @@
+# Panky
+
+A personal chat workspace. Milestone 1 uses a deterministic mock provider: no AI model, tool execution, or local AI runtime is involved.
+
+The React frontend calls a separate Node backend. SQLite stores conversations on the backend host. Production access follows `browser → Vercel frontend → HTTPS tunnel → local backend`; the browser makes authenticated requests directly to the tunnel origin.
+
+## Run locally
+
+Use Node 24+ and pnpm 12.16.1. From the repository root:
+
+```sh
+pnpm install --frozen-lockfile
+cp apps/server/.env.example apps/server/.env
+cp apps/web/.env.example apps/web/.env
+```
+
+Generate a token with `openssl rand -hex 32`, save it as `AUTH_TOKEN` in `apps/server/.env`, and keep a copy in your password manager. Do not commit this file. Then:
+
+```sh
+pnpm dev
+```
+
+Open http://localhost:5173 and enter the token in **Access token**. Choose **Connect**, then **New conversation**, enter a message, and select **Send message**. Enter sends the message; Shift+Enter adds a new line. The reply arrives incrementally from the backend. Reload, reconnect with the token, and select the conversation to restore history.
+
+The token is kept only in browser memory, so refresh requires signing in again. This trades persistent login convenience for avoiding credentials in browser storage. Conversation data remains in SQLite regardless of browser sign-in state.
+
+Run either app independently with `pnpm --filter @panky/web dev` or `pnpm --filter @panky/server dev`. For production builds, use `pnpm build`; start the compiled backend with `pnpm --filter @panky/server start`. Preview the built web app with `pnpm --filter @panky/web preview` and add its exact origin to the backend allowlist if using a different port.
+
+## Commands and structure
+
+| Command             | Purpose                                                |
+| ------------------- | ------------------------------------------------------ |
+| `pnpm dev`          | Run both apps                                          |
+| `pnpm build`        | Typecheck shared schemas and build both apps           |
+| `pnpm lint`         | Biome lint                                             |
+| `pnpm format`       | Format source                                          |
+| `pnpm format:check` | Verify formatting                                      |
+| `pnpm typecheck`    | Strict TypeScript checks                               |
+| `pnpm test`         | Backend behavior tests using isolated SQLite databases |
+| `pnpm check`        | Lint, formatting, typechecking, backend tests          |
+| `pnpm test:e2e`     | Chromium tests against the real backend                |
+
+Install the test browser once with `pnpm exec playwright install chromium`. CI runs `pnpm check`, `pnpm build`, and the browser suite using the lockfile. Browser tests own ports 3101 and 5174 and use an isolated in-memory database and a public test-only token. Do not reuse that token for real access.
+
+- `apps/web`: React/Vite UI, Pancake UI components and tokens, API client.
+- `apps/server`: HTTP validation/authentication, chat orchestration, mock provider, SQLite persistence.
+- `packages/shared`: Zod API schemas and inferred TypeScript types.
+- `tests`: browser integration tests.
+
+## Configuration
+
+Server environment variables are loaded from `apps/server/.env` by the package scripts:
+
+| Variable          | Default / requirement                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `AUTH_TOKEN`      | Required, at least 32 characters; generate a random token                                               |
+| `HOST`            | `127.0.0.1`; keep loopback when using the tunnel                                                        |
+| `PORT`            | `3001`                                                                                                  |
+| `DATABASE_PATH`   | `./data/panky.sqlite`, relative to the server working directory                                         |
+| `ALLOWED_ORIGINS` | Explicit comma-separated frontend origins; local defaults `http://localhost:5173,http://127.0.0.1:5173` |
+| `MODEL_PROVIDER`  | `mock`; unsupported providers fail startup                                                              |
+| `MODEL_NAME`      | `panky-mock`                                                                                            |
+| `MODEL_ENDPOINT`  | Optional future provider endpoint; unused in mock mode                                                  |
+
+Frontend `VITE_API_URL` is a public backend origin, defaulting to `http://localhost:3001`. Set it to your HTTPS tunnel origin for deployment. Vite embeds it at build time, so changes require a rebuild. Never define a frontend variable containing the access token. HTTPS is required except for loopback development URLs.
+
+## Authentication and persistence
+
+All API endpoints, including health and streaming, require an `Authorization: Bearer …` header. The token is a pre-shared single-user credential, not a complete OAuth login system. Bearer header transport follows [RFC 6750](https://www.rfc-editor.org/rfc/rfc6750). Use HTTPS remotely, rotate the token by changing the server environment and restarting, and reconnect with the new token. There are no authentication cookies, so this works across the Vercel and tunnel origins without third-party cookies. Tokens never belong in URLs or logs.
+
+CORS allows only configured frontend origins. Preflight requests are permitted without a token; actual API requests still require authentication. CORS is not authentication, and non-browser clients also require the token.
+
+Only one response can run at a time across all conversations. A conflicting submission returns HTTP 409 without adding messages. User and assistant records are created together; streamed assistant text is saved as it is produced. Completion is recorded before the final stream event. A disconnected browser aborts generation and leaves an **interrupted** assistant record with any saved partial text. Backend startup marks unfinished streaming records interrupted. A disconnect after completion may lose the final browser event, but refreshing history reveals the completed record.
+
+The client never retries a message automatically. After a network error, refresh history before manually sending again: a request can have been accepted even if its acknowledgement was lost. A manual second submission is a new message. Run one backend process per database; clustering and multiple backend replicas are not supported.
+
+SQLite files contain plaintext conversations. Keep the data directory private. For backup, stop the server and copy the database and any SQLite sidecar files together. No cloud backup, encryption-at-rest, retention policy, or deletion interface is included in this milestone.
+
+## Prepare remote access
+
+These steps are for you to perform when ready. No account, DNS record, tunnel, or deployment is created by this repository. You need a Vercel account and a domain managed through Cloudflare. The Mac must stay awake and connected, with both the backend and tunnel running.
+
+### 1. Create a named Cloudflare tunnel
+
+Install `cloudflared` and authenticate, then create a named tunnel:
+
+```sh
+brew install cloudflared
+cloudflared tunnel login
+cloudflared tunnel create panky
+```
+
+Put this configuration in `~/.cloudflared/config.yml`, replacing the UUID, username, and hostname:
+
+```yaml
+tunnel: YOUR-TUNNEL-UUID
+credentials-file: /Users/YOUR-USERNAME/.cloudflared/YOUR-TUNNEL-UUID.json
+ingress:
+  - hostname: panky-api.example.com
+    service: http://127.0.0.1:3001
+  - service: http_status:404
+```
+
+Then route DNS and run it:
+
+```sh
+cloudflared tunnel route dns panky panky-api.example.com
+cloudflared tunnel run panky
+```
+
+Keep the credentials file private and outside the repository. See Cloudflare's [named tunnel setup](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/). Do not use a Quick Tunnel: [Quick Tunnels do not support SSE](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/). The backend sends `text/event-stream` with cache bypass headers for incremental delivery. Keep caching disabled for the API hostname and avoid additional interactive login middleware on it, which would require a different cross-origin authentication flow.
+
+### 2. Configure Vercel
+
+Import the repository into a Vercel project. Select the Vite framework and root directory **apps/web**. Enable access to source files outside the root directory, so the workspace shared package is included. Use:
+
+- Install command: `pnpm install --frozen-lockfile`
+- Build command: `pnpm build`
+- Output directory: `dist`
+- Node.js: 24.x
+- Environment: `VITE_API_URL=https://panky-api.example.com`
+
+The app's `vercel.json` supplies build/output settings. Vercel's [monorepo documentation](https://vercel.com/docs/monorepos) explains project roots and workspace dependencies. The token belongs only in the local backend environment, never in Vercel.
+
+Set backend `ALLOWED_ORIGINS` to the exact deployed origin, for example `https://panky.vercel.app`, then restart the backend. For both local and deployed use, list both origins separated by commas. Preview deployment origins must be individually authorized; wildcards are not supported. Deploy only when you intend to publish the frontend.
+
+### 3. Verify the deployed path
+
+On the deployed frontend, connect with your token and send a message. Confirm text appears progressively, then refresh and reconnect to verify history. Stop and restart the backend and check the same history again. In browser developer tools, check that a request without `Authorization` receives 401; an unlisted frontend origin should fail access. Open a second tab and attempt a submission during a response: it must be rejected cleanly. Disconnect during a reply and verify an interrupted record after reconnecting. Inspect the network response for `text/event-stream` and incremental data.
+
+A successful local build does not prove streaming through Vercel, Cloudflare, or your network. Remote access remains unverified until these steps pass on the actual deployment.
+
+## Milestone status and limits
+
+Milestone 1 implementation includes authenticated streaming mock chat, SQLite history, responsive UI, workspace checks, and deployment preparation. Local verification passed on Node 26.13.0: `pnpm check` (13 backend tests), `pnpm build`, and `pnpm test:e2e` (5 Chromium tests). Desktop and 390px mobile screenshots were inspected. The compiled backend also streamed a reply and restored it after an actual process restart. The maximum-length browser test completed in about 13 seconds. Independent review found no remaining actionable issues after the long-message streaming fix.
+
+CI targets Node 24; that runtime and hosted CI have not been exercised locally. Vercel configuration and the production frontend build are prepared, but an actual Vercel build/deployment and Cloudflare tunnel remain unverified. The local Git repository includes `pnpm-lock.yaml`; environment secrets, conversation data, and generated files are ignored.
+
+The mock is deterministic and does not reason, execute tools, or call an AI service. There is no Ollama installation or model download. The next milestone is **Tool Execution and Task Activity**; it has not been started.
