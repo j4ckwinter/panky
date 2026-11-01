@@ -361,3 +361,34 @@ test("composer aligns send with input and grows for multiline drafts on desktop 
       .toBe(48);
   }
 });
+
+test("connection page keeps the form usable at desktop and mobile sizes", async ({
+  page,
+}) => {
+  await page.goto("/");
+  for (const width of [1280, 390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(
+      page.getByRole("heading", { name: "Connect to Panky" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("textbox", { name: "Access token", exact: true }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({ path: `test-results/connection-${width}.png` });
+  }
+  await page
+    .getByRole("textbox", { name: "Access token", exact: true })
+    .fill("wrong-token");
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});

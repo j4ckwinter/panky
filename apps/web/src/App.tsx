@@ -9,6 +9,7 @@ import { useState } from "react";
 import { type Api, createApi, errorMessage } from "./api";
 import { Brand } from "./Brand";
 import { Chat } from "./Chat";
+import { PankyMark } from "./PankyMark";
 
 export function App() {
   const [api, setApi] = useState<Api | null>(null);
@@ -22,6 +23,23 @@ export function App() {
         <Brand />
       </header>
       <div className="connect-layout">
+        <div className="connect-art" aria-hidden="true">
+          <div className="connect-orbit" />
+          <div className="connect-orbit connect-orbit-inner" />
+          <div className="connect-art-mark">
+            <PankyMark />
+          </div>
+          <div className="connect-bubble connect-bubble-top">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="connect-bubble connect-bubble-bottom">
+            <span />
+            <span />
+          </div>
+          <span className="connect-spark">✳</span>
+        </div>
         <section className="connect-card" aria-labelledby="connect-title">
           <Stack gap="space24">
             <Text as="h1" variant="title" id="connect-title">
