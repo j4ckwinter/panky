@@ -380,9 +380,7 @@ test("connection page keeps the form usable at desktop and mobile sizes", async 
   await page.goto("/");
   for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await expect(
-      page.getByRole("heading", { name: "Connect to Panky" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Connect" })).toBeVisible();
     await expect(
       page.getByRole("textbox", { name: "Access token", exact: true }),
     ).toBeVisible();

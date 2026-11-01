@@ -62,112 +62,43 @@ button:disabled {
 }
 .connect-page {
   min-height: 100dvh;
-  padding: var(--spacing-pancake-40) max(6vw, 24px) var(--spacing-pancake-24);
-  display: flex;
-  flex-direction: column;
-}
-.connect-header {
+  padding: var(--spacing-pancake-40) max(6vw, 24px);
+  border-top: 6px solid var(--color-pancake-accent);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-pancake-16);
-  margin-bottom: var(--spacing-pancake-40);
 }
 .connect-layout {
   width: 100%;
-  max-width: 1000px;
+  max-width: 1080px;
   margin: auto;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-28);
-  overflow: hidden;
-  background: var(--color-pancake-surface);
-  box-shadow: 0 24px 64px
-    color-mix(in srgb, var(--color-pancake-deep) 7%, transparent);
+  grid-template-columns: minmax(0, 1fr) 400px;
+  align-items: center;
+  gap: var(--spacing-pancake-64);
 }
-.connect-art {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: 480px;
-  overflow: hidden;
-  background: var(--color-pancake-deep);
+.connect-wordmark {
+  color: var(--color-pancake-deep);
+  font-size: clamp(80px, 10vw, 144px);
+  font-weight: 700;
+  letter-spacing: -0.075em;
+  line-height: 1;
+  padding-bottom: 0.12em;
 }
-.connect-orbit {
-  position: absolute;
-  width: 420px;
-  height: 420px;
-  border: 1px solid
-    color-mix(in srgb, var(--color-pancake-accent) 22%, transparent);
-  border-radius: 50%;
-}
-.connect-orbit-inner {
-  width: 310px;
-  height: 310px;
-}
-.connect-art-mark {
-  z-index: 1;
-  transform: rotate(-9deg);
-}
-.connect-art-mark .panky-mark {
-  --mark-size: 184px;
-  box-shadow: 12px 16px 0
-    color-mix(in srgb, var(--color-pancake-accent) 14%, transparent);
-}
-.connect-bubble {
-  position: absolute;
-  display: flex;
-  gap: var(--spacing-pancake-8);
-  padding: var(--spacing-pancake-20) var(--spacing-pancake-24);
-  border-radius: var(--radius-pancake-20);
-  background: var(--color-pancake-canvas);
-}
-.connect-bubble-top {
-  top: 64px;
-  right: 36px;
-  border-bottom-left-radius: 4px;
-  transform: rotate(8deg);
-}
-.connect-bubble-top span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-pancake-olive);
-}
-.connect-bubble-bottom {
-  bottom: 64px;
-  left: 36px;
-  flex-direction: column;
-  border-bottom-right-radius: 4px;
-  transform: rotate(-6deg);
-}
-.connect-bubble-bottom span {
-  width: 64px;
-  height: 5px;
-  border-radius: 4px;
-  background: var(--color-pancake-border);
-}
-.connect-bubble-bottom span:last-child {
-  width: 40px;
-}
-.connect-spark {
-  position: absolute;
-  right: 48px;
-  bottom: 64px;
-  font-size: 48px;
-  color: var(--color-pancake-accent);
+.connect-wordmark span {
+  color: var(--color-pancake-control-focus);
 }
 .connect-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: var(--spacing-pancake-48);
+  border-left: 1px solid var(--color-pancake-control-border);
+  padding: var(--spacing-pancake-24) 0 var(--spacing-pancake-24)
+    var(--spacing-pancake-48);
   min-width: 0;
 }
 .connect-card h1 {
-  font-size: 30px;
-  letter-spacing: -1px;
+  font-size: 24px;
+  letter-spacing: -0.5px;
+}
+.connect-card form button {
+  border-radius: var(--radius-pancake-12);
 }
 .chat-layout {
   display: grid;
@@ -438,9 +369,6 @@ button:disabled {
   display: none;
 }
 @media (max-width: 900px) {
-  .connect-card {
-    padding: var(--spacing-pancake-24);
-  }
   .chat-layout {
     grid-template-columns: 236px minmax(0, 1fr);
   }
@@ -455,46 +383,6 @@ button:disabled {
   }
 }
 @media (max-width: 640px) {
-  .connect-page {
-    padding: var(--spacing-pancake-24);
-  }
-  .connect-layout {
-    grid-template-columns: 1fr;
-  }
-  .connect-art {
-    min-height: 180px;
-  }
-  .connect-art-mark .panky-mark {
-    --mark-size: 108px;
-  }
-  .connect-orbit {
-    width: 280px;
-    height: 280px;
-  }
-  .connect-orbit-inner {
-    width: 200px;
-    height: 200px;
-  }
-  .connect-bubble {
-    padding: var(--spacing-pancake-12) var(--spacing-pancake-16);
-  }
-  .connect-bubble-top {
-    top: 24px;
-    right: 20px;
-  }
-  .connect-bubble-bottom {
-    bottom: 24px;
-    left: 16px;
-  }
-  .connect-spark {
-    right: 24px;
-    bottom: 16px;
-    font-size: 32px;
-  }
-  .connect-card h1 {
-    font-size: 26px;
-  }
-
   .chat-layout {
     grid-template-columns: 1fr;
   }
@@ -692,5 +580,24 @@ button:disabled {
 @media (max-width: 640px) {
   .desktop-sidebar-toggle {
     display: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .connect-page {
+    padding: var(--spacing-pancake-32) var(--spacing-pancake-24);
+  }
+  .connect-layout {
+    max-width: 440px;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-pancake-40);
+  }
+  .connect-wordmark {
+    font-size: clamp(72px, 18vw, 104px);
+  }
+  .connect-card {
+    border-left: 0;
+    border-top: 1px solid var(--color-pancake-control-border);
+    padding: var(--spacing-pancake-32) 0 0;
   }
 }
