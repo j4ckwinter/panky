@@ -233,7 +233,7 @@ test("mobile conversations close with Escape, backdrop and selection", async ({
     .click();
   await expect(drawer).toHaveCount(0);
   await expect(page.getByLabel("Message", { exact: true })).toBeEnabled();
-  await expect(page.locator("#composer-help")).toContainText("Shift+Enter");
+  await expect(page.locator("#composer-help")).toHaveCount(0);
   await menu.click();
   await page.screenshot({
     path: "test-results/drawer-mobile.png",

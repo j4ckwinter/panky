@@ -307,3 +307,57 @@ test("each reply owns its task activity after more messages and reload", async (
   ).toBe(true);
   await page.screenshot({ path: "test-results/per-reply-mobile.png" });
 });
+
+test("composer aligns send with input and grows for multiline drafts on desktop and mobile", async ({
+  page,
+}) => {
+  await connect(page);
+  const input = page.getByLabel("Message", { exact: true });
+  const button = page.getByRole("button", {
+    name: "Send message",
+    exact: true,
+  });
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await input.fill("A short message");
+    await expect(
+      page.getByText("Enter to send · Shift+Enter for a new line", {
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await expect
+      .poll(async () => {
+        const field = await input.boundingBox();
+        const send = await button.boundingBox();
+        if (!field || !send) return 999;
+        return Math.abs(field.y + field.height / 2 - send.y - send.height / 2);
+      })
+      .toBeLessThan(2);
+    await page.screenshot({ path: `test-results/composer-${width}.png` });
+    await input.fill("First line\nSecond line\nThird line");
+    await expect
+      .poll(() => input.evaluate((element) => element.clientHeight))
+      .toBeGreaterThan(80);
+    await expect
+      .poll(async () => {
+        const field = await input.boundingBox();
+        const send = await button.boundingBox();
+        if (!field || !send) return 999;
+        return Math.abs(field.y + field.height - send.y - send.height);
+      })
+      .toBeLessThan(2);
+    await input.fill("A long draft\n".repeat(30));
+    expect(
+      await input.evaluate((element) => element.clientHeight),
+    ).toBeLessThanOrEqual(160);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await input.fill("");
+    await expect
+      .poll(() => input.evaluate((element) => element.clientHeight))
+      .toBe(48);
+  }
+});

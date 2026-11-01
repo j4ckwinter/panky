@@ -23,6 +23,29 @@ export function Chat({
 }) {
   const chat = useChat(api);
   const { draft, setDraft } = chat;
+  const input = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const field = input.current;
+    if (!field) return;
+    const resize = () => {
+      field.style.height = "0px";
+      field.style.height = `${field.scrollHeight}px`;
+    };
+    resize();
+    let width = field.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (field.clientWidth === width) return;
+      width = field.clientWidth;
+      resize();
+    });
+    observer.observe(field);
+    return () => observer.disconnect();
+  }, [draft]);
+  const composerStatus = !chat.connected
+    ? "Connection lost. Refresh history to reconnect."
+    : chat.serverBusy && !chat.streaming
+      ? "Another tab is running a task. Wait for it to finish."
+      : "";
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebar = useRef<HTMLElement>(null);
   const menu = useRef<HTMLButtonElement>(null);
@@ -328,8 +351,9 @@ export function Chat({
             }}
           >
             <Textarea
+              ref={input}
               label="Message"
-              rows={2}
+              rows={1}
               maxLength={8000}
               value={draft}
               placeholder="Message Panky"
@@ -345,30 +369,37 @@ export function Chat({
                 event.preventDefault();
                 if (!event.repeat) event.currentTarget.form?.requestSubmit();
               }}
-              aria-describedby="composer-help"
+              aria-describedby={composerStatus ? "composer-help" : undefined}
               disabled={chat.pending}
             />
-            <div className="composer-bottom">
-              <span id="composer-help">
-                {!chat.connected
-                  ? "Connection lost. Refresh history to reconnect."
-                  : chat.streaming
-                    ? "Panky is replying. You can use Cancel task to stop."
-                    : chat.serverBusy
-                      ? "Another tab is running a task. Wait for it to finish."
-                      : chat.pending
-                        ? "Updating conversation…"
-                        : "Enter to send · Shift+Enter for a new line"}
-              </span>
-              <Button
-                type="submit"
-                disabled={unavailable || !draft.trim()}
-                aria-label="Send message"
+            <Button
+              className="send-button"
+              size={48}
+              type="submit"
+              disabled={unavailable || !draft.trim()}
+              aria-label="Send message"
+              title="Send message"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
               >
-                Send message <span aria-hidden="true">↗</span>
-              </Button>
-            </div>
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
+            </Button>
           </form>
+          {composerStatus && (
+            <p id="composer-help" className="composer-status" role="status">
+              {composerStatus}
+            </p>
+          )}
           {(chat.error ||
             !chat.connected ||
             (lastMessage?.status === "interrupted" &&

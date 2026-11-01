@@ -328,35 +328,58 @@ button:disabled {
     var(--spacing-pancake-16);
 }
 .composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: end;
+  gap: var(--spacing-pancake-8);
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-20);
-  background: var(--color-pancake-canvas);
-  padding: var(--spacing-pancake-16);
+  background: var(--color-pancake-surface);
+  padding: var(--spacing-pancake-8);
   margin-top: var(--spacing-pancake-8);
 }
-.composer textarea {
-  background: var(--color-pancake-surface);
-  min-height: 64px;
-  max-height: 200px;
+.composer > div {
+  min-width: 0;
 }
-.composer-bottom {
-  display: flex;
-  gap: var(--spacing-pancake-16);
-  justify-content: space-between;
-  align-items: center;
-  margin-top: var(--spacing-pancake-12);
-}
-.composer-bottom > button {
-  flex-shrink: 0;
+.composer label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
   white-space: nowrap;
 }
-.composer-bottom > span,
+.composer textarea {
+  display: block;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 48px;
+  max-height: 160px;
+  padding: var(--spacing-pancake-12);
+  line-height: 24px;
+  resize: none;
+}
+.composer textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.composer .send-button {
+  width: 48px;
+  min-width: 48px;
+  padding: 0;
+  border-radius: 50%;
+}
+.composer-status,
 .composer-note {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-pancake-muted);
   line-height: 1.5;
 }
 .composer-note {
+  font-size: 11px;
   text-align: center;
   margin: var(--spacing-pancake-12) 0 0;
 }
@@ -439,12 +462,6 @@ button:disabled {
     padding: var(--spacing-pancake-8) var(--spacing-pancake-12)
       var(--spacing-pancake-12);
   }
-  .composer {
-    padding: var(--spacing-pancake-12);
-  }
-  .composer-bottom > span {
-    max-width: 180px;
-  }
   .composer-note {
     font-size: 10px;
   }
@@ -472,4 +489,5 @@ button:disabled {
 }
 .composer:focus-within {
   border-color: var(--color-pancake-control-focus);
+  outline: 1px solid var(--color-pancake-control-focus);
 }
