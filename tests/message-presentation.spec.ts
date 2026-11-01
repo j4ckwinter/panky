@@ -41,7 +41,11 @@ test("assistant Markdown renders safely and fits mobile while user input stays l
     exact: true,
   });
   await expect(
-    page.getByLabel("Refresh history", { exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
   await expect(reply.getByRole("heading", { name: "A closure" })).toBeVisible();
   await expect(
@@ -119,7 +123,11 @@ test("next draft survives cancellation and sends only on request", async ({
   ).toHaveCount(2);
   await expect(input).toHaveValue("");
   await expect(
-    page.getByLabel("Refresh history", { exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
 });
 

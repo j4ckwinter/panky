@@ -78,7 +78,11 @@ test("owner invites a friend, chats stay private, and removing access ends their
     .fill("Owner-only conversation");
   await page.getByRole("button", { name: "Send message", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Account", exact: true }).click();
   await page.getByRole("button", { name: "People", exact: true }).click();
@@ -107,12 +111,20 @@ test("owner invites a friend, chats stay private, and removing access ends their
       .getByRole("button", { name: "Send message", exact: true })
       .click();
     await expect(
-      friend.getByRole("button", { name: "Refresh history", exact: true }),
+      friend.getByRole("button", {
+        name: "Refresh history",
+        exact: true,
+        includeHidden: true,
+      }),
     ).toBeEnabled();
     await friend.screenshot({ path: "test-results/google-member-mobile.png" });
     await people.getByRole("button", { name: "Close", exact: true }).click();
     await page
-      .getByRole("button", { name: "Refresh history", exact: true })
+      .getByRole("button", {
+        name: "Refresh history",
+        exact: true,
+        includeHidden: true,
+      })
       .click();
     await expect(
       page.getByRole("button", {

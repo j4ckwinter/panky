@@ -21,7 +21,11 @@ test("authenticates, streams from the server and restores conversations after re
     page.getByText(/This is a mock response from Panky/),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
   await expect(page.locator(".composer-note")).toHaveCount(0);
   await page.screenshot({
@@ -35,7 +39,7 @@ test("authenticates, streams from the server and restores conversations after re
   ).not.toContain(token);
   await page.reload();
   await login(page);
-  await page.getByRole("button", { name: /Remember my pancakes/ }).click();
+  await page.getByRole("button", { name: /^Remember my pancakes/ }).click();
   await expect(
     page.getByText(/This is a mock response from Panky/),
   ).toBeVisible();
@@ -87,7 +91,7 @@ test("reload interrupts a reply and does not submit it again", async ({
   });
   await login(page);
   await expect(page.getByRole("article")).toHaveCount(0);
-  await page.getByRole("button", { name: /Interrupt this reply/ }).click();
+  await page.getByRole("button", { name: /^Interrupt this reply/ }).click();
   await expect(
     page.getByText(/Reply interrupted\. This partial reply was saved/),
   ).toBeVisible();
@@ -95,7 +99,11 @@ test("reload interrupts a reply and does not submit it again", async ({
     "Refresh history before sending again",
   );
   await page
-    .getByRole("button", { name: "Refresh history", exact: true })
+    .getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    })
     .click();
   await expect(
     page.getByRole("article", { name: "Your message", exact: true }),
@@ -126,7 +134,11 @@ test("maximum valid message streams progressively and completes", async ({
   const partial = await reply.textContent();
   expect(partial?.length).toBeLessThan(content.length);
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled({ timeout: 20_000 });
   await expect(reply).toContainText(content);
   await expect(page.getByText(/Reply interrupted/)).toHaveCount(0);
@@ -161,7 +173,11 @@ test("Enter sends, Shift+Enter inserts a line, and composing Enter does not send
   await expect(messages).toContainText("First line\nSecond line");
   await expect(input).toHaveValue("");
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
 });
 

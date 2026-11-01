@@ -943,3 +943,35 @@ button.visible-action:focus-visible,
     display: none;
   }
 }
+
+.mobile-header-menu {
+  display: none;
+}
+@media (max-width: 640px) {
+  .desktop-refresh {
+    display: none;
+  }
+  .mobile-header-menu {
+    display: block;
+    width: 40px;
+    flex-shrink: 0;
+  }
+  .mobile-header-menu > button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    font-size: 24px;
+  }
+  .mobile-header-menu .action-menu-panel {
+    bottom: auto;
+    top: calc(100% + 8px);
+    left: auto;
+    right: 0;
+    width: 180px;
+  }
+  .chat-header-actions {
+    gap: 4px;
+  }
+}

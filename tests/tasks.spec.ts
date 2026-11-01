@@ -7,7 +7,11 @@ async function connect(page: Page) {
   await page.goto("/");
   await login(page);
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
 }
 
@@ -163,7 +167,7 @@ test("Stop response stops a live reply and persists cancellation across refresh"
   );
   await page.reload();
   await login(page);
-  await page.getByRole("button", { name: /Cancellation check/ }).click();
+  await page.getByRole("button", { name: /^Cancellation check/ }).click();
   await expect(
     activity.getByText("Cancelled", { exact: true }).first(),
   ).toBeVisible();

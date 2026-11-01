@@ -370,7 +370,7 @@ export function Chat({
             </span>
             <Button
               variant="ghost"
-              className="header-icon-button"
+              className="header-icon-button desktop-refresh"
               size={40}
               aria-label="Refresh history"
               title="Refresh history"
@@ -391,6 +391,44 @@ export function Chat({
                 <path d="M3 11a9 9 0 0 1 15.36-6.36L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.36 6.36L3 17M7 17H3v4" />
               </svg>
             </Button>
+            <Button
+              className="mobile-menu header-icon-button"
+              variant="ghost"
+              size={40}
+              aria-label="Start new chat"
+              title="New chat"
+              disabled={chat.pending}
+              onClick={() => {
+                chat.create();
+                input.current?.focus();
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </Button>
+            <ActionMenu
+              label="Chat options"
+              iconOnly
+              className="mobile-header-menu"
+            >
+              <Button
+                variant="ghost"
+                disabled={chat.pending}
+                onClick={() => void chat.refresh(chat.current?.id)}
+              >
+                Refresh history
+              </Button>
+            </ActionMenu>
           </Inline>
         </header>
         {chat.error && (

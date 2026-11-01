@@ -11,7 +11,11 @@ test("search, rename and confirmed deletion persist without affecting other chat
     await input.fill(text);
     await input.press("Enter");
     await expect(
-      page.getByLabel("Refresh history", { exact: true }),
+      page.getByRole("button", {
+        name: "Refresh history",
+        exact: true,
+        includeHidden: true,
+      }),
     ).toBeEnabled();
   };
   await send("Keep this conversation");
@@ -87,7 +91,11 @@ test("mobile chat management keeps a chat when deletion fails", async ({
   await page.getByLabel("Message", { exact: true }).fill("Mobile management");
   await page.getByLabel("Message", { exact: true }).press("Enter");
   await expect(
-    page.getByLabel("Refresh history", { exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
   await page
     .getByRole("button", { name: "Conversations", exact: true })
@@ -121,4 +129,53 @@ test("mobile chat management keeps a chat when deletion fails", async ({
   await expect(
     page.getByRole("button", { name: "Conversations", exact: true }),
   ).toBeFocused();
+});
+
+test("mobile header starts a new chat and keeps refresh in an accessible menu", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await login(page);
+  await page.getByLabel("Message", { exact: true }).fill("Mobile header test");
+  await page.getByLabel("Message", { exact: true }).press("Enter");
+  await expect(
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Refresh history", exact: true }),
+  ).toHaveCount(0);
+  const options = page.getByRole("button", {
+    name: "Chat options",
+    exact: true,
+  });
+  await options.click();
+  await page
+    .getByRole("button", { name: "Refresh history", exact: true })
+    .click();
+  await expect(options).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    page.getByRole("button", { name: "Start new chat", exact: true }),
+  ).toBeEnabled();
+  await options.click();
+  await page.keyboard.press("Escape");
+  await expect(options).toBeFocused();
+  await expect(options).toHaveAttribute("aria-expanded", "false");
+  await page
+    .getByRole("button", { name: "Start new chat", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Start a chat" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Message", { exact: true })).toBeFocused();
+  await page.screenshot({ path: "test-results/mobile-header.png" });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

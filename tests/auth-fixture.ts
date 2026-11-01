@@ -73,6 +73,10 @@ export async function login(page: Page) {
   if (await button.isVisible()) await button.click();
   await expect(composer).toBeEnabled();
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
 }

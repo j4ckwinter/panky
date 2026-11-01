@@ -9,7 +9,11 @@ async function send(page: Page, content: string) {
   await page.getByLabel("Message", { exact: true }).fill(content);
   await page.getByRole("button", { name: "Send message", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
 }
 
@@ -28,7 +32,11 @@ test("new tabs and reconnects start blank without creating records", async ({
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Refresh history", exact: true })
+    .getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    })
     .click();
   await expect(
     page.getByRole("heading", { name: "Start a chat" }),
@@ -95,7 +103,11 @@ test("failed first submission preserves draft and does not create another conver
   expect(sends).toBe(1);
   await page.unroute("**/api/conversations/*/messages");
   await page
-    .getByRole("button", { name: "Refresh history", exact: true })
+    .getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    })
     .click();
   await expect(
     page.getByRole("button", { name: "Send message", exact: true }),
@@ -105,7 +117,11 @@ test("failed first submission preserves draft and does not create another conver
     page.getByRole("article", { name: "Your message", exact: true }),
   ).toHaveCount(1);
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
   expect(creates).toBe(1);
   expect(sends).toBe(2);
@@ -146,7 +162,11 @@ test("streaming respects reading position and Jump to latest resumes following",
   await jump.click();
   await expect(jump).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled({ timeout: 20000 });
   await expect
     .poll(() =>
@@ -201,12 +221,20 @@ test("drafts stay with each conversation and the fresh chat until accepted", asy
     .click();
   await expect(input).toHaveValue("Unsent A\nsecond line");
   await page
-    .getByRole("button", { name: "Refresh history", exact: true })
+    .getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    })
     .click();
   await expect(input).toHaveValue("Unsent A\nsecond line");
   await page.getByRole("button", { name: "Send message", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Refresh history", exact: true }),
+    page.getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    }),
   ).toBeEnabled();
   await expect(input).toHaveValue("");
   await page
@@ -451,6 +479,10 @@ test("desktop sidebar collapses, expands and preserves the current draft", async
   ).toBeVisible();
   await expect(input).toHaveValue("Keep this while collapsing");
   await page
-    .getByRole("button", { name: "Refresh history", exact: true })
+    .getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    })
     .screenshot({ path: "test-results/refresh-icon.png" });
 });
