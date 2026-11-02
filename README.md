@@ -1,43 +1,27 @@
 # panky
 
-i spent a fortune on my graphics card, so i figured i should make it useful. i'm building a little AI teammate that runs on my PC and comes with me on my phone.
+i spent a fortune on my graphics card, so i figured i should make it useful. Panky is a little AI teammate that runs on my PC and comes with me on my phone.
 
-it's called Panky. the model runs locally through Ollama, the chats stay on the PC, and the interface uses [Pancake UI](https://github.com/j4ckwinter/pancake-ui). mostly, it's an excuse to see how useful i can make this thing.
+local models through Ollama, saved chats, and an interface built with [Pancake UI](https://github.com/j4ckwinter/pancake-ui).
 
-you can find it at [panky.vercel.app](https://panky.vercel.app). it's invite-only for now. send me a message if you fancy trying it out and giving my graphics card something to do.
+try it at [panky.vercel.app](https://panky.vercel.app). it's invite-only for now.
 
 <img src="docs/assets/panky.gif" alt="Panky chat demo" width="320" />
 
-## try it out
+## run locally
 
-use Node 24+ and pnpm 12.16.1. from this checkout:
+use Node 24+ and pnpm 12.16.1. from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile
 cp -n apps/server/.env.example apps/server/.env
 cp -n apps/web/.env.example apps/web/.env
-```
-
-generate a token and save it as `AUTH_TOKEN` in `apps/server/.env`:
-
-```sh
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-set up Google sign-in below, then start both apps:
+save the generated value as `AUTH_TOKEN` in `apps/server/.env`. keep it on the backend; browser login uses Google, not this token.
 
-```sh
-pnpm dev
-```
-
-open **http://localhost:5173**. this uses a mock model, so you can work on the app without installing Ollama. replies are scripted, but saving chats and calling the clock tool are real.
-
-<details>
-<summary>Google sign-in</summary>
-
-create a [Google OAuth web client](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid). add `http://localhost:5173` and your deployed frontend URL as Authorized JavaScript origins. the current deployment is `https://panky.vercel.app`.
-
-set these in `apps/server/.env` and restart the backend:
+create a [Google OAuth web client](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid) with `http://localhost:5173` as an Authorized JavaScript origin, then set:
 
 ```dotenv
 OWNER_EMAIL=your-email@gmail.com
@@ -45,72 +29,30 @@ GOOGLE_CLIENT_ID=YOUR_CLIENT_ID.apps.googleusercontent.com
 AUTH_ORIGIN=http://localhost:5173
 ```
 
-no client secret or redirect URI is needed. if Google's app is in testing, add the accounts as Google test users too. without a client ID, browser sign-in is disabled.
+no client secret is needed. add your account as a Google test user if the OAuth app is in testing. leave the web proxy target at `http://127.0.0.1:3001`.
 
-keep `PANKY_API_TARGET=http://127.0.0.1:3001` in `apps/web/.env`. local and production databases are separate; don't change the PC's production origin to develop on the Mac.
+```sh
+pnpm dev
+```
 
-`AUTH_TOKEN` is a private owner credential for API clients, not browser login. never put it in frontend configuration or share it with friends. changing an established owner email fails startup rather than transferring ownership.
+open **http://localhost:5173** and sign in. the default mock model gives scripted replies without Ollama; chat storage and the clock tool work. try asking “What is the current date and time?”
 
-</details>
+the owner can invite people through **Account → People**. each person has private chats and can manage their devices under **Account → Sessions**.
 
-## use it
+## use a local model
 
-sign in with Google and start a chat. to try the tool:
-
-> What is the current date and time?
-
-open **Used 1 tool** beneath the reply to see what actually ran. the mock recognises that exact prompt; with Ollama, the model decides when to call the tool. **Stop response** stops a reply. saved chats are in the sidebar, and a refresh opens a fresh chat without signing you out.
-
-only the owner can add people through **Account → People**. this allows their Google account; it doesn't send an email, so share the link yourself. friends get private chats and can't invite others. removing access ends their sessions. **Account → Sessions** lets each person sign out their own devices. sessions last 30 days; Gmail and Google Workspace accounts are supported.
-
-chat and the clock tool work today. typed interview assistance and selected Notion imports are implemented locally; live-service and real-model acceptance are pending. there's no shell access or background automation yet. the [brief](brief.md) has the original roadmap and the [interview plan](interview-assistant-plan.md) tracks the new workflow.
-
-### typed interview assistant
-
-choose the **Interview** microphone icon in the far-left navigation rail (open the menu first on mobile). the adjacent chat-history pane can collapse while the rail stays visible on desktop. the selected feature stays highlighted; choose **Chats**, **New chat** or a saved conversation to return to chat. for typed assistance, open **Interview options** in the header, expand **Ask a question**, and enter a behavioural, technical or mixed question, optionally expand **Experience sample** and paste a short example from your work, then choose **Get response**. the panel displays the answer directly as tokens arrive, without separate cues or hidden supporting detail. **Edit last question**, **Stop response** and **New interview** let you control the flow.
-
-demo mode returns clearly labelled synthetic examples and does not analyse your sample. with the local model, Panky requests three or four concise cues and distinguishes supplied experience from suggested reasoning. these are model instructions, not a guarantee of factual accuracy; real-model quality still needs evaluation.
-
-follow-ups can use up to four recent questions and your optional **What I actually said** notes. generated suggestions never become spoken-answer context. **Start new topic** clears that context while keeping your experience sample. older turns may be omitted to fit the model budget. context and spoken notes stay in this view and are not restored from saved history; answers may quote them. selected Notion imports are available through **Notion experience**; browser audio capture and local English transcription are available in Interview (IA-4b/IA-4c), without a native helper. Choose **Start listening** to capture and prepare local transcription; open the header’s **Interview options** for **Listening settings** and **Ask a question**; live-interview accuracy acceptance remains pending. See [browser audio setup and limitations](docs/browser-audio.md). Shared-audio questions appear in compact editors beside the response on desktop and above it on mobile, with sent questions underneath. Listening controls stay compact, and the transcript is collapsed below the workspace. Choose **Send question** (or Ctrl/Cmd+Enter) to send one to the configured model for general technical help, without experience retrieval. Use **Sent questions → View answer** to revisit a spoken answer without leaving Interview or stopping capture. Microphone text never creates cards. Spoken follow-ups include up to four accepted spoken questions, excluding model replies and personal experience; **New topic** clears this context. Nothing is submitted automatically; missed questions can be selected with **Use as question** in the transcript. the question, generated reply and any retrieved evidence snapshots are saved in your existing chat history; reopening one from the sidebar uses the normal chat view. the pasted sample stays in the interview view until you leave or start a new interview and is not stored separately, but saved answers may quote it. do not paste credentials.
-
-the question accepts up to 8,000 characters and the sample up to 4,000. the combined prompt must also fit the server's context budget; an oversized request is rejected without saving messages. interview generation uses the same authenticated endpoint, global response slot and cancellation as chat, with tools disabled.
-
-run `pnpm evaluate:interview` to inspect the evaluation command without calling a model. the [evaluation guide](docs/interview-evaluation.md) covers standalone and multi-turn PC runs, private sample input, latency measurements and human scoring. PC measurements, agreed acceptance targets and a spoken-use review remain required for real-model acceptance.
-
-### Notion experience
-
-configure the owner’s read-only Notion connection with `NOTION_TOKEN` on the backend, then use **Interview → Notion experience** to import an explicit page link or ID. inspect, refresh and remove sources there. relevant passages are retrieved locally and shown separately beneath each answer, including in demo mode. invited users cannot use the owner’s connection or read the owner’s corpus.
-
-failed refreshes preserve the old copy but exclude it from new answers until refreshed successfully. removing a source does not erase excerpts already saved with answers. see the [Notion setup and verification guide](docs/notion-experience.md) for supported content, limits, privacy, and live acceptance checks.
-
-## run it on your PC
-
-the current setup uses an RTX 3080, Ollama and a small Qwen3 model. the frontend runs on Vercel and reaches the PC through an HTTPS tunnel. the PC needs to stay awake and connected.
-
-<details>
-<summary>Windows and Ollama setup</summary>
-
-install [Ollama for Windows](https://docs.ollama.com/windows). keep it on `127.0.0.1:11434`. in PowerShell, set these once, then quit and relaunch Ollama:
+on Windows, install Ollama and keep it bound to `127.0.0.1:11434`. set these in PowerShell, then quit and relaunch Ollama:
 
 ```powershell
 [Environment]::SetEnvironmentVariable("OLLAMA_NO_CLOUD", "1", "User")
 [Environment]::SetEnvironmentVariable("OLLAMA_GO_TEMPLATE", "1", "User")
-```
-
-the first setting keeps inference local. the second enables the corrected model template used with the evaluated Ollama version, 0.40.13.
-
-from the repository root:
-
-```powershell
-corepack pnpm install --frozen-lockfile
-# If pnpm is missing from PATH:
-corepack enable --install-directory node_modules/.bin
-if (!(Test-Path apps/server/.env)) { Copy-Item apps/server/.env.example apps/server/.env }
 ollama pull qwen3:4b-instruct-2507-q4_K_M
 ollama create panky-qwen3:4b -f models/qwen3.Modelfile
 ```
 
-configure the token and Google sign-in as above, then set these in `apps/server/.env`:
+run the model commands from the repository root after relaunching Ollama. the explicit Instruct model and [custom template](models/qwen3.Modelfile) are the evaluated configuration; rerun `pnpm evaluate:ollama --run` before changing them.
+
+set these in `apps/server/.env`, then restart the backend:
 
 ```dotenv
 MODEL_PROVIDER=ollama
@@ -121,88 +63,23 @@ HISTORY_MAX_CHARS=8000
 MAX_TASK_DURATION_MS=120000
 ```
 
-build and start the backend:
+the deployed frontend uses Vercel and an HTTPS tunnel to the PC backend. the PC, backend, Ollama and tunnel must stay running. keep Ollama's port private. deployment routing lives in [vercel.json](apps/web/vercel.json); set the backend's `AUTH_ORIGIN` and `ALLOWED_ORIGINS` to your exact frontend origin.
 
-```powershell
-corepack pnpm build
-corepack pnpm --filter @panky/server start
-```
+## development
 
-the model uses the template in [models/qwen3.Modelfile](models/qwen3.Modelfile) to address malformed tool definitions in [Ollama issue 14601](https://github.com/ollama/ollama/issues/14601). use the explicit Instruct model above: the generic `qwen3:4b` tag resolved to a thinking variant that failed evaluation. repeat the evaluation before changing the model or removing the template setting.
-
-</details>
-
-<details>
-<summary>Vercel and the tunnel</summary>
-
-the deployed path is:
-
-```text
-Browser → Vercel /api proxy → HTTPS tunnel → PC backend → Ollama
-```
-
-the PC, backend, Ollama and tunnel must stay running. this isn't an always-on hosted backend.
-
-configure the PC backend:
-
-```dotenv
-AUTH_ORIGIN=https://panky.vercel.app
-ALLOWED_ORIGINS=https://panky.vercel.app
-```
-
-use your own exact frontend origin if hosting elsewhere. cookie-authenticated writes require `AUTH_ORIGIN`; CORS is not authentication.
-
-configure ngrok's account token privately, then start the tunnel in PowerShell:
-
-```powershell
-ngrok http http://127.0.0.1:3001 --url=https://upcountry-scheme-excretory.ngrok-free.dev --inspect=false
-```
-
-that hostname belongs to the current deployment; replace it for your own setup. `--inspect=false` disables request inspection that could capture credentials and conversations. the ngrok token is separate from Panky's API token. keep the old Mac tunnel stopped, and never expose Ollama's port 11434.
-
-for Vercel, use **apps/web** as the project root, allow access to workspace files outside it, and install with `pnpm install --frozen-lockfile`. [apps/web/vercel.json](apps/web/vercel.json) defines the build, output and `/api` rewrite. update that rewrite when changing tunnels; frontend environment variables do not change the production target. keep secrets on the backend.
-
-to update the PC: stop the backend, back up the database, pull the code, install with the frozen lockfile, build and restart. update the backend before a frontend release that depends on new API behaviour.
-
-after deployment, check Google sign-in, streamed replies, stopping a response and history after refresh. local tests don't prove the Google Cloud configuration or deployed cookie/tunnel path. the owner verified deployed real-model streaming, clock activity and restored history for Milestone 3.
-
-</details>
-
-## work on it
-
-React and Vite live in `apps/web`, grouped into chat, auth and shared components. `apps/server` separates authentication, chat execution and model providers, with tests alongside them. `packages/shared` holds the API schemas and types.
+- `apps/web` — React/Vite UI and API client.
+- `apps/server` — authentication, model providers, chat execution and SQLite.
+- `packages/shared` — API schemas and types.
 
 ```sh
 pnpm check       # lint, formatting, types and backend tests
-pnpm build      # build both apps and shared schemas
-pnpm test:e2e   # browser tests against an isolated backend
-pnpm format     # format source
+pnpm build       # build all packages
+pnpm test:e2e    # browser tests against an isolated backend
+pnpm format      # format source
 ```
 
-install Chromium once with `pnpm exec playwright install chromium`. individual checks are `pnpm lint`, `pnpm format:check`, `pnpm typecheck` and `pnpm test`. CI runs checks, build and browser tests. the browser tests stub Google sign-in; real sign-in still needs checking after deployment.
+install the test browser once with `pnpm exec playwright install chromium`. tests use isolated databases; real Google sign-in and deployment still need a live check.
 
-use the mock on the Mac and test model changes on the PC. push and pull code between them; environment files and databases stay separate. tests use isolated databases, never your live chats.
+one response runs at a time. interrupted replies are saved and never retried automatically. SQLite stores chats in plaintext: keep its directory private, and stop the backend before backing up the database and any sidecar files.
 
-<details>
-<summary>model checks and known limits</summary>
-
-run `corepack pnpm evaluate:ollama --run` on the PC. it uses an in-memory database to check instructions, short conversation recall, clock calls, tool failure and a requested retry. check GPU use with `ollama ps` and `nvidia-smi`.
-
-on 1 November 2026, all seven cases passed with Ollama 0.40.13 and `panky-qwen3:4b` on the RTX 3080. the first reply took 2.36 seconds; short warm replies took 55–94 ms and clock runs 301–318 ms. Ollama reported 100% GPU residency. these are small examples, not a general reliability benchmark.
-
-- one response runs at a time across all users. Busy submissions are rejected without adding messages.
-- disconnecting interrupts generation and preserves partial text. restarting marks unfinished work interrupted. messages and tools are never retried automatically; check history before manually resending after a connection error.
-- the provider supports one tool request per turn. tool failures end the task; a later message can request another attempt.
-- history is bounded by characters, not tokens. older messages may be omitted, and Ollama may truncate context. stored history isn't deleted. previous tasks supply completed message text; structured tool results are supplied within the current task.
-- browser sessions use HttpOnly cookies, Secure on HTTPS. the backend verifies Google identities and enforces per-user access. the owner cannot read members' chats through the app.
-- SQLite stores chats in plaintext. keep its directory private and run only one backend process per database.
-
-for backups or moving data between machines, stop the backend and copy the database **with any SQLite sidecar files**. back up the destination first; don't overwrite or merge databases implicitly. the database also contains accounts, invitations and sessions. transfer configuration privately.
-
-legacy chats are assigned to the owner during migration. don't roll back to the old single-user backend after adding members: it lacks ownership checks and could expose their chats.
-
-</details>
-
-## a bit more
-
-[server configuration](apps/server/.env.example) lists the defaults; [config.ts](apps/server/src/config.ts) defines their limits. [web configuration](apps/web/.env.example) sets the local proxy target. the [brief](brief.md) records Milestone 3 as complete and what's next.
+see the [server configuration](apps/server/.env.example), [web configuration](apps/web/.env.example) and [project brief](brief.md) for more detail.
