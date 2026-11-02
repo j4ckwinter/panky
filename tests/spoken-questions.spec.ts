@@ -81,20 +81,22 @@ test("shared speech becomes an editable general question and sends once only on 
     path: "test-results/interview-workspace-mobile.png",
   });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(card).toContainText("Sent to model");
+  await expect(
+    page.getByText("Sent questions (1)", { exact: true }),
+  ).toBeVisible();
   expect(submissions).toHaveLength(1);
   expect(submissions[0]).toMatchObject({
     content: "Explain a JavaScript closure with a short example.",
     interview: { experience: "", context: [], useExperience: false },
   });
   expect(JSON.stringify(submissions)).not.toContain("PRIVATE EXPERIENCE");
-  await expect(card).not.toContainText("private microphone question");
+  await expect(card).toHaveCount(0);
   await page.evaluate(
     "window.speechTest.transcript('shared', 'How does lexical scope work?')",
   );
   await expect(
     cards.getByRole("article", { name: "Detected question", exact: true }),
-  ).toHaveCount(2, { timeout: 15000 });
+  ).toHaveCount(1, { timeout: 15000 });
   await expect(answer).toContainText(
     "Explain a JavaScript closure with a short example.",
   );
@@ -283,7 +285,9 @@ test("accepted spoken questions can be stopped without resubmission", async ({
       exact: true,
     }),
   ).toBeVisible();
-  await expect(card).toContainText("Sent to model");
+  await expect(
+    page.getByText("Sent questions (1)", { exact: true }),
+  ).toBeVisible();
   expect(submissions).toBe(1);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });
@@ -369,7 +373,7 @@ test("a second question without punctuation settles while shared audio continues
   await page.evaluate(
     "window.speechTest.transcript('shared', 'Explain how the JavaScript event loop works.')",
   );
-  await expect(cards).toHaveCount(2, { timeout: 24000 });
+  await expect(cards).toHaveCount(1, { timeout: 24000 });
   await expect(cards.last().getByLabel("Question to ask")).toHaveValue(
     /Explain how the JavaScript event loop works/,
   );
@@ -383,5 +387,52 @@ test("a second question without punctuation settles while shared audio continues
   await expect(
     page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});
+
+test("accepted requests leave room for more than five questions in one session", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  const panel = await audioFixture(page);
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'Explain concept number 1?')",
+  );
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  for (let number = 1; number <= 6; number++) {
+    await page.evaluate((number) => {
+      (
+        window as unknown as {
+          speechTest: { transcript(source: string, text: string): void };
+        }
+      ).speechTest.transcript("shared", `Explain concept number ${number}?`);
+    }, number);
+    const card = page.getByRole("article", {
+      name: "Detected question",
+      exact: true,
+    });
+    await expect(card.getByLabel("Question to ask")).toHaveValue(
+      `Explain concept number ${number}?`,
+      { timeout: 12000 },
+    );
+    await card
+      .getByRole("button", { name: "Use this question", exact: true })
+      .click();
+    await expect(
+      page.getByText("Response ready.", { exact: true }),
+    ).toBeVisible();
+    await expect(card).toHaveCount(0);
+    await expect(
+      page.getByText(`Sent questions (${number})`, { exact: true }),
+    ).toBeVisible();
+  }
+  await expect(page.locator(".accepted-questions")).not.toHaveAttribute(
+    "open",
+    "",
+  );
+  await page.getByText("Sent questions (6)", { exact: true }).click();
+  await expect(page.locator(".accepted-questions li")).toHaveCount(6);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });

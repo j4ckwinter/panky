@@ -293,6 +293,6 @@ Second-question verification: the user's screenshot showed a Microphone transcri
 ### Sequential flow improvements
 
 1. Audio-source visibility: implemented a recent-activity indicator beside the listening controls, including microphone-only guidance, neutral silence and recovery. Verified all 16 capture/transcript browser tests, checks (92 backend tests) and build.
-2. Queue management: next.
+2. Queue management: accepted requests move to collapsed history (last 20), freeing the five active slots. Pending and failed cards remain actionable. Verified all eight spoken-question browser tests, including six successive accepted questions, plus checks/build. Independent review found no actionable issues.
 3. Stage latency measurement: pending.
 4. Spoken follow-up context without personal experience: pending; explicitly authorized by the user for this sequence.

@@ -8,7 +8,12 @@ export function SpokenQuestions({
   questions: ReturnType<typeof useSpokenQuestions>;
   providerLabel: string;
 }) {
-  if (!questions.cards.length && !questions.notice) return null;
+  if (
+    !questions.cards.length &&
+    !questions.acceptedQuestions.length &&
+    !questions.notice
+  )
+    return null;
   return (
     <section className="spoken-questions" aria-label="Detected questions">
       <h2>Questions</h2>
@@ -37,29 +42,25 @@ export function SpokenQuestions({
                 void questions.submit(card.id);
               }}
             >
-              {card.status === "accepted" ? (
-                <p className="accepted-question">{card.text}</p>
-              ) : (
-                <Textarea
-                  label="Question to ask"
-                  rows={3}
-                  maxLength={8000}
-                  value={card.text}
-                  disabled={card.status !== "draft"}
-                  onChange={(event) =>
-                    questions.edit(card.id, event.currentTarget.value)
+              <Textarea
+                label="Question to ask"
+                rows={3}
+                maxLength={8000}
+                value={card.text}
+                disabled={card.status !== "draft"}
+                onChange={(event) =>
+                  questions.edit(card.id, event.currentTarget.value)
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    (event.ctrlKey || event.metaKey)
+                  ) {
+                    event.preventDefault();
+                    void questions.submit(card.id);
                   }
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === "Enter" &&
-                      (event.ctrlKey || event.metaKey)
-                    ) {
-                      event.preventDefault();
-                      void questions.submit(card.id);
-                    }
-                  }}
-                />
-              )}
+                }}
+              />
               <div className="interview-actions">
                 {card.status === "draft" && (
                   <Button
@@ -71,9 +72,6 @@ export function SpokenQuestions({
                 )}
                 {card.status === "pending" && (
                   <span role="status">Sending question…</span>
-                )}
-                {card.status === "accepted" && (
-                  <span role="status">Sent to model</span>
                 )}
                 {card.status === "failed" && (
                   <>
@@ -102,6 +100,24 @@ export function SpokenQuestions({
           </article>
         ))}
       </section>
+      {questions.cards.length === 0 && (
+        <p className="interview-note">No questions waiting for review.</p>
+      )}
+      {questions.acceptedQuestions.length > 0 && (
+        <details className="accepted-questions">
+          <summary>
+            Sent questions ({questions.acceptedQuestions.length})
+          </summary>
+          <p className="interview-note">
+            Last 20 accepted requests. Replies are saved in chat history.
+          </p>
+          <ol>
+            {questions.acceptedQuestions.map((question) => (
+              <li key={question.id}>{question.text}</li>
+            ))}
+          </ol>
+        </details>
+      )}
     </section>
   );
 }

@@ -7,11 +7,14 @@ export type SpokenQuestion = {
   id: number;
   text: string;
   original: string;
-  status: "draft" | "pending" | "accepted" | "failed";
+  status: "draft" | "pending" | "failed";
 };
 
 export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   const [cards, setCards] = useState<SpokenQuestion[]>([]);
+  const [acceptedQuestions, setAcceptedQuestions] = useState<
+    { id: number; text: string }[]
+  >([]);
   const [notice, setNotice] = useState("");
   const items = useRef(cards);
   const history = useRef<string[]>([]);
@@ -56,7 +59,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
       return;
     if (items.current.length >= 5) {
       setNotice(
-        "Five questions are shown. Dismiss one, then use a transcript segment to add another.",
+        "Five questions are waiting. Dismiss one, then use a transcript segment to add another.",
       );
       return;
     }
@@ -135,9 +138,14 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
         { experience: "", context: [], useExperience: false },
         () => {
           accepted = true;
+          if (!mounted.current || generation.current !== current) return;
           remember(card.original);
           remember(submitted);
-          changeStatus("accepted");
+          setAcceptedQuestions((previous) =>
+            [...previous, { id, text: submitted }].slice(-20),
+          );
+          update(items.current.filter((item) => item.id !== id));
+          setNotice("");
         },
       );
     } finally {
@@ -175,10 +183,12 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     resetDetection();
     history.current = [];
     update([]);
+    setAcceptedQuestions([]);
     setNotice("");
   }
   return {
     cards,
+    acceptedQuestions,
     notice,
     unavailable,
     onTranscript,

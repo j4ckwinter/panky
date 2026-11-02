@@ -104,7 +104,9 @@ test("production speech reaches an editable question and the answer endpoint", a
     await card
       .getByRole("button", { name: "Use this question", exact: true })
       .click();
-    await expect(card).toContainText("Sent to model");
+    await expect(
+      page.getByText("Sent questions (1)", { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("region", { name: "Interview answer", exact: true }),
     ).toContainText("Suggested approach");
