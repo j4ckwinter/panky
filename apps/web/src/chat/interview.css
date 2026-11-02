@@ -15,9 +15,7 @@
   gap: var(--spacing-pancake-16);
   overflow-wrap: anywhere;
 }
-.interview-panel:has(.live-transcript-active),
-.interview-panel:has(.interview-tools[open]),
-.interview-panel:has(.listening-settings[open]) {
+.interview-panel:has(.live-transcript-active) {
   align-content: start;
   padding-bottom: 24px;
 }
@@ -96,8 +94,8 @@
   scroll-margin-block: var(--spacing-pancake-16);
 }
 .interview-question {
-  background: var(--color-pancake-canvas);
   padding: var(--spacing-pancake-24);
+  border-bottom: 1px solid var(--color-pancake-border);
 }
 .interview-question h2 {
   font-size: 13px;
@@ -134,6 +132,7 @@
   padding: var(--spacing-pancake-16);
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-12);
+  background: var(--color-pancake-canvas);
 }
 .spoken-question form {
   display: grid;
@@ -149,7 +148,7 @@
   min-width: 0;
 }
 .interview-workspace.has-answer {
-  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.6fr);
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.6fr);
   align-items: start;
 }
 .interview-answer-column {
@@ -166,10 +165,109 @@
   max-height: 48vh;
   overflow-y: auto;
 }
-.accepted-question {
+.sent-questions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-pancake-16);
+  padding: 12px;
+  border: 1px solid var(--color-pancake-border);
+  border-radius: 12px;
+}
+.accepted-questions {
+  flex: 1;
+  min-width: 0;
+}
+.accepted-questions ol {
+  list-style: none;
   margin: 0;
+  padding: 0;
+}
+.accepted-questions > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
   font-size: 14px;
-  white-space: pre-wrap;
+}
+.accepted-questions > summary::-webkit-details-marker {
+  display: none;
+}
+.accepted-questions[open] .history-chevron {
+  transform: rotate(90deg);
+}
+.accepted-questions ol {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+.accepted-questions li button {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  height: auto;
+  gap: 12px;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 400;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-pancake-ink);
+}
+.accepted-questions li button[aria-pressed="true"] {
+  background: var(--color-pancake-canvas);
+  border-color: var(--color-pancake-border);
+  box-shadow: inset 3px 0 var(--color-pancake-deep);
+}
+.accepted-questions li button:hover {
+  background: var(--color-pancake-surface-muted);
+}
+.sent-question-number {
+  color: var(--color-pancake-muted);
+  font-size: 12px;
+}
+.sent-question-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sent-question-arrow {
+  flex-shrink: 0;
+  color: var(--color-pancake-muted);
+}
+.sent-questions .new-topic-button {
+  min-width: 0;
+  padding: 0 12px;
+  font-size: 13px;
+  border: 1px solid var(--color-pancake-control-border);
+  background: var(--color-pancake-surface);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.spoken-question .interview-actions {
+  justify-content: space-between;
+}
+.spoken-question .question-send {
+  min-width: 0;
+  padding-inline: 12px;
+  font-size: 14px;
+  order: 1;
+  border-radius: 10px;
+  gap: 8px;
+}
+.spoken-question .question-dismiss {
+  min-width: 40px;
+  border-radius: 10px;
+  padding-inline: 8px;
+  font-size: 14px;
+}
+.spoken-question textarea {
+  background: var(--color-pancake-surface);
 }
 @media (max-width: 760px) {
   .interview-workspace.has-answer {
@@ -199,4 +297,28 @@
 }
 .response-timing dd {
   margin: 0;
+}
+
+.interview-options {
+  position: fixed;
+  z-index: 4;
+  top: 64px;
+  right: 12px;
+  bottom: 12px;
+  width: min(520px, calc(100vw - 24px));
+  overflow-y: auto;
+  padding: var(--spacing-pancake-16);
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-12);
+  background: var(--color-pancake-surface);
+  box-shadow: 0 8px 32px #38454020;
+}
+.interview-options[hidden] {
+  display: none;
+}
+.interview-options .dialog-heading {
+  margin-bottom: var(--spacing-pancake-16);
+}
+.interview-options .interview-tools > summary {
+  text-align: left;
 }

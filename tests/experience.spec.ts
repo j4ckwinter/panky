@@ -1,3 +1,7 @@
+import {
+  toggleTypedQuestion,
+  openInterviewOptions,
+} from "./interview-options.js";
 import { expect } from "@playwright/test";
 import { test, login } from "./auth-fixture.js";
 
@@ -7,7 +11,7 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await page.getByText("Notion experience", { exact: true }).click();
   const field = page.getByLabel("Notion page ID or link", { exact: true });
   await expect(field).toBeEnabled();
@@ -48,6 +52,7 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
     path: "test-results/experience-desktop.png",
     fullPage: true,
   });
+  await openInterviewOptions(page);
   await source
     .getByRole("button", { name: "Refresh page", exact: true })
     .click();
@@ -84,6 +89,7 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   ).toBeVisible();
   await expect(answer.locator(".source-evidence")).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
+  await openInterviewOptions(page);
   await updated.scrollIntoViewIfNeeded();
   expect(
     await page.evaluate(
@@ -131,7 +137,7 @@ test("an inaccessible selected Notion page reports a failure without adding a so
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await page.getByText("Notion experience", { exact: true }).click();
   await page
     .getByLabel("Notion page ID or link", { exact: true })

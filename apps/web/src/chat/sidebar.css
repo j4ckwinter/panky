@@ -1,11 +1,37 @@
 .sidebar {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
   background: var(--color-pancake-canvas);
   border-right: 1px solid var(--color-pancake-border);
+  min-height: 0;
+}
+.feature-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+  border-right: 1px solid var(--color-pancake-border);
+  gap: 8px;
+}
+.feature-rail nav {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.rail-bottom {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  justify-items: center;
+}
+.sidebar-content {
   padding: 12px 8px 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-height: 0;
+  min-width: 0;
 }
 .sidebar-brand {
   display: flex;
@@ -41,8 +67,7 @@
   border-radius: 8px;
   background: transparent;
 }
-.sidebar .new-chat-button,
-.sidebar .sidebar-feature-button {
+.sidebar .new-chat-button {
   justify-content: flex-start;
   gap: var(--spacing-pancake-12);
   min-width: 0;
@@ -54,7 +79,13 @@
   background: transparent;
 }
 .sidebar .sidebar-feature-button {
-  width: 100%;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 10px;
+  background: transparent;
 }
 .sidebar .sidebar-feature-button[aria-current] {
   background: var(--color-pancake-surface-accent);
@@ -155,7 +186,7 @@
 }
 .sidebar-bottom {
   display: block;
-  padding-top: 8px;
+  padding-top: 0;
   border-top: 0;
 }
 .sidebar-bottom > :first-child {
@@ -175,11 +206,13 @@
 }
 .account-menu > button {
   min-width: 0;
-  min-height: 36px;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-size: 14px;
+  width: 40px;
+  min-height: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 20px;
   background: transparent;
 }
 .account-menu > button:hover,
@@ -204,22 +237,10 @@
 }
 @media (min-width: 641px) {
   .sidebar-collapsed {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 52px minmax(0, 1fr);
   }
-  .sidebar-collapsed .sidebar-brand {
-    justify-content: center;
-  }
-  .sidebar-collapsed .brand,
-  .sidebar-collapsed .conversation-list,
-  .sidebar-collapsed .new-chat-label,
-  .sidebar-collapsed .sidebar-feature-label,
-  .sidebar-collapsed .chat-search {
+  .sidebar-collapsed .sidebar-content {
     display: none;
-  }
-  .sidebar-collapsed .new-chat-button,
-  .sidebar-collapsed .sidebar-feature-button {
-    width: 100%;
-    justify-content: center;
   }
 }
 @media (max-width: 640px) {
@@ -227,7 +248,7 @@
     display: none;
   }
   .sidebar-open {
-    display: flex;
+    display: grid;
     position: fixed;
     z-index: 2;
     top: 0;

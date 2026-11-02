@@ -1,3 +1,8 @@
+import {
+  toggleTypedQuestion,
+  openInterviewOptions,
+  closeInterviewOptions,
+} from "./interview-options.js";
 import { expect } from "@playwright/test";
 import { test } from "./auth-fixture.js";
 import { audioFixture } from "./browser-audio-fixture.js";
@@ -6,12 +11,12 @@ test("shared speech becomes an editable general question and sends once only on 
   page,
 }) => {
   const panel = await audioFixture(page);
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await page.getByText("Experience sample (optional)", { exact: true }).click();
   await page
     .getByLabel("Your experience sample", { exact: true })
     .fill("PRIVATE EXPERIENCE SHOULD NOT BE SENT");
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await page.evaluate(() => {
     const fixture = (
       window as unknown as {
@@ -53,7 +58,7 @@ test("shared speech becomes an editable general question and sends once only on 
     .getByLabel("Question to ask", { exact: true })
     .fill("Explain a JavaScript closure with a short example.");
   await card
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .dblclick();
   const answer = page.getByRole("region", {
     name: "Interview answer",
@@ -72,6 +77,7 @@ test("shared speech becomes an editable general question and sends once only on 
   await expect(answer.locator(".interview-response")).toBeInViewport();
   await expect(answer).not.toContainText("Immediate cues");
   await expect(answer).not.toContainText("Supporting detail");
+  await openInterviewOptions(page);
   await page.getByText("Response timing", { exact: true }).click();
   const timing = page.locator(".response-timing");
   await expect(timing.locator("dd").nth(0)).toHaveText("42 ms");
@@ -82,7 +88,14 @@ test("shared speech becomes an editable general question and sends once only on 
     page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
   await expect(timing.locator("dd").nth(2)).toHaveText(firstTextTime!);
+  await openInterviewOptions(page);
   await page.getByText("Response timing", { exact: true }).click();
+  await closeInterviewOptions(page);
+  const historyBox = await page.locator(".sent-questions").boundingBox();
+  const responseBox = await answer.boundingBox();
+  expect(historyBox!.y).toBeGreaterThanOrEqual(
+    responseBox!.y + responseBox!.height,
+  );
   await page.screenshot({
     path: "test-results/interview-workspace-desktop.png",
   });
@@ -95,6 +108,11 @@ test("shared speech becomes an editable general question and sends once only on 
   await expect(
     page.getByText("Sent questions (1)", { exact: true }),
   ).toBeVisible();
+  await page.getByText("Sent questions (1)", { exact: true }).click();
+  await page
+    .locator(".sent-questions")
+    .screenshot({ path: "test-results/sent-questions-refined.png" });
+  await page.getByText("Sent questions (1)", { exact: true }).click();
   expect(submissions).toHaveLength(1);
   expect(submissions[0]).toMatchObject({
     content: "Explain a JavaScript closure with a short example.",
@@ -112,8 +130,30 @@ test("shared speech becomes an editable general question and sends once only on 
     "Explain a JavaScript closure with a short example.",
   );
   expect(submissions).toHaveLength(1);
+  const sendBox = await card
+    .getByRole("button", { name: "Send question", exact: true })
+    .boundingBox();
+  const dismissBox = await card
+    .getByRole("button", { name: "Dismiss question", exact: true })
+    .boundingBox();
+  expect(Math.abs(sendBox!.y - dismissBox!.y)).toBeLessThan(2);
+  const queueBox = await cards.boundingBox();
+  const answerBox = await answer.boundingBox();
+  expect(queueBox!.x + queueBox!.width).toBeLessThanOrEqual(answerBox!.x);
+  await page.screenshot({
+    path: "test-results/interview-question-controls-desktop.png",
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await card.scrollIntoViewIfNeeded();
+  await expect(
+    card.getByRole("button", { name: "Send question", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/interview-question-controls-mobile.png",
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
   await cards
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     page.getByText("Response ready.", { exact: true }),
@@ -135,7 +175,9 @@ test("shared speech becomes an editable general question and sends once only on 
   expect(JSON.stringify(submissions[1])).not.toContain("Synthetic example");
   expect(JSON.stringify(submissions[1])).not.toContain("PRIVATE EXPERIENCE");
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
-  await cards.screenshot({ path: "test-results/spoken-question-cards.png" });
+  await page
+    .locator(".sent-questions")
+    .screenshot({ path: "test-results/spoken-question-history.png" });
 });
 
 test("dismissed shared questions do not reappear and unrecognized speech can be selected manually", async ({
@@ -212,6 +254,7 @@ test("failed spoken submissions are not retried automatically", async ({
     .getByLabel("Question to ask", { exact: true })
     .press("Control+Enter");
   await expect(card).toContainText("Submission not confirmed");
+  await openInterviewOptions(page);
   await page.getByText("Response timing", { exact: true }).click();
   await expect(page.locator(".response-timing")).toContainText(
     "No response text received",
@@ -221,6 +264,7 @@ test("failed spoken submissions are not retried automatically", async ({
   );
   await page.waitForTimeout(1500);
   expect(attempts).toBe(1);
+  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });
 
@@ -312,7 +356,7 @@ test("accepted spoken questions can be stopped without resubmission", async ({
   });
   await expect(card).toBeVisible({ timeout: 15000 });
   await card
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Stop response", exact: true })
@@ -364,7 +408,7 @@ test("long answers stay in the workspace and can be scrolled with the keyboard",
       .join("\n");
     await route.fulfill({ response, body });
   });
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await page
     .getByLabel("Interview question", { exact: true })
     .fill("Explain closures");
@@ -402,7 +446,7 @@ test("a second question without punctuation settles while shared audio continues
   await expect(cards).toHaveCount(1, { timeout: 15000 });
   await cards
     .first()
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     page.getByText("Response ready.", { exact: true }),
@@ -416,7 +460,7 @@ test("a second question without punctuation settles while shared audio continues
   );
   await cards
     .last()
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     page.getByRole("region", { name: "Interview answer", exact: true }),
@@ -466,7 +510,7 @@ test("accepted requests leave room for more than five questions in one session",
       { timeout: 12000 },
     );
     await card
-      .getByRole("button", { name: "Use this question", exact: true })
+      .getByRole("button", { name: "Send question", exact: true })
       .click();
     await expect(
       page.getByText("Response ready.", { exact: true }),
@@ -503,14 +547,14 @@ test("accepted requests leave room for more than five questions in one session",
     { timeout: 12000 },
   );
   await next
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
   expect(submissions.at(-1)?.interview.context).toEqual([]);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await page
     .getByRole("button", { name: "New interview", exact: true })
     .click();
@@ -537,12 +581,12 @@ test("typed topic reset also clears spoken context while disconnected", async ({
   });
   await expect(card).toBeVisible({ timeout: 12000 });
   await card
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await page
     .getByLabel("Interview question", { exact: true })
     .fill("Explain lexical scope");
@@ -556,9 +600,11 @@ test("typed topic reset also clears spoken context while disconnected", async ({
       exact: true,
     }),
   ).toBeVisible({ timeout: 10000 });
+  await openInterviewOptions(page);
   await page
     .getByRole("button", { name: "Start new topic", exact: true })
     .click();
+  await closeInterviewOptions(page);
   await expect(page.getByText(/Using 1 recent spoken question/)).toHaveCount(0);
   await page.unroute("**/api/health");
   await expect(page.getByText("Response ready.", { exact: true })).toBeVisible({
@@ -576,7 +622,7 @@ test("typed topic reset also clears spoken context while disconnected", async ({
       request.method() === "POST" && request.url().endsWith("/messages"),
   );
   await card
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   expect((await request).postDataJSON().interview.context).toEqual([]);
   await expect(
@@ -631,7 +677,7 @@ test("the same follow-up can be asked after context changes without replaying co
       timeout: 12000,
     });
     await card
-      .getByRole("button", { name: "Use this question", exact: true })
+      .getByRole("button", { name: "Send question", exact: true })
       .click();
     await expect(
       page.getByText("Response ready.", { exact: true }),
@@ -699,7 +745,7 @@ test("a sustained audio pause settles an imperative question without a question 
     { timeout: 4000 },
   );
   await card
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     page.getByText("Response ready.", { exact: true }),
@@ -771,7 +817,7 @@ test("sent questions reopen their own answers without stopping listening or repl
     timeout: 12000,
   });
   await card
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     page.getByText("Response ready.", { exact: true }),
@@ -785,7 +831,7 @@ test("sent questions reopen their own answers without stopping listening or repl
     { timeout: 12000 },
   );
   await card
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     page.getByRole("button", { name: "Stop response", exact: true }),
@@ -837,7 +883,7 @@ test("sent questions reopen their own answers without stopping listening or repl
     { timeout: 12000 },
   );
   await card
-    .getByRole("button", { name: "Use this question", exact: true })
+    .getByRole("button", { name: "Send question", exact: true })
     .click();
   await expect(
     answer.getByRole("heading", { name: "Current question", exact: true }),

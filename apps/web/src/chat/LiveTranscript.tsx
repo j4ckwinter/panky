@@ -1,5 +1,6 @@
 import { BannerToast, Button } from "@jack.winter/pancake-ui";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AudioSourceStatus } from "./AudioSourceStatus";
 import { BrowserAudio, initialAudioState } from "./browserAudio";
 import {
@@ -18,11 +19,13 @@ export type TranscriptEntry = {
 
 export function LiveTranscript({
   children,
+  settingsTarget,
   onTranscript,
   onUseAsQuestion,
   onResetDetection,
 }: {
   children?: ReactNode;
+  settingsTarget?: HTMLElement | null;
   onTranscript?: (entry: TranscriptEntry) => void;
   onUseAsQuestion?: (text: string) => void;
   onResetDetection?: () => void;
@@ -134,12 +137,7 @@ export function LiveTranscript({
               ? "Your transcript"
               : "Start listening"}
         </h2>
-        {!hasSession && (
-          <p className="muted">
-            Choose your Google Meet tab and share its audio.
-          </p>
-        )}
-        {(state.status !== "idle" || loading) && (
+        {((state.status !== "idle" && !active) || loading) && (
           <p role="status" className="listening-status">
             {loading
               ? speech.progress || "Preparing local transcription…"
@@ -153,6 +151,7 @@ export function LiveTranscript({
                 }[state.status]}
           </p>
         )}
+        <AudioSourceStatus state={state} />
         <div className="browser-audio-actions listening-controls">
           {!active && !pending && !loading && (
             <Button disabled={removing} onClick={() => void start()}>
@@ -162,13 +161,39 @@ export function LiveTranscript({
           {active && !loading && (
             <Button
               variant="secondary"
+              size={40}
+              className="capture-action"
               onClick={() => capture.current?.stop("paused")}
             >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
               Pause
             </Button>
           )}
           {(active || pending) && (
-            <Button variant="secondary" onClick={() => capture.current?.stop()}>
+            <Button
+              variant="secondary"
+              size={40}
+              className="capture-action"
+              onClick={() => capture.current?.stop()}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <rect x="5" y="5" width="14" height="14" rx="2" />
+              </svg>
               Stop
             </Button>
           )}
@@ -181,11 +206,6 @@ export function LiveTranscript({
             </Button>
           )}
         </div>
-        {!hasSession && !modelReady && (
-          <p className="interview-note listening-download">
-            Transcribes on your device. First use downloads about 70 MB.
-          </p>
-        )}
       </div>
       {speech.error && (
         <BannerToast tone="error" title="Transcription unavailable">
@@ -197,7 +217,6 @@ export function LiveTranscript({
           {state.error}
         </BannerToast>
       )}
-      <AudioSourceStatus state={state} />
       {children}
       {(active || entries.length > 0) && (
         <details className="transcript-details">
@@ -243,78 +262,88 @@ export function LiveTranscript({
           </section>
         </details>
       )}
-      <details className="listening-settings">
-        <summary>Listening settings</summary>
-        <section aria-label="Local speech model" className="speech-model">
-          <p>
-            English transcription runs locally. The first use downloads about 70
-            MB from Hugging Face and this app, then caches it in your browser.
-            You can load it before your call.
-          </p>
-          <div className="browser-audio-actions">
-            <Button
-              variant="secondary"
-              disabled={active || pending || loading || modelReady || removing}
-              onClick={() => void transcriber.current?.load()}
-            >
-              Load speech model
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={active || pending || removing}
-              onClick={async () => {
-                setRemoving(true);
-                try {
-                  await transcriber.current?.clearCache();
-                } finally {
-                  setRemoving(false);
-                }
-              }}
-            >
-              Remove downloaded model
-            </Button>
-          </div>
-          <p role="status">
-            {removing
-              ? "Removing downloaded model…"
-              : speech.progress ||
-                (modelReady ? "Speech model ready" : "Speech model not loaded")}
-          </p>
-        </section>
-        <div className="browser-audio-meters">
-          <label>
-            Shared audio{" "}
-            <meter
-              aria-label="Shared audio level"
-              min={0}
-              max={100}
-              value={state.sharedLevel}
-            />
-          </label>
-          <label>
-            Microphone{" "}
-            <meter
-              aria-label="Microphone level"
-              min={0}
-              max={100}
-              value={state.microphoneLevel}
-            />
-          </label>
-        </div>
-        <p className="interview-note">
-          Use headphones. Enable Share audio in the browser picker and allow
-          microphone access. {active && `Selected source: ${state.surface}. `}A
-          silent meter does not confirm audio capture.
-        </p>
-        <p className="interview-note">
-          Audio and unsent transcripts stay on this device. Up to 50 transcript
-          segments remain until cleared or you leave Interview. Pause and Stop
-          discard pending audio and transcription; Start asks you to choose a
-          source again. Dismiss any permission prompt left open after Stop.
-          Shared speech can suggest editable questions. Only Use this question
-          sends a question to the model; microphone speech is never submitted.
-        </p>
-      </details>
+      {settingsTarget &&
+        createPortal(
+          <details className="listening-settings">
+            <summary>Listening settings</summary>
+            <section aria-label="Local speech model" className="speech-model">
+              <p>
+                English transcription runs locally. The first use downloads
+                about 70 MB from Hugging Face and this app, then caches it in
+                your browser. You can load it before your call.
+              </p>
+              <div className="browser-audio-actions">
+                <Button
+                  variant="secondary"
+                  disabled={
+                    active || pending || loading || modelReady || removing
+                  }
+                  onClick={() => void transcriber.current?.load()}
+                >
+                  Load speech model
+                </Button>
+                <Button
+                  variant="ghost"
+                  disabled={active || pending || removing}
+                  onClick={async () => {
+                    setRemoving(true);
+                    try {
+                      await transcriber.current?.clearCache();
+                    } finally {
+                      setRemoving(false);
+                    }
+                  }}
+                >
+                  Remove downloaded model
+                </Button>
+              </div>
+              <p role="status">
+                {removing
+                  ? "Removing downloaded model…"
+                  : speech.progress ||
+                    (modelReady
+                      ? "Speech model ready"
+                      : "Speech model not loaded")}
+              </p>
+            </section>
+            <div className="browser-audio-meters">
+              <label>
+                Shared audio{" "}
+                <meter
+                  aria-label="Shared audio level"
+                  min={0}
+                  max={100}
+                  value={state.sharedLevel}
+                />
+              </label>
+              <label>
+                Microphone{" "}
+                <meter
+                  aria-label="Microphone level"
+                  min={0}
+                  max={100}
+                  value={state.microphoneLevel}
+                />
+              </label>
+            </div>
+            <p className="interview-note">
+              Use headphones. Enable Share audio in the browser picker and allow
+              microphone access.{" "}
+              {active && `Selected source: ${state.surface}. `}A silent meter
+              does not confirm audio capture.
+            </p>
+            <p className="interview-note">
+              Audio and unsent transcripts stay on this device. Up to 50
+              transcript segments remain until cleared or you leave Interview.
+              Pause and Stop discard pending audio and transcription; Start asks
+              you to choose a source again. Dismiss any permission prompt left
+              open after Stop. Shared speech can suggest editable questions.
+              Only Send question sends a question to the model; microphone
+              speech is never submitted.
+            </p>
+          </details>,
+          settingsTarget,
+        )}
     </section>
   );
 }

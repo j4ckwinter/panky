@@ -36,15 +36,14 @@ export function AudioSourceStatus({ state }: { state: AudioCaptureState }) {
   if (state.status !== "listening") return null;
   return (
     <div
-      className="audio-source-status"
+      className={`audio-source-status${status === "Only microphone audio detected" ? " audio-source-warning" : ""}`}
       role="status"
       aria-label="Audio source status"
     >
-      <strong>{status}</strong>
       <span>
-        {status === "Only microphone audio detected"
-          ? "Questions use shared audio. Check that you shared the call tab with Share tab audio enabled."
-          : "Questions come from shared audio; microphone speech does not create questions."}
+        {status}
+        {status === "Only microphone audio detected" &&
+          ". Enable Share tab audio."}
       </span>
     </div>
   );

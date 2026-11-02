@@ -1,4 +1,4 @@
-import { Button, Text } from "@jack.winter/pancake-ui";
+import { Button } from "@jack.winter/pancake-ui";
 import type { Message, TaskRun } from "@panky/shared";
 import type { RefObject } from "react";
 import { Markdown } from "./Markdown";
@@ -29,9 +29,7 @@ export function InterviewAnswer({
       aria-label="Interview answer"
     >
       <div className="interview-question">
-        <Text as="h2" variant="heading">
-          {viewingEarlier ? "Earlier question" : "Current question"}
-        </Text>
+        <h2>{viewingEarlier ? "Earlier question" : "Current question"}</h2>
         <p>{question.content}</p>
         {viewingEarlier && (
           <>
@@ -43,11 +41,9 @@ export function InterviewAnswer({
             </Button>
           </>
         )}
-        <p className="interview-note">
-          {viewingEarlier
-            ? `Current provider: ${providerLabel}`
-            : providerLabel}
-        </p>
+        {providerLabel === "Demo mode" && (
+          <p className="interview-note">Demo mode</p>
+        )}
       </div>
       <div className="interview-response">
         <Markdown>

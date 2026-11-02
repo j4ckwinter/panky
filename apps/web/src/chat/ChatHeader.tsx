@@ -1,8 +1,9 @@
 import { Button, Inline, Text } from "@jack.winter/pancake-ui";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { ActionMenu } from "../components/ActionMenu";
 
 export function ChatHeader({
+  toolsSlot,
   title,
   connected,
   streaming,
@@ -14,6 +15,7 @@ export function ChatHeader({
   onRefresh,
   onCreate,
 }: {
+  toolsSlot?: ReactNode;
   title: string;
   connected: boolean;
   streaming: boolean;
@@ -55,6 +57,7 @@ export function ChatHeader({
         </Text>
       </div>
       <Inline gap="space12" className="chat-header-actions">
+        {toolsSlot}
         <span
           className={`connection ${!connected ? "offline" : !streaming && !serverBusy ? "connection-idle" : ""}`}
           title={connected ? "Connected" : "Connection lost"}

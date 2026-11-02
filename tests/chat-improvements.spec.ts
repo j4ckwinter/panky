@@ -549,3 +549,39 @@ test("reply progress has breathing room above the mobile composer", async ({
     .click();
   await expect(progress).toHaveCount(0);
 });
+
+test("feature rail separates Interview from chat history and stays available when collapsed", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await connect(page);
+  const features = page.getByRole("navigation", { name: "Panky features" });
+  const interview = features.getByRole("button", {
+    name: "Interview",
+    exact: true,
+  });
+  const history = page.locator(".sidebar-content");
+  const railBox = await features.boundingBox();
+  const historyBox = await history.boundingBox();
+  expect(railBox!.x + railBox!.width).toBeLessThanOrEqual(historyBox!.x);
+  await interview.click();
+  await expect(interview).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("heading", { name: "Start listening", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "test-results/interview-two-part-nav.png" });
+  await page
+    .getByRole("button", { name: "Collapse sidebar", exact: true })
+    .click();
+  await expect(history).toBeHidden();
+  await expect(interview).toBeVisible();
+  await features.getByRole("button", { name: "Chats", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Start a chat", exact: true }),
+  ).toBeVisible();
+  await interview.click();
+  await expect(
+    page.getByRole("heading", { name: "Start listening", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "test-results/interview-rail-collapsed.png" });
+});

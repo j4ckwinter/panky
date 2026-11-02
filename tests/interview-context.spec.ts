@@ -1,3 +1,7 @@
+import {
+  toggleTypedQuestion,
+  openInterviewOptions,
+} from "./interview-options.js";
 import { expect } from "@playwright/test";
 import { test, login } from "./auth-fixture.js";
 
@@ -7,9 +11,10 @@ test("follow-ups carry questions and spoken notes, never generated suggestions",
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   const field = page.getByLabel("Interview question", { exact: true });
   const submit = async (question: string) => {
+    await openInterviewOptions(page);
     await field.fill(question);
     const request = page.waitForRequest(
       (req) => req.method() === "POST" && req.url().endsWith("/messages"),
@@ -24,6 +29,7 @@ test("follow-ups carry questions and spoken notes, never generated suggestions",
   expect(
     (await submit("How would you design a reliable queue?")).interview.context,
   ).toEqual([]);
+  await openInterviewOptions(page);
   await page
     .getByLabel("What I actually said", { exact: true })
     .fill("I proposed idempotent consumers and bounded retries.");
@@ -40,6 +46,7 @@ test("follow-ups carry questions and spoken notes, never generated suggestions",
   await expect(
     page.getByLabel("What I actually said", { exact: true }),
   ).toHaveValue("");
+  await openInterviewOptions(page);
   await page.getByText("Recent questions (2)", { exact: true }).click();
   await expect(page.locator(".interview-context")).toContainText(
     "You said: I proposed idempotent consumers and bounded retries.",
@@ -67,6 +74,7 @@ test("follow-ups carry questions and spoken notes, never generated suggestions",
   expect((await submit("Explain database indexes.")).interview.context).toEqual(
     [],
   );
+  await openInterviewOptions(page);
   await page
     .getByRole("button", { name: "New interview", exact: true })
     .click();
@@ -82,13 +90,15 @@ test("rejected follow-up keeps the spoken summary and draft without retrying", a
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   const field = page.getByLabel("Interview question", { exact: true });
+  await openInterviewOptions(page);
   await field.fill("Explain database indexes.");
   await page.getByRole("button", { name: "Get response" }).click();
   await expect(
     page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
+  await openInterviewOptions(page);
   await page
     .getByLabel("What I actually said", { exact: true })
     .fill("I described a B-tree.");
@@ -107,6 +117,7 @@ test("rejected follow-up keeps the spoken summary and draft without retrying", a
       body: JSON.stringify({ error: "Model unavailable" }),
     });
   });
+  await openInterviewOptions(page);
   await field.fill("Why that structure?");
   await page.getByRole("button", { name: "Get response" }).click();
   await expect(page.getByRole("alert")).toContainText("Model unavailable");
@@ -114,6 +125,7 @@ test("rejected follow-up keeps the spoken summary and draft without retrying", a
   await expect(
     page.getByLabel("What I actually said", { exact: true }),
   ).toHaveValue("I described a B-tree.");
+  await openInterviewOptions(page);
   await expect(
     page.getByText("Recent questions (1)", { exact: true }),
   ).toBeVisible();
@@ -126,9 +138,10 @@ test("interview context keeps only four recent questions and clears when leaving
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   const field = page.getByLabel("Interview question", { exact: true });
   for (let index = 1; index <= 6; index++) {
+    await openInterviewOptions(page);
     await field.fill(`Explain queue design choice ${index}.`);
     const request = page.waitForRequest(
       (req) => req.method() === "POST" && req.url().endsWith("/messages"),
@@ -153,7 +166,7 @@ test("interview context keeps only four recent questions and clears when leaving
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
   await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await expect(
     page.getByText("No previous questions in context.", { exact: true }),
   ).toBeVisible();
@@ -165,13 +178,15 @@ test("accepted question remains in context when the trailing history refresh fai
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   const field = page.getByLabel("Interview question", { exact: true });
+  await openInterviewOptions(page);
   await field.fill("Explain database indexes.");
   await page.getByRole("button", { name: "Get response" }).click();
   await expect(
     page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
+  await openInterviewOptions(page);
   await page
     .getByLabel("What I actually said", { exact: true })
     .fill("I described a B-tree.");
@@ -184,11 +199,13 @@ test("accepted question remains in context when the trailing history refresh fai
       });
     } else await route.continue();
   });
+  await openInterviewOptions(page);
   await field.fill("Why that structure?");
   await page.getByRole("button", { name: "Get response" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "History refresh unavailable",
   );
+  await openInterviewOptions(page);
   await expect(
     page.getByText("Recent questions (2)", { exact: true }),
   ).toBeVisible();
@@ -196,10 +213,12 @@ test("accepted question remains in context when the trailing history refresh fai
   await expect(
     page.getByLabel("What I actually said", { exact: true }),
   ).toHaveValue("");
+  await openInterviewOptions(page);
   await page
     .getByLabel("What I actually said", { exact: true })
     .fill("I explained logarithmic lookups.");
   await page.unroute("**/api/conversations");
+  await openInterviewOptions(page);
   await field.fill("What if that fails?");
   const request = page.waitForRequest(
     (req) => req.method() === "POST" && req.url().endsWith("/messages"),
@@ -226,7 +245,7 @@ test("accepted question remains in context after an interrupted response stream"
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await page.getByText("Ask a question", { exact: true }).click();
+  await toggleTypedQuestion(page);
   await page.route("**/api/conversations/*/messages", async (route) => {
     const response = await route.fetch();
     const stream = await response.text();
@@ -241,19 +260,23 @@ test("accepted question remains in context after an interrupted response stream"
     await route.fulfill({ response, body: `${start}\n\n` });
   });
   const field = page.getByLabel("Interview question", { exact: true });
+  await openInterviewOptions(page);
   await field.fill("Explain database indexes.");
   await page.getByRole("button", { name: "Get response" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "The reply was interrupted",
   );
+  await openInterviewOptions(page);
   await expect(
     page.getByText("Recent questions (1)", { exact: true }),
   ).toBeVisible();
   await expect(field).toHaveValue("");
+  await openInterviewOptions(page);
   await page
     .getByLabel("What I actually said", { exact: true })
     .fill("I described a B-tree.");
   await page.unroute("**/api/conversations/*/messages");
+  await openInterviewOptions(page);
   await field.fill("Why that structure?");
   const request = page.waitForRequest(
     (req) => req.method() === "POST" && req.url().endsWith("/messages"),

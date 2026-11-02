@@ -200,7 +200,11 @@ test("mobile conversations close with Escape, backdrop and selection", async ({
     drawer.getByRole("button", { name: "Close conversations" }),
   ).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(drawer.getByRole("button", { name: "Account" })).toBeFocused();
+  await expect(
+    drawer
+      .locator("button:visible:not(:disabled), input:visible:not(:disabled)")
+      .last(),
+  ).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(
     drawer.getByRole("button", { name: "Close conversations" }),

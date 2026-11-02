@@ -3,52 +3,16 @@ import type { useSpokenQuestions } from "./useSpokenQuestions";
 
 export function SpokenQuestions({
   questions,
-  providerLabel,
-  onViewAnswer,
-  selectedQuestionId,
 }: {
   questions: ReturnType<typeof useSpokenQuestions>;
-  providerLabel: string;
-  onViewAnswer: (questionId: string) => void;
-  selectedQuestionId?: string;
 }) {
-  if (
-    !questions.cards.length &&
-    !questions.acceptedQuestions.length &&
-    !questions.notice
-  )
-    return null;
   return (
     <section className="spoken-questions" aria-label="Detected questions">
-      <h2>Questions</h2>
-      <p className="interview-note">
-        {providerLabel}
-        {providerLabel === "Demo mode"
-          ? " · Scripted examples; no AI reasoning."
-          : " · General knowledge; your experience is not included."}{" "}
-        Review the transcript before sending.
-      </p>
-      {questions.topicCount > 0 && (
-        <div className="interview-actions">
-          <span className="interview-note">
-            Using {questions.topicCount} recent spoken{" "}
-            {questions.topicCount === 1 ? "question" : "questions"} for
-            follow-ups.
-          </span>
-          <Button
-            variant="ghost"
-            disabled={questions.unavailable}
-            onClick={questions.newTopic}
-          >
-            New topic
-          </Button>
-        </div>
-      )}
       {questions.notice && <p role="status">{questions.notice}</p>}
       <section
         className="spoken-question-list"
         aria-label="Question queue"
-        tabIndex={0}
+        tabIndex={questions.cards.length ? 0 : undefined}
       >
         {questions.cards.map((card) => (
           <article
@@ -64,7 +28,7 @@ export function SpokenQuestions({
             >
               <Textarea
                 label="Question to ask"
-                rows={3}
+                rows={2}
                 maxLength={8000}
                 value={card.text}
                 disabled={card.status !== "draft"}
@@ -85,9 +49,24 @@ export function SpokenQuestions({
                 {card.status === "draft" && (
                   <Button
                     type="submit"
+                    size={40}
+                    className="question-send"
                     disabled={questions.unavailable || !card.text.trim()}
                   >
-                    Use this question
+                    Send question
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 19V5m-6 6 6-6 6 6" />
+                    </svg>
                   </Button>
                 )}
                 {card.status === "pending" && (
@@ -110,42 +89,19 @@ export function SpokenQuestions({
                 )}
                 <Button
                   variant="ghost"
+                  aria-label="Dismiss question"
+                  className="question-dismiss"
+                  size={40}
                   disabled={card.status === "pending"}
                   onClick={() => questions.dismiss(card.id)}
                 >
-                  Dismiss question
+                  Dismiss
                 </Button>
               </div>
             </form>
           </article>
         ))}
       </section>
-      {questions.cards.length === 0 && (
-        <p className="interview-note">No questions waiting for review.</p>
-      )}
-      {questions.acceptedQuestions.length > 0 && (
-        <details className="accepted-questions">
-          <summary>
-            Sent questions ({questions.acceptedQuestions.length})
-          </summary>
-          <p className="interview-note">
-            Last 20 accepted requests. Replies are saved in chat history.
-          </p>
-          <ol>
-            {questions.acceptedQuestions.map((question) => (
-              <li key={question.id}>
-                <Button
-                  variant="ghost"
-                  aria-pressed={selectedQuestionId === question.userMessageId}
-                  onClick={() => onViewAnswer(question.userMessageId)}
-                >
-                  View answer: {question.text}
-                </Button>
-              </li>
-            ))}
-          </ol>
-        </details>
-      )}
     </section>
   );
 }

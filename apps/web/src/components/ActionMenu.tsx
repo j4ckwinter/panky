@@ -7,12 +7,14 @@ export function ActionMenu({
   className = "",
   disabled = false,
   iconOnly = false,
+  icon,
 }: {
   label: string;
   children: ReactNode;
   className?: string;
   disabled?: boolean;
   iconOnly?: boolean;
+  icon?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -52,7 +54,9 @@ export function ActionMenu({
         onClick={() => setOpen(!open)}
       >
         {!iconOnly && <span className="action-menu-label">{label}</span>}
-        <span aria-hidden="true">{iconOnly ? "···" : open ? "▴" : "▾"}</span>
+        <span aria-hidden="true">
+          {icon ?? (iconOnly ? "···" : open ? "▴" : "▾")}
+        </span>
       </Button>
       {open && (
         <div

@@ -1,3 +1,7 @@
+import {
+  openInterviewOptions,
+  closeInterviewOptions,
+} from "./interview-options.js";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -76,13 +80,15 @@ test("production speech reaches an editable question and the answer endpoint", a
     await login(page);
     await page.getByRole("button", { name: "Interview", exact: true }).click();
     const panel = page.getByRole("region", { name: "Browser audio capture" });
-    await panel.getByText("Listening settings", { exact: true }).click();
-    await panel
+    await openInterviewOptions(page);
+    await page.getByText("Listening settings", { exact: true }).click();
+    await page
       .getByRole("button", { name: "Load speech model", exact: true })
       .click();
     await expect(
-      panel.getByRole("region", { name: "Local speech model" }),
+      page.getByRole("region", { name: "Local speech model" }),
     ).toContainText("Speech model ready", { timeout: 90_000 });
+    await closeInterviewOptions(page);
     const captureStarted = Date.now();
     await panel.getByRole("button", { name: "Start listening" }).click();
     await panel.locator(".transcript-details > summary").click();
@@ -109,7 +115,7 @@ test("production speech reaches an editable question and the answer endpoint", a
       /closure/i,
     );
     await card
-      .getByRole("button", { name: "Use this question", exact: true })
+      .getByRole("button", { name: "Send question", exact: true })
       .click();
     await expect(
       page.getByText("Sent questions (1)", { exact: true }),

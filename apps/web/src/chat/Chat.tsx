@@ -30,6 +30,7 @@ export function Chat({
   const [managedChat, setManagedChat] = useState<Conversation | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [toolsTarget, setToolsTarget] = useState<HTMLDivElement | null>(null);
   const [interview, setInterview] = useState(false);
   const hasMessages = chat.messages.length > 0;
   const { scrollArea, scrollContent, showJump, jumpToLatest, onScroll } =
@@ -66,6 +67,7 @@ export function Chat({
         conversations={chat.conversations}
         currentId={interview ? undefined : chat.current?.id}
         interview={interview}
+        onChat={() => setInterview(false)}
         onInterview={() => {
           if (interview) return;
           chat.create();
@@ -97,6 +99,11 @@ export function Chat({
       />
       <main className="chat-main" inert={sidebarOpen}>
         <ChatHeader
+          toolsSlot={
+            interview ? (
+              <div className="interview-header-tools" ref={setToolsTarget} />
+            ) : undefined
+          }
           title={
             interview
               ? "Interview assistant"
@@ -126,7 +133,7 @@ export function Chat({
           </div>
         )}
         {interview ? (
-          <Interview chat={chat} api={api} />
+          <Interview chat={chat} api={api} toolsTarget={toolsTarget} />
         ) : (
           <div className={`chat-body${hasMessages ? "" : " chat-body-empty"}`}>
             <div className="chat-scroll" ref={scrollArea} onScroll={onScroll}>
