@@ -63,7 +63,19 @@ open **Used 1 tool** beneath the reply to see what actually ran. the mock recogn
 
 only the owner can add people through **Account → People**. this allows their Google account; it doesn't send an email, so share the link yourself. friends get private chats and can't invite others. removing access ends their sessions. **Account → Sessions** lets each person sign out their own devices. sessions last 30 days; Gmail and Google Workspace accounts are supported.
 
-chat and the clock tool work today. next is one useful workflow, before adding more tools. there's no shell access or background automation yet. the [brief](brief.md) has the roadmap.
+chat and the clock tool work today. the first interview-assistant slice is implemented locally; real-model acceptance is pending. there's no shell access or background automation yet. the [brief](brief.md) has the original roadmap and the [interview plan](interview-assistant-plan.md) tracks the new workflow.
+
+### typed interview assistant
+
+choose **Interview** in the left sidebar (open the menu first on mobile). the selected item stays highlighted; choose **New chat** or a saved conversation to return to chat. enter a behavioural, technical or mixed question, optionally expand **Experience sample** and paste a short example from your work, then choose **Get talking points**. the panel streams immediate cues and keeps supporting detail collapsed. **Edit last question**, **Stop response** and **New interview** let you control the flow.
+
+demo mode returns clearly labelled synthetic examples and does not analyse your sample. with the local model, Panky requests three or four concise cues and distinguishes supplied experience from suggested reasoning. these are model instructions, not a guarantee of factual accuracy; real-model quality still needs evaluation.
+
+each question is independent in IA-1: include any necessary follow-up context in the question itself. Notion import, audio capture and automatic question detection are not implemented. the question and generated reply are saved in your existing chat history; reopening one from the sidebar uses the normal chat view. the pasted sample stays in the interview view until you leave or start a new interview and is not stored separately, but saved answers may quote it. do not paste credentials.
+
+the question accepts up to 8,000 characters and the sample up to 4,000. the combined prompt must also fit the server's context budget; an oversized request is rejected without saving messages. interview generation uses the same authenticated endpoint, global response slot and cancellation as chat, with tools disabled.
+
+run `pnpm evaluate:interview` to inspect the evaluation command without calling a model. the [evaluation guide](docs/interview-evaluation.md) covers the 24-question PC run, private sample input, latency measurements and human scoring. PC measurements, agreed acceptance targets and a spoken-use review are required before IA-1 is accepted.
 
 ## run it on your PC
 

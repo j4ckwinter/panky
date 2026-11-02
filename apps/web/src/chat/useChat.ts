@@ -1,6 +1,7 @@
 import type {
   Activity,
   Conversation,
+  InterviewInput,
   Message,
   StreamEvent,
   TaskRun,
@@ -160,7 +161,7 @@ export function useChat(api: Api) {
       }
     });
   }
-  function send(content: string) {
+  function send(content: string, interview?: InterviewInput) {
     return run(async () => {
       const conversation = current ?? (await api.create());
       if (!mounted.current) return;
@@ -230,7 +231,13 @@ export function useChat(api: Api) {
         }
       };
       try {
-        await api.send(conversation.id, content, controller.signal, receive);
+        await api.send(
+          conversation.id,
+          content,
+          controller.signal,
+          receive,
+          interview,
+        );
         const list = await api.conversations();
         if (mounted.current) {
           setConversations(list);

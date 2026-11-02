@@ -1,0 +1,113 @@
+.interview-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-pancake-24);
+}
+.interview-panel {
+  max-width: 860px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--spacing-pancake-24);
+  overflow-wrap: anywhere;
+}
+.interview-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-pancake-16);
+}
+.interview-intro button {
+  flex-shrink: 0;
+}
+.interview-panel h2 {
+  margin: 0;
+}
+.interview-mode,
+.interview-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-pancake-muted);
+}
+.interview-mode {
+  padding: var(--spacing-pancake-12) var(--spacing-pancake-16);
+  background: var(--color-pancake-canvas);
+  border-radius: var(--radius-pancake-12);
+}
+.interview-form {
+  display: grid;
+  gap: var(--spacing-pancake-16);
+}
+.interview-form textarea {
+  resize: vertical;
+}
+.interview-panel summary {
+  cursor: pointer;
+  color: var(--color-pancake-deep);
+  padding: var(--spacing-pancake-12) 0;
+  font-weight: 600;
+}
+.interview-panel summary:focus-visible {
+  outline: 2px solid var(--color-pancake-control-focus);
+  outline-offset: 3px;
+}
+.interview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-pancake-12);
+}
+.interview-actions [role="status"] {
+  font-size: 13px;
+  color: var(--color-pancake-muted);
+}
+.interview-result {
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-12);
+  overflow: hidden;
+}
+.interview-question {
+  background: var(--color-pancake-canvas);
+  padding: var(--spacing-pancake-24);
+}
+.interview-question h2 {
+  font-size: 13px;
+  color: var(--color-pancake-muted);
+}
+.interview-question p {
+  margin: var(--spacing-pancake-8) 0 0;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+.interview-cues {
+  padding: var(--spacing-pancake-24);
+}
+.interview-cues li {
+  margin: var(--spacing-pancake-12) 0;
+}
+.interview-detail {
+  border-top: 1px solid var(--color-pancake-border);
+  padding: 0 var(--spacing-pancake-24) var(--spacing-pancake-16);
+}
+.interview-empty {
+  padding: var(--spacing-pancake-32);
+  border: 1px dashed var(--color-pancake-control-border);
+  border-radius: var(--radius-pancake-12);
+  color: var(--color-pancake-muted);
+}
+.interview-empty p {
+  margin-bottom: 0;
+}
+@media (max-width: 640px) {
+  .interview-scroll {
+    padding: var(--spacing-pancake-16);
+  }
+  .interview-intro {
+    flex-direction: column;
+  }
+  .interview-question,
+  .interview-cues,
+  .interview-empty {
+    padding: var(--spacing-pancake-16);
+  }
+}

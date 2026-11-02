@@ -28,6 +28,8 @@ export function ChatSidebar({
   onAccess,
   onSessions,
   onDisconnect,
+  interview,
+  onInterview,
 }: {
   conversations: Conversation[];
   currentId?: string;
@@ -45,6 +47,8 @@ export function ChatSidebar({
   onAccess?: () => void;
   onSessions: () => void;
   onDisconnect: () => void;
+  interview: boolean;
+  onInterview: () => void;
 }) {
   const [search, setSearch] = useState("");
   const visibleConversations = conversations.filter((item) =>
@@ -178,6 +182,37 @@ export function ChatSidebar({
           </svg>
           <span className="new-chat-label">New chat</span>
         </Button>
+        <nav aria-label="Panky features">
+          <Button
+            size={40}
+            variant="ghost"
+            className="sidebar-feature-button"
+            aria-label="Interview"
+            title="Interview"
+            aria-current={interview ? "page" : undefined}
+            disabled={pending}
+            onClick={() => {
+              setSidebarOpen(false);
+              onInterview();
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 3v-3H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+              <path d="M7 9h10M7 13h6" />
+            </svg>
+            <span className="sidebar-feature-label">Interview</span>
+          </Button>
+        </nav>
         <div className="chat-search">
           <TextField
             label="Search chats"

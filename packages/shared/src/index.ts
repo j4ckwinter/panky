@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { interviewInputSchema } from "./interview.js";
+
+export { type InterviewInput, interviewInputSchema } from "./interview.js";
 
 export const conversationSchema = z.object({
   id: z.uuid(),
@@ -23,6 +26,7 @@ export const submissionSchema = z
   .object({
     content: z.string().trim().min(1).max(8000),
     includeActivity: z.boolean().default(false),
+    interview: interviewInputSchema.optional(),
   })
   .strict();
 export const conversationsSchema = z.array(conversationSchema);

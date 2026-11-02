@@ -7,6 +7,7 @@ import {
   errorSchema,
   healthSchema,
   historySchema,
+  type InterviewInput,
   type StreamEvent,
   streamEventSchema,
 } from "@panky/shared";
@@ -125,6 +126,7 @@ export function createApi(token?: string) {
       content: string,
       signal: AbortSignal,
       onEvent: (event: StreamEvent) => void,
+      interview?: InterviewInput,
     ) {
       const response = await request(
         `/conversations/${encodeURIComponent(id)}/messages`,
@@ -134,7 +136,7 @@ export function createApi(token?: string) {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
           },
-          body: JSON.stringify({ content, includeActivity: true }),
+          body: JSON.stringify({ content, includeActivity: true, interview }),
           signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]),
         },
       );

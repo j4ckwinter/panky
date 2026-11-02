@@ -26,7 +26,7 @@ async function readSubmission(request: IncomingMessage) {
   if (!result.success)
     throw new HttpError(
       400,
-      "Message must contain 1–8000 characters with an optional includeActivity boolean.",
+      "Message must contain 1–8000 characters, an optional includeActivity boolean and optional interview experience of up to 4000 characters.",
     );
   return result.data;
 }
@@ -181,7 +181,8 @@ export function createApp(
       return;
     }
     if (match[2] && request.method === "POST") {
-      const { content, includeActivity } = await readSubmission(request);
+      const { content, includeActivity, interview } =
+        await readSubmission(request);
       if (!bearer && auth.authenticate(request)?.id !== userId)
         throw new HttpError(401, "Sign in to continue.");
       if (!store.ownsConversation(id.data, userId))
@@ -207,6 +208,7 @@ export function createApp(
           send,
           controller.signal,
           includeActivity,
+          interview,
         );
         response.end();
       } finally {

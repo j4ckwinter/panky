@@ -9,6 +9,7 @@ import { ChatComposer } from "./ChatComposer";
 import { MessageList } from "./MessageList";
 import { useChat } from "./useChat";
 import { useChatScroll } from "./useChatScroll";
+import { Interview } from "./Interview";
 
 export function Chat({
   api,
@@ -29,9 +30,10 @@ export function Chat({
   const [managedChat, setManagedChat] = useState<Conversation | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [interview, setInterview] = useState(false);
   const hasMessages = chat.messages.length > 0;
   const { scrollArea, scrollContent, showJump, jumpToLatest, onScroll } =
-    useChatScroll(chat.current?.id, hasMessages);
+    useChatScroll(chat.current?.id, hasMessages && !interview);
   const lastMessage = chat.messages.at(-1);
   const latestRun = chat.runs.at(-1);
   const runningTask = chat.runs.find((task) => task.status === "running");
@@ -62,7 +64,13 @@ export function Chat({
       )}
       <ChatSidebar
         conversations={chat.conversations}
-        currentId={chat.current?.id}
+        currentId={interview ? undefined : chat.current?.id}
+        interview={interview}
+        onInterview={() => {
+          if (interview) return;
+          chat.create();
+          setInterview(true);
+        }}
         pending={chat.pending}
         providerLabel={chat.providerLabel}
         sidebarOpen={sidebarOpen}
@@ -71,8 +79,12 @@ export function Chat({
         setSidebarCollapsed={setSidebarCollapsed}
         menu={menu}
         email={email}
-        onCreate={chat.create}
+        onCreate={() => {
+          setInterview(false);
+          chat.create();
+        }}
         onSelect={(id) => {
+          setInterview(false);
           void chat.select(id);
         }}
         onManage={(conversation) => {
@@ -85,7 +97,11 @@ export function Chat({
       />
       <main className="chat-main" inert={sidebarOpen}>
         <ChatHeader
-          title={chat.current?.title ?? "New chat"}
+          title={
+            interview
+              ? "Interview assistant"
+              : (chat.current?.title ?? "New chat")
+          }
           connected={chat.connected}
           streaming={chat.streaming}
           serverBusy={chat.serverBusy}
@@ -97,6 +113,7 @@ export function Chat({
             void chat.refresh(chat.current?.id);
           }}
           onCreate={() => {
+            setInterview(false);
             chat.create();
             input.current?.focus();
           }}
@@ -108,39 +125,43 @@ export function Chat({
             </BannerToast>
           </div>
         )}
-        <div className={`chat-body${hasMessages ? "" : " chat-body-empty"}`}>
-          <div className="chat-scroll" ref={scrollArea} onScroll={onScroll}>
-            <div ref={scrollContent}>
-              <MessageList
-                messages={chat.messages}
-                runs={chat.runs}
-                activities={chat.activities}
-                streaming={chat.streaming}
-              />
+        {interview ? (
+          <Interview chat={chat} />
+        ) : (
+          <div className={`chat-body${hasMessages ? "" : " chat-body-empty"}`}>
+            <div className="chat-scroll" ref={scrollArea} onScroll={onScroll}>
+              <div ref={scrollContent}>
+                <MessageList
+                  messages={chat.messages}
+                  runs={chat.runs}
+                  activities={chat.activities}
+                  streaming={chat.streaming}
+                />
+              </div>
             </div>
+            <ChatComposer
+              input={input}
+              draft={chat.draft}
+              setDraft={chat.setDraft}
+              connected={chat.connected}
+              serverBusy={chat.serverBusy}
+              streaming={chat.streaming}
+              pending={chat.pending}
+              submissionAccepted={chat.submissionAccepted}
+              cancelling={chat.cancelling}
+              runningTask={runningTask}
+              showJump={showJump}
+              jumpToLatest={jumpToLatest}
+              showRecoveryNote={showRecoveryNote}
+              onSend={(content) => {
+                void chat.send(content);
+              }}
+              onCancel={(id) => {
+                void chat.cancel(id);
+              }}
+            />
           </div>
-          <ChatComposer
-            input={input}
-            draft={chat.draft}
-            setDraft={chat.setDraft}
-            connected={chat.connected}
-            serverBusy={chat.serverBusy}
-            streaming={chat.streaming}
-            pending={chat.pending}
-            submissionAccepted={chat.submissionAccepted}
-            cancelling={chat.cancelling}
-            runningTask={runningTask}
-            showJump={showJump}
-            jumpToLatest={jumpToLatest}
-            showRecoveryNote={showRecoveryNote}
-            onSend={(content) => {
-              void chat.send(content);
-            }}
-            onCancel={(id) => {
-              void chat.cancel(id);
-            }}
-          />
-        </div>
+        )}
       </main>
     </div>
   );

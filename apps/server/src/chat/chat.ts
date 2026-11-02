@@ -1,7 +1,8 @@
-import type { StreamEvent } from "@panky/shared";
+import type { InterviewInput, StreamEvent } from "@panky/shared";
 import type { Config } from "../config.js";
 import { HttpError } from "../http-utils.js";
 import type { ModelProvider } from "../providers/provider.js";
+import { interviewContext } from "../interview/prompt.js";
 import { boundedHistory, runLoop, TaskError } from "./loop.js";
 import type { Store } from "./store.js";
 import { dateTimeTool, type Tool } from "./tools.js";
@@ -29,6 +30,7 @@ export class Chat {
     send: (event: StreamEvent) => Promise<void>,
     signal: AbortSignal,
     includeActivity = false,
+    interview?: InterviewInput,
   ): Promise<void> {
     if (this.active)
       throw new HttpError(
@@ -37,6 +39,9 @@ export class Chat {
       );
     if (!this.store.conversation(conversationId))
       throw new HttpError(404, "Conversation not found.");
+    const context = interview
+      ? interviewContext(content, interview, this.config.HISTORY_MAX_CHARS)
+      : undefined;
     const controller = new AbortController();
     const active: NonNullable<Chat["active"]> = { controller, conversationId };
     this.active = active;
@@ -53,6 +58,7 @@ export class Chat {
       send,
       active,
       includeActivity,
+      context,
     ).finally(() => {
       clearTimeout(timeout);
       signal.removeEventListener("abort", abort);
@@ -80,6 +86,7 @@ export class Chat {
     send: (event: StreamEvent) => Promise<void>,
     active: NonNullable<Chat["active"]>,
     includeActivity: boolean,
+    interview?: ReturnType<typeof interviewContext>,
   ) {
     const signal = active.controller.signal;
     signal.throwIfAborted();
@@ -93,10 +100,18 @@ export class Chat {
     let error: string | null = null;
     try {
       await send({ type: "start", user, assistant, run });
-      const context = boundedHistory(
-        this.store.messages(conversationId),
-        this.config.HISTORY_MAX_CHARS,
-      );
+      const context = interview
+        ? {
+            ...interview,
+            omittedMessages:
+              this.store
+                .messages(conversationId)
+                .filter((message) => message.status === "completed").length - 1,
+          }
+        : boundedHistory(
+            this.store.messages(conversationId),
+            this.config.HISTORY_MAX_CHARS,
+          );
       const activity = async (event: Parameters<Store["addActivity"]>[1]) => {
         const saved = this.store.addActivity(run.id, event);
         if (includeActivity) await send({ type: "activity", activity: saved });
@@ -109,7 +124,7 @@ export class Chat {
       await runLoop({
         history: context.history,
         provider: this.provider,
-        tools: this.tools,
+        tools: interview ? [] : this.tools,
         config: this.config,
         signal,
         activity,
