@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api/chat";
 import { ExperienceSources } from "./ExperienceSources";
 import { LiveTranscript } from "./LiveTranscript";
-import { Markdown } from "./Markdown";
+import { InterviewAnswer } from "./InterviewAnswer";
 import { ResponseTiming } from "./ResponseTiming";
-import { SourceEvidence } from "./SourceEvidence";
 import { SpokenQuestions } from "./SpokenQuestions";
 import type { useChat } from "./useChat";
 import { useSpokenQuestions } from "./useSpokenQuestions";
@@ -26,8 +25,30 @@ export function Interview({
     NonNullable<InterviewInput["context"]>
   >([]);
   const [spokenAnswer, setSpokenAnswer] = useState("");
-  const question = chat.messages.findLast((item) => item.role === "user");
-  const answer = chat.messages.findLast((item) => item.role === "assistant");
+  const latestQuestion = chat.messages.findLast((item) => item.role === "user");
+  const latestAnswer = chat.messages.findLast(
+    (item) => item.role === "assistant",
+  );
+  const [selection, setSelection] = useState<{
+    questionId: string;
+    currentId: string;
+  } | null>(null);
+  const selectedQuestion =
+    selection?.currentId === latestQuestion?.id
+      ? chat.messages.find(
+          (item) => item.id === selection?.questionId && item.role === "user",
+        )
+      : undefined;
+  const question = selectedQuestion ?? latestQuestion;
+  const viewingEarlier = !!question && question.id !== latestQuestion?.id;
+  const displayedRun = chat.runs.find(
+    (item) => item.userMessageId === question?.id,
+  );
+  const answer = displayedRun
+    ? chat.messages.find((item) => item.id === displayedRun.assistantMessageId)
+    : !viewingEarlier
+      ? latestAnswer
+      : undefined;
   const run = chat.runs.at(-1);
   const unavailable = chat.pending || chat.serverBusy || !chat.connected;
   const answerPanel = useRef<HTMLElement>(null);
@@ -40,7 +61,7 @@ export function Interview({
   const state = !chat.connected
     ? "Connection lost. Refresh history to reconnect."
     : chat.streaming
-      ? answer?.content
+      ? latestAnswer?.content
         ? "Responding…"
         : "Waiting for response…"
       : chat.serverBusy
@@ -71,11 +92,18 @@ export function Interview({
               <SpokenQuestions
                 questions={questions}
                 providerLabel={chat.providerLabel}
+                selectedQuestionId={question?.id}
+                onViewAnswer={(questionId) => {
+                  if (latestQuestion)
+                    setSelection({ questionId, currentId: latestQuestion.id });
+                }}
               />
               <div className="interview-answer-column">
                 {(question || questions.cards.length > 0) && (
                   <div className="interview-actions">
-                    <span role="status">{state}</span>
+                    <span role="status">
+                      {viewingEarlier ? `Current response: ${state}` : state}
+                    </span>
                     {run?.status === "running" && (
                       <Button
                         disabled={chat.cancelling}
@@ -87,28 +115,19 @@ export function Interview({
                   </div>
                 )}
                 {question ? (
-                  <section
-                    ref={answerPanel}
-                    tabIndex={0}
-                    className="interview-result"
-                    aria-label="Interview answer"
-                  >
-                    <div className="interview-question">
-                      <Text as="h2" variant="heading">
-                        Current question
-                      </Text>
-                      <p>{question.content}</p>
-                      <p className="interview-note">{chat.providerLabel}</p>
-                    </div>
-                    <div className="interview-response">
-                      <Markdown>
-                        {answer?.content || "Waiting for response…"}
-                      </Markdown>
-                    </div>
-                    <SourceEvidence sources={answer?.sources ?? []} />
-                  </section>
+                  <InterviewAnswer
+                    question={question}
+                    answer={answer}
+                    run={displayedRun}
+                    viewingEarlier={viewingEarlier}
+                    providerLabel={chat.providerLabel}
+                    onBack={() => setSelection(null)}
+                    panelRef={answerPanel}
+                  />
                 ) : null}
-                <ResponseTiming timing={questions.timing} />
+                {!viewingEarlier && (
+                  <ResponseTiming timing={questions.timing} />
+                )}
               </div>
             </div>
           )}
@@ -258,7 +277,7 @@ export function Interview({
                   <Button
                     variant="ghost"
                     disabled={chat.pending}
-                    onClick={() => setDraft(question.content)}
+                    onClick={() => setDraft(latestQuestion?.content ?? "")}
                   >
                     Edit last question
                   </Button>

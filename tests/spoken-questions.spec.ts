@@ -644,6 +644,22 @@ test("the same follow-up can be asked after context changes without replaying co
     page.getByRole("article", { name: "Detected question", exact: true }),
   ).toHaveCount(0);
   expect(submissions).toBe(4);
+  await page.getByText("Sent questions (4)", { exact: true }).click();
+  const repeated = page.getByRole("button", {
+    name: "View answer: Can you give an example?",
+    exact: true,
+  });
+  await expect(repeated).toHaveCount(2);
+  await repeated.first().click();
+  await expect(
+    page.getByRole("heading", { name: "Earlier question", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Back to current response", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Current question", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "New topic", exact: true }).click();
   await panel.locator(".transcript-details > summary").click();
   await panel
@@ -721,5 +737,126 @@ test("a pause after an incomplete phrase retains it for the next audio chunk", a
     "What is a closure in JavaScript?",
     { timeout: 4000 },
   );
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});
+
+test("sent questions reopen their own answers without stopping listening or replacing them with live output", async ({
+  page,
+}) => {
+  test.setTimeout(45000);
+  const panel = await audioFixture(page);
+  const first = "Tell me about a difficult project?";
+  await page.evaluate(
+    (text) =>
+      (
+        window as unknown as {
+          speechTest: { transcript(source: string, text: string): void };
+        }
+      ).speechTest.transcript("shared", text),
+    first,
+  );
+  let submissions = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/messages"))
+      submissions++;
+  });
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  const card = page.getByRole("article", {
+    name: "Detected question",
+    exact: true,
+  });
+  await expect(card.getByLabel("Question to ask")).toHaveValue(first, {
+    timeout: 12000,
+  });
+  await card
+    .getByRole("button", { name: "Use this question", exact: true })
+    .click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Sent questions (1)", { exact: true }).click();
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'How would you design a cache?')",
+  );
+  await expect(card.getByLabel("Question to ask")).toHaveValue(
+    "How would you design a cache?",
+    { timeout: 12000 },
+  );
+  await card
+    .getByRole("button", { name: "Use this question", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Stop response", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: `View answer: ${first}`, exact: true })
+    .click();
+  const answer = page.getByRole("region", {
+    name: "Interview answer",
+    exact: true,
+  });
+  await expect(
+    answer.getByRole("heading", { name: "Earlier question", exact: true }),
+  ).toBeVisible();
+  await expect(answer).toContainText("fictional engineer");
+  await expect(
+    page.getByText("Current response: Response ready.", { exact: true }),
+  ).toBeVisible();
+  await expect(answer).not.toContainText("clarify the workload");
+  expect(
+    await page.evaluate("window.audioTest.snapshot().live"),
+  ).toBeGreaterThan(0);
+  expect(submissions).toBe(2);
+  await page.screenshot({ path: "test-results/interview-earlier-answer.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await answer.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: "test-results/interview-earlier-answer-mobile.png",
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page
+    .getByRole("button", { name: "Back to current response", exact: true })
+    .click();
+  await expect(answer).toContainText("How would you design a cache?");
+  await expect(answer).toContainText("clarify the workload");
+  await page
+    .getByRole("button", { name: `View answer: ${first}`, exact: true })
+    .click();
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'How would you design a queue?')",
+  );
+  await expect(card.getByLabel("Question to ask")).toHaveValue(
+    "How would you design a queue?",
+    { timeout: 12000 },
+  );
+  await card
+    .getByRole("button", { name: "Use this question", exact: true })
+    .click();
+  await expect(
+    answer.getByRole("heading", { name: "Current question", exact: true }),
+  ).toBeVisible();
+  await expect(answer).toContainText("How would you design a queue?");
+  await page
+    .getByRole("button", { name: `View answer: ${first}`, exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Stop response", exact: true })
+    .click();
+  await expect(answer).toContainText("fictional engineer");
+  await page
+    .getByRole("button", { name: "Back to current response", exact: true })
+    .click();
+  await expect(
+    page.getByText("Stopped. Partial response is saved.", { exact: true }),
+  ).toBeVisible();
+  await expect(answer).toContainText("How would you design a queue?");
+  expect(submissions).toBe(3);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });

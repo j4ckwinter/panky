@@ -4,9 +4,13 @@ import type { useSpokenQuestions } from "./useSpokenQuestions";
 export function SpokenQuestions({
   questions,
   providerLabel,
+  onViewAnswer,
+  selectedQuestionId,
 }: {
   questions: ReturnType<typeof useSpokenQuestions>;
   providerLabel: string;
+  onViewAnswer: (questionId: string) => void;
+  selectedQuestionId?: string;
 }) {
   if (
     !questions.cards.length &&
@@ -129,7 +133,15 @@ export function SpokenQuestions({
           </p>
           <ol>
             {questions.acceptedQuestions.map((question) => (
-              <li key={question.id}>{question.text}</li>
+              <li key={question.id}>
+                <Button
+                  variant="ghost"
+                  aria-pressed={selectedQuestionId === question.userMessageId}
+                  onClick={() => onViewAnswer(question.userMessageId)}
+                >
+                  View answer: {question.text}
+                </Button>
+              </li>
             ))}
           </ol>
         </details>

@@ -21,7 +21,12 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   const [topicQuestions, setTopicQuestions] = useState<string[]>([]);
   const [cards, setCards] = useState<SpokenQuestion[]>([]);
   const [acceptedQuestions, setAcceptedQuestions] = useState<
-    { id: number; text: string }[]
+    {
+      id: number;
+      text: string;
+      userMessageId: string;
+      assistantMessageId: string;
+    }[]
   >([]);
   const [notice, setNotice] = useState("");
   const items = useRef(cards);
@@ -187,7 +192,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           })),
           useExperience: false,
         },
-        () => {
+        (messages) => {
           accepted = true;
           if (!mounted.current || generation.current !== current) return;
           setTopicQuestions((previous) => [...previous, submitted].slice(-4));
@@ -195,7 +200,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           remember(card.original);
           remember(submitted);
           setAcceptedQuestions((previous) =>
-            [...previous, { id, text: submitted }].slice(-20),
+            [...previous, { id, text: submitted, ...messages }].slice(-20),
           );
           update(items.current.filter((item) => item.id !== id));
           setNotice("");

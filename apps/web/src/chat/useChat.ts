@@ -164,7 +164,10 @@ export function useChat(api: Api) {
   function send(
     content: string,
     interview?: InterviewInput,
-    onAccepted?: () => void,
+    onAccepted?: (messages: {
+      userMessageId: string;
+      assistantMessageId: string;
+    }) => void,
     onFirstText?: () => void,
   ) {
     return run(async () => {
@@ -193,7 +196,10 @@ export function useChat(api: Api) {
             setSubmissionAccepted(true);
             assistantId = event.assistant.id;
             runId = event.run.id;
-            onAccepted?.();
+            onAccepted?.({
+              userMessageId: event.user.id,
+              assistantMessageId: event.assistant.id,
+            });
             setRuns((items) => [...items, event.run]);
             setMessages((items) => [...items, event.user, event.assistant]);
             setDrafts((items) => {

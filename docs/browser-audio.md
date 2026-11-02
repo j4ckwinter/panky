@@ -50,7 +50,7 @@ Pinned dependencies: Transformers.js 4.3.2 and ONNX Runtime Web 1.31.0-dev.20260
 
 ## Flow diagnostics
 
-The source indicator reports recent shared-audio activity, microphone-only activity, or silence. Silence is not proof of a capture failure. Accepted questions move to collapsed **Sent questions** history (last 20 in this view), leaving five slots for questions awaiting action.
+The source indicator reports recent shared-audio activity, microphone-only activity, or silence. Silence is not proof of a capture failure. Accepted spoken questions move to collapsed **Sent questions** history (last 20 in this view), leaving five slots for questions awaiting action. Choose **View answer** to reopen the response in Interview while listening continues. **Back to current response** returns to the latest answer. Earlier answers stay attached to their message IDs, including when wording repeats or the current response is still streaming.
 
 **Response timing** shows worker transcription compute, question assembly from the first transcript to the card, and Send to first streamed text. The last measurement includes connection setup, backend and model time. Capture buffering, worker queue time and review time are excluded; the values are not an end-to-end total. Typed questions and manually selected transcript segments show unmeasured detection stages explicitly. These measurements stay in the current view and are not sent to the server.
 
