@@ -116,7 +116,7 @@ test("imports are authenticated, source snapshots survive refresh/removal and st
         assert.equal(history[0]?.role, "system");
         yield {
           type: "delta",
-          text: "## Immediate cues\n- Supplied experience [S1]: proposed a migration.\n\n## Supporting detail\nThe team implemented it.",
+          text: "Supplied experience [S1]: proposed a migration. The team implemented it.",
         };
         yield { type: "complete" };
       },

@@ -17,6 +17,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   const history = useRef<string[]>([]);
   const detector = useRef(new QuestionDetector());
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const deadline = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const nextId = useRef(0);
   const sending = useRef(false);
   const generation = useRef(0);
@@ -28,6 +29,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     return () => {
       mounted.current = false;
       clearTimeout(timer.current);
+      clearTimeout(deadline.current);
       generation.current++;
     };
   }, []);
@@ -63,15 +65,25 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
       { id: nextId.current++, text: value, original: value, status: "draft" },
     ]);
   }
+  function settle() {
+    clearTimeout(timer.current);
+    clearTimeout(deadline.current);
+    timer.current = undefined;
+    deadline.current = undefined;
+    const candidate = detector.current.flush();
+    if (candidate) propose(candidate);
+  }
   function onTranscript(entry: TranscriptEntry) {
     if (entry.source !== "shared") return;
-    clearTimeout(timer.current);
     const candidate = detector.current.push(entry.text);
     if (candidate) propose(candidate);
-    timer.current = setTimeout(() => {
-      const settled = detector.current.flush();
-      if (settled) propose(settled);
-    }, 6500);
+    if (!detector.current.pending) {
+      resetDetection();
+      return;
+    }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(settle, 6500);
+    deadline.current ??= setTimeout(settle, 15000);
   }
   function edit(id: number, text: string) {
     update(
@@ -153,6 +165,9 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   }
   function resetDetection() {
     clearTimeout(timer.current);
+    timer.current = undefined;
+    clearTimeout(deadline.current);
+    deadline.current = undefined;
     detector.current.reset();
   }
   function reset() {

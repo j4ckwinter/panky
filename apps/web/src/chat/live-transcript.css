@@ -71,6 +71,8 @@
   font-size: 13px;
 }
 .transcript-entries {
+  max-height: 260px;
+  overflow-y: auto;
   overflow-wrap: anywhere;
 }
 .transcript-toolbar {
@@ -91,4 +93,20 @@
 .transcript-source {
   color: var(--color-pancake-muted);
   font-size: 13px;
+}
+
+.live-transcript-active .listening-welcome {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-pancake-8);
+  padding: 0;
+}
+.live-transcript-active .listening-welcome h2 {
+  font-size: 18px;
+}
+.live-transcript-active .listening-status {
+  font-size: 12px;
 }

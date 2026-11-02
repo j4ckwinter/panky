@@ -1,6 +1,6 @@
 import { Button, Text, Textarea } from "@jack.winter/pancake-ui";
 import type { InterviewInput } from "@panky/shared";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api/chat";
 import { ExperienceSources } from "./ExperienceSources";
 import { LiveTranscript } from "./LiveTranscript";
@@ -29,30 +29,29 @@ export function Interview({
   const answer = chat.messages.findLast((item) => item.role === "assistant");
   const run = chat.runs.at(-1);
   const unavailable = chat.pending || chat.serverBusy || !chat.connected;
-  const detailHeading = /^## Supporting detail\s*$/m.exec(
-    answer?.content ?? "",
-  );
-  const cues = detailHeading
-    ? (answer?.content.slice(0, detailHeading.index) ?? "")
-    : (answer?.content ?? "");
-  const detail = detailHeading
-    ? (answer?.content.slice(detailHeading.index + detailHeading[0].length) ??
-      "")
-    : "";
+  const answerPanel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (question?.id && answerPanel.current) {
+      answerPanel.current.scrollTop = 0;
+      answerPanel.current.scrollIntoView({ block: "nearest" });
+    }
+  }, [question?.id]);
   const state = !chat.connected
     ? "Connection lost. Refresh history to reconnect."
     : chat.streaming
-      ? "Preparing talking points…"
+      ? answer?.content
+        ? "Responding…"
+        : "Waiting for response…"
       : chat.serverBusy
         ? "Panky is busy with another response. Wait for it to finish."
         : run?.status === "cancelled"
-          ? "Stopped. Partial talking points are saved."
+          ? "Stopped. Partial response is saved."
           : run?.status === "interrupted"
             ? "Interrupted. Refresh history before sending again."
             : run?.status === "failed"
               ? "Could not finish. Review the error before submitting again."
               : run?.status === "completed"
-                ? "Talking points ready."
+                ? "Response ready."
                 : "Ready for a question.";
 
   return (
@@ -63,11 +62,55 @@ export function Interview({
           onTranscript={questions.onTranscript}
           onResetDetection={questions.resetDetection}
           onUseAsQuestion={questions.propose}
-        />
-        <SpokenQuestions
-          questions={questions}
-          providerLabel={chat.providerLabel}
-        />
+        >
+          {(question || questions.cards.length > 0) && (
+            <div
+              className={`interview-workspace${question ? " has-answer" : ""}`}
+            >
+              <SpokenQuestions
+                questions={questions}
+                providerLabel={chat.providerLabel}
+              />
+              <div className="interview-answer-column">
+                {(question || questions.cards.length > 0) && (
+                  <div className="interview-actions">
+                    <span role="status">{state}</span>
+                    {run?.status === "running" && (
+                      <Button
+                        disabled={chat.cancelling}
+                        onClick={() => void chat.cancel(run.id)}
+                      >
+                        Stop response
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {question ? (
+                  <section
+                    ref={answerPanel}
+                    tabIndex={0}
+                    className="interview-result"
+                    aria-label="Interview answer"
+                  >
+                    <div className="interview-question">
+                      <Text as="h2" variant="heading">
+                        Current question
+                      </Text>
+                      <p>{question.content}</p>
+                      <p className="interview-note">{chat.providerLabel}</p>
+                    </div>
+                    <div className="interview-response">
+                      <Markdown>
+                        {answer?.content || "Waiting for response…"}
+                      </Markdown>
+                    </div>
+                    <SourceEvidence sources={answer?.sources ?? []} />
+                  </section>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </LiveTranscript>
         <details className="interview-tools">
           <summary>Ask a question</summary>
           <div className="interview-tools-content">
@@ -206,7 +249,7 @@ export function Interview({
               />
               <div className="interview-actions">
                 <Button type="submit" disabled={unavailable || !draft.trim()}>
-                  Get talking points
+                  Get response
                 </Button>
                 {question && (
                   <Button
@@ -228,40 +271,6 @@ export function Interview({
             </p>
           </div>
         </details>
-        {(question || questions.cards.length > 0) && (
-          <div className="interview-actions">
-            <span role="status">{state}</span>
-            {run?.status === "running" && (
-              <Button
-                disabled={chat.cancelling}
-                onClick={() => void chat.cancel(run.id)}
-              >
-                Stop response
-              </Button>
-            )}
-          </div>
-        )}
-        {question ? (
-          <section className="interview-result" aria-label="Interview answer">
-            <div className="interview-question">
-              <Text as="h2" variant="heading">
-                Current question
-              </Text>
-              <p>{question.content}</p>
-              <p className="interview-note">{chat.providerLabel}</p>
-            </div>
-            <div className="interview-cues">
-              <Markdown>{cues || "Waiting for talking points…"}</Markdown>
-            </div>
-            <SourceEvidence sources={answer?.sources ?? []} />
-            {detail.trim() && (
-              <details className="interview-detail" key={answer?.id}>
-                <summary>Supporting detail</summary>
-                <Markdown>{detail}</Markdown>
-              </details>
-            )}
-          </section>
-        ) : null}
       </div>
     </div>
   );

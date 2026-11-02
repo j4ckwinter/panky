@@ -94,9 +94,9 @@ test("chat follows streamed output after leaving a populated interview panel", a
   await page
     .getByLabel("Interview question", { exact: true })
     .fill("Interview return scroll regression");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(
-    page.getByText("Talking points ready.", { exact: true }),
+    page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", {
@@ -167,27 +167,20 @@ test("interview questions stream through the backend, support editing, and retai
   const submission = page.waitForRequest(
     (req) => req.method() === "POST" && req.url().endsWith("/messages"),
   );
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   const sent = await submission;
   expect(sent.postDataJSON().interview.experience).toContain(
     "Synthetic test sample",
   );
   await expect(
-    page.getByRole("status").filter({ hasText: "Talking points ready." }),
+    page.getByRole("status").filter({ hasText: "Response ready." }),
   ).toBeVisible();
   const answer = page.getByRole("region", { name: "Interview answer" });
-  await expect(
-    answer.getByRole("heading", { name: "Immediate cues" }),
-  ).toBeVisible();
-  expect(
-    await answer.locator(".interview-cues li").count(),
-  ).toBeGreaterThanOrEqual(3);
-  await expect(answer.locator(".interview-detail")).not.toHaveAttribute(
-    "open",
-    "",
+  await expect(answer.locator(".interview-response")).toContainText(
+    "Suggested approach",
   );
-  await answer.getByText("Supporting detail", { exact: true }).click();
-  await expect(answer.locator(".interview-detail")).toHaveAttribute("open", "");
+  await expect(answer).not.toContainText("Immediate cues");
+  await expect(answer).not.toContainText("Supporting detail");
   const historyUrl = sent.url().replace(/\/messages$/, "");
   const saved = historySchema.parse(
     await (
@@ -200,7 +193,7 @@ test("interview questions stream through the backend, support editing, and retai
   expect(saved.messages[0]?.content).toBe(
     "Tell me about a technical decision you influenced.",
   );
-  expect(saved.messages[1]?.content).toContain("## Immediate cues");
+  expect(saved.messages[1]?.content).toContain("Suggested approach");
   await page.screenshot({
     path: "test-results/interview-desktop.png",
     fullPage: true,
@@ -210,9 +203,9 @@ test("interview questions stream through the backend, support editing, and retai
     "Tell me about a technical decision you influenced.",
   );
   await field.fill("How would you design a queue?");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(
-    page.getByRole("status").filter({ hasText: "Talking points ready." }),
+    page.getByRole("status").filter({ hasText: "Response ready." }),
   ).toBeVisible();
   await expect(answer).toContainText("How would you design a queue?");
   await page.setViewportSize({ width: 390, height: 844 });
@@ -248,7 +241,7 @@ test("interview questions stream through the backend, support editing, and retai
     .click();
   await expect(
     page.getByRole("article", { name: "Panky response", exact: true }).first(),
-  ).toContainText("Immediate cues");
+  ).toContainText("Suggested approach");
   expect(posts).toBe(0);
 });
 
@@ -266,7 +259,7 @@ test("interview cancellation preserves partial output without retrying", async (
   const submission = page.waitForRequest(
     (req) => req.method() === "POST" && req.url().endsWith("/messages"),
   );
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   const sent = await submission;
   await expect(
     page.getByRole("button", { name: "New interview", exact: true }),
@@ -275,7 +268,7 @@ test("interview cancellation preserves partial output without retrying", async (
     .getByRole("button", { name: "Stop response", exact: true })
     .click();
   await expect(
-    page.getByText("Stopped. Partial talking points are saved.", {
+    page.getByText("Stopped. Partial response is saved.", {
       exact: true,
     }),
   ).toBeVisible();
@@ -311,7 +304,7 @@ test("interview reports an unavailable backend and retains the question without 
   });
   const field = page.getByLabel("Interview question", { exact: true });
   await field.fill("Explain database indexes.");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(page.getByRole("alert")).toContainText("Could not reach Panky");
   await expect(field).toHaveValue("Explain database indexes.");
   expect(submissions).toBe(1);

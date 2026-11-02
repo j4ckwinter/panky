@@ -5,7 +5,7 @@
   padding: var(--spacing-pancake-24);
 }
 .interview-panel {
-  max-width: 760px;
+  max-width: 1100px;
   width: 100%;
   min-height: 100%;
   align-content: center;
@@ -91,7 +91,9 @@
 .interview-result {
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-12);
-  overflow: hidden;
+  max-height: 65vh;
+  overflow-y: auto;
+  scroll-margin-block: var(--spacing-pancake-16);
 }
 .interview-question {
   background: var(--color-pancake-canvas);
@@ -106,15 +108,11 @@
   font-weight: 600;
   white-space: pre-wrap;
 }
-.interview-cues {
+.interview-response {
   padding: var(--spacing-pancake-24);
 }
-.interview-cues li {
+.interview-response li {
   margin: var(--spacing-pancake-12) 0;
-}
-.interview-detail {
-  border-top: 1px solid var(--color-pancake-border);
-  padding: 0 var(--spacing-pancake-24) var(--spacing-pancake-16);
 }
 @media (max-width: 640px) {
   .interview-scroll {
@@ -124,7 +122,7 @@
     padding-bottom: 24px;
   }
   .interview-question,
-  .interview-cues {
+  .interview-response {
     padding: var(--spacing-pancake-16);
   }
 }
@@ -143,4 +141,50 @@
 }
 .spoken-question textarea {
   resize: vertical;
+}
+
+.interview-workspace {
+  display: grid;
+  gap: var(--spacing-pancake-16);
+  min-width: 0;
+}
+.interview-workspace.has-answer {
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.6fr);
+  align-items: start;
+}
+.interview-answer-column {
+  display: grid;
+  gap: var(--spacing-pancake-12);
+  min-width: 0;
+}
+.interview-answer-column:only-child {
+  grid-column: 1 / -1;
+}
+.spoken-question-list {
+  display: grid;
+  gap: var(--spacing-pancake-12);
+  max-height: 48vh;
+  overflow-y: auto;
+}
+.accepted-question {
+  margin: 0;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+@media (max-width: 760px) {
+  .interview-workspace.has-answer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .has-answer .spoken-question-list {
+    max-height: 180px;
+  }
+  .interview-result {
+    max-height: none;
+  }
+}
+
+.interview-result:focus-visible,
+.spoken-question-list:focus-visible {
+  outline: 2px solid var(--color-pancake-control-focus);
+  outline-offset: 3px;
 }

@@ -210,7 +210,7 @@ test("interview requests reach the provider without tools or prior suggestions; 
       calls.push({ history, tools });
       yield {
         type: "delta",
-        text: "## Immediate cues\n- Suggested approach: ask about constraints.\n\n## Supporting detail\nNo outcome was supplied.",
+        text: "Suggested approach: ask about constraints. No outcome was supplied.",
       };
       yield { type: "complete" };
     },
@@ -262,6 +262,63 @@ test("interview requests reach the provider without tools or prior suggestions; 
   assert.equal(started.omittedMessages, 2);
 });
 
+test("interview text reaches the client before the provider completes", {
+  timeout: 5000,
+}, async () => {
+  let release = () => {};
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const app = await fixture({
+    async *stream() {
+      yield {
+        type: "delta",
+        text: "A closure retains access to its lexical scope.",
+      };
+      await pending;
+      yield {
+        type: "delta",
+        text: " That scope remains available after the outer function returns.",
+      };
+      yield { type: "complete" };
+    },
+  });
+  const response = await app.submit({
+    content: "What is a closure?",
+    interview: { experience: "", useExperience: false },
+  });
+  assert(response.body);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let output = "";
+  try {
+    while (!output.includes("A closure retains access")) {
+      const part = await reader.read();
+      assert(!part.done);
+      output += decoder.decode(part.value, { stream: true });
+    }
+    assert.equal(app.store.runs(app.conversation.id)[0]?.status, "running");
+    assert(!output.includes('"type":"done"'));
+    release();
+    while (true) {
+      const part = await reader.read();
+      if (part.done) break;
+      output += decoder.decode(part.value, { stream: true });
+    }
+    const last = events(output).at(-1);
+    assert(last?.type === "done");
+    assert.equal(last.run.status, "completed");
+    assert.equal(
+      last.message.content,
+      "A closure retains access to its lexical scope. That scope remains available after the outer function returns.",
+    );
+  } finally {
+    release();
+    await reader.cancel();
+    reader.releaseLock();
+  }
+});
+
 test("mock interview answers label synthetic evidence and never claim to analyse the user's sample", async () => {
   const app = await fixture();
   for (const content of [
@@ -277,8 +334,9 @@ test("mock interview answers label synthetic evidence and never claim to analyse
     const answer = stream
       .flatMap((event) => (event.type === "delta" ? [event.text] : []))
       .join("");
-    assert(answer.startsWith("## Immediate cues\n"));
-    assert(answer.includes("## Supporting detail"));
+    assert.match(answer, /^(Suggested approach|Synthetic example)/);
+    assert(!answer.includes("## Immediate cues"));
+    assert(!answer.includes("## Supporting detail"));
     assert.match(answer, /synthetic demo/);
     assert.match(answer, /does not analyse your pasted experience/);
     assert(!answer.includes("Private user experience"));
@@ -291,7 +349,7 @@ test("mock interview answers label synthetic evidence and never claim to analyse
 test("interview and ordinary chat share the global response slot and existing cancellation", async () => {
   const app = await fixture({
     async *stream(_history, _tools, signal) {
-      yield { type: "delta", text: "## Immediate cues\n- Partial cue" };
+      yield { type: "delta", text: "Partial answer" };
       if (!signal.aborted) await once(signal, "abort");
       signal.throwIfAborted();
     },
@@ -314,10 +372,10 @@ test("interview and ordinary chat share the global response slot and existing ca
   assert.equal(app.chat.busy, false);
 });
 
-test("an interview provider failure preserves partial cues and releases the response slot", async () => {
+test("an interview provider failure preserves partial answers and releases the response slot", async () => {
   const app = await fixture({
     async *stream() {
-      yield { type: "delta", text: "## Immediate cues\n- Partial" };
+      yield { type: "delta", text: "Partial answer" };
       throw new Error("private connection details");
     },
   });

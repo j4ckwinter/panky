@@ -29,11 +29,12 @@ The report contains generated personal content. Keep it outside the repository a
 ## Measurements and interpretation
 
 - `firstDeltaMs`: submission until the first text chunk, including headers or introductory text. This is not useful-answer latency.
-- `firstCompleteCueMs`: submission until a complete first Markdown bullet and its terminating newline are observed under `## Immediate cues`. This is a syntactic proxy for first-useful-cue time; it is null if the expected structure is absent. A reviewer must confirm that the cue is useful.
 - `durationMs`: submission until the response stream closes.
 - `admittedContextChars`: total admitted system and user prompt characters from the backend activity event, including question, experience and retained conversation context.
 - `sourceCount`: retrieved passages attached to the response; zero in this empty-corpus harness.
 - `transportPassed`: the task completed without a reported error. This does not assess correctness, relevance or quality.
+
+The former `firstCompleteCueMs` metric required the old two-section response format and is no longer emitted. Do not compare that metric with `firstDeltaMs`; the latter does not establish usefulness.
 
 The timings include local HTTP, the empty-corpus retrieval path and generation, but exclude a remote Mac-to-PC connection, browser rendering, audio and transcription. The first case may include cold model loading; retain run order and distinguish it from warm cases. Record PC/GPU, Ollama version, model digest, sample revision and run conditions privately with the report when comparing results. The report records configured model, context and history budgets, the exact scripted context submitted per turn and pending `runConditions` fields for host measurements. Fill those fields from the actual run; null does not mean zero memory usage.
 
@@ -48,18 +49,18 @@ Score each dimension 0, 1 or 2, using the case's `review` guidance and the actua
 | Correctness         | Material technical or logical error     | Broadly sound, important qualification missing | Accurate with appropriate assumptions and tradeoffs               |
 | Relevant experience | Irrelevant or invented example          | Plausible but weak selection                   | Strong supported example, or correct recognition that none exists |
 | Factual support     | Unsupported personal claim              | Evidence and suggestion partly blurred         | Personal claims supported; suggestions clearly distinguished      |
-| Readability         | Hard to scan or unusable while speaking | Useful but too long or poorly prioritised      | Three or four concise cues with useful expandable detail          |
+| Readability         | Hard to scan or unusable while speaking | Useful but too long or poorly prioritised      | Direct, concise answer with relevant explanation or examples      |
 | Missing information | Invents absent requirements or facts    | Signals uncertainty but gives poor next steps  | Requests the relevant clarification or clearly explains the gap   |
 
-Set `unsupportedPersonalClaims` to true for any invented achievement, metric, role, team ownership or source claim. Treat that case as a quality failure regardless of the total score. Set `usefulCueConfirmed` only after reading the first cue; a fast generic placeholder does not establish usefulness. Set `confusedSuggestionWithSpokenAnswer` to true if the output attributes an earlier generated suggestion to the user's speech or experience; treat this as a quality failure. For sequences, compare the output with that turn's `context`, not just previous generated text. Add specific corrections or observations to `reviewerNotes`.
+Set `unsupportedPersonalClaims` to true for any invented achievement, metric, role, team ownership or source claim. Treat that case as a quality failure regardless of the total score. Set `usefulOpeningConfirmed` only after reading the opening answer; a fast generic placeholder does not establish usefulness. Set `confusedSuggestionWithSpokenAnswer` to true if the output attributes an earlier generated suggestion to the user's speech or experience; treat this as a quality failure. For sequences, compare the output with that turn's `context`, not just previous generated text. Add specific corrections or observations to `reviewerNotes`.
 
 When an answer contains an executable code example, inspect it before running it in a temporary isolated environment with synthetic inputs. Record the command, result and pass/fail status in `executableExampleCheck`. Do not execute generated code automatically or give it credentials. For conceptual examples without executable code, mark the check not applicable and record the reason. A typecheck of this harness does not verify generated examples.
 
 ## Acceptance decision
 
-After the initial PC run, agree numerical targets for warm and cold first-useful-cue time, full-response time and rubric scores with the user. Record those targets before declaring the milestone complete. Repeat the same set and sample after a relevant model or prompt change; do not lower expectations to turn a failed comparison into a pass.
+After the initial PC run, agree numerical targets for warm and cold first-text time, full-response time and rubric scores with the user. Record those targets before declaring the milestone complete. Repeat the same set and sample after a relevant model or prompt change; do not lower expectations to turn a failed comparison into a pass.
 
-Separately, have the user read questions aloud and use the browser panel while answering. Record whether cues can be found quickly, whether the panel is distracting and whether supporting detail is accessible. Script execution cannot establish this interaction criterion.
+Separately, have the user read questions aloud and use the browser panel while answering. Record whether the question and streamed answer can be found quickly and whether the panel is distracting. Script execution cannot establish this interaction criterion.
 
 The harness does not import Notion data. Evaluate retrieval separately in the browser with an explicitly selected personal corpus: record the question, admitted source links, context size, latency and any missing or misleading evidence. IA-3's combined retrieval, context and generation targets cannot be accepted from this empty-corpus run alone. Live question detection and audio latency remain outside this milestone.
 

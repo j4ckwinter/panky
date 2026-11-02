@@ -14,10 +14,10 @@ test("follow-ups carry questions and spoken notes, never generated suggestions",
     const request = page.waitForRequest(
       (req) => req.method() === "POST" && req.url().endsWith("/messages"),
     );
-    await page.getByRole("button", { name: "Get talking points" }).click();
+    await page.getByRole("button", { name: "Get response" }).click();
     const body = (await request).postDataJSON();
     await expect(
-      page.getByText("Talking points ready.", { exact: true }),
+      page.getByText("Response ready.", { exact: true }),
     ).toBeVisible();
     return body;
   };
@@ -85,9 +85,9 @@ test("rejected follow-up keeps the spoken summary and draft without retrying", a
   await page.getByText("Ask a question", { exact: true }).click();
   const field = page.getByLabel("Interview question", { exact: true });
   await field.fill("Explain database indexes.");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(
-    page.getByText("Talking points ready.", { exact: true }),
+    page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
   await page
     .getByLabel("What I actually said", { exact: true })
@@ -108,7 +108,7 @@ test("rejected follow-up keeps the spoken summary and draft without retrying", a
     });
   });
   await field.fill("Why that structure?");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(page.getByRole("alert")).toContainText("Model unavailable");
   await expect(field).toHaveValue("Why that structure?");
   await expect(
@@ -133,7 +133,7 @@ test("interview context keeps only four recent questions and clears when leaving
     const request = page.waitForRequest(
       (req) => req.method() === "POST" && req.url().endsWith("/messages"),
     );
-    await page.getByRole("button", { name: "Get talking points" }).click();
+    await page.getByRole("button", { name: "Get response" }).click();
     const context = (await request).postDataJSON().interview.context;
     expect(context).toHaveLength(Math.min(index - 1, 4));
     if (index === 6)
@@ -146,7 +146,7 @@ test("interview context keeps only four recent questions and clears when leaving
         "Explain queue design choice 5.",
       ]);
     await expect(
-      page.getByText("Talking points ready.", { exact: true }),
+      page.getByText("Response ready.", { exact: true }),
     ).toBeVisible();
   }
   await page
@@ -168,9 +168,9 @@ test("accepted question remains in context when the trailing history refresh fai
   await page.getByText("Ask a question", { exact: true }).click();
   const field = page.getByLabel("Interview question", { exact: true });
   await field.fill("Explain database indexes.");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(
-    page.getByText("Talking points ready.", { exact: true }),
+    page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
   await page
     .getByLabel("What I actually said", { exact: true })
@@ -185,7 +185,7 @@ test("accepted question remains in context when the trailing history refresh fai
     } else await route.continue();
   });
   await field.fill("Why that structure?");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "History refresh unavailable",
   );
@@ -204,7 +204,7 @@ test("accepted question remains in context when the trailing history refresh fai
   const request = page.waitForRequest(
     (req) => req.method() === "POST" && req.url().endsWith("/messages"),
   );
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   expect((await request).postDataJSON().interview.context).toEqual([
     {
       question: "Explain database indexes.",
@@ -216,7 +216,7 @@ test("accepted question remains in context when the trailing history refresh fai
     },
   ]);
   await expect(
-    page.getByText("Talking points ready.", { exact: true }),
+    page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
 });
 
@@ -242,7 +242,7 @@ test("accepted question remains in context after an interrupted response stream"
   });
   const field = page.getByLabel("Interview question", { exact: true });
   await field.fill("Explain database indexes.");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "The reply was interrupted",
   );
@@ -258,7 +258,7 @@ test("accepted question remains in context after an interrupted response stream"
   const request = page.waitForRequest(
     (req) => req.method() === "POST" && req.url().endsWith("/messages"),
   );
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   expect((await request).postDataJSON().interview.context).toEqual([
     {
       question: "Explain database indexes.",
@@ -266,6 +266,6 @@ test("accepted question remains in context after an interrupted response stream"
     },
   ]);
   await expect(
-    page.getByText("Talking points ready.", { exact: true }),
+    page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
 });

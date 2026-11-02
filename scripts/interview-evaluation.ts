@@ -104,7 +104,6 @@ if (!values.run) {
       }
       const started = performance.now();
       let firstDeltaMs: number | null = null;
-      let firstCompleteCueMs: number | null = null;
       let output = "";
       let status = "missing_terminal";
       let taskError: string | null = null;
@@ -149,11 +148,6 @@ if (!values.run) {
             if (event.type === "delta") {
               firstDeltaMs ??= elapsed;
               output += event.text;
-              if (
-                firstCompleteCueMs === null &&
-                /## Immediate cues\s*\r?\n[-*] .+\r?\n/.test(output)
-              )
-                firstCompleteCueMs = elapsed;
             }
             if (event.type === "done") {
               status = event.run.status;
@@ -176,7 +170,6 @@ if (!values.run) {
         status,
         taskError,
         firstDeltaMs,
-        firstCompleteCueMs,
         durationMs,
         admittedContextChars,
         sourceCount,
@@ -190,7 +183,7 @@ if (!values.run) {
           missingInformation: null,
         },
         unsupportedPersonalClaims: null,
-        usefulCueConfirmed: null,
+        usefulOpeningConfirmed: null,
         confusedSuggestionWithSpokenAnswer: null,
         executableExampleCheck: {
           status: "not-reviewed",

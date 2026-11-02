@@ -27,9 +27,9 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   await page
     .getByLabel("Interview question", { exact: true })
     .fill("Describe a database migration rollout and rollback rehearsal.");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(
-    page.getByText("Talking points ready.", { exact: true }),
+    page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
   const answer = page.getByRole("region", { name: "Interview answer" });
   await answer.getByText("Retrieved evidence (1)", { exact: true }).click();
@@ -78,9 +78,9 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   await page
     .getByLabel("Interview question", { exact: true })
     .fill("How did I use idempotency keys and durable delivery?");
-  await page.getByRole("button", { name: "Get talking points" }).click();
+  await page.getByRole("button", { name: "Get response" }).click();
   await expect(
-    page.getByText("Talking points ready.", { exact: true }),
+    page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
   await expect(answer.locator(".source-evidence")).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });

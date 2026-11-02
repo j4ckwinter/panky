@@ -1,5 +1,5 @@
 import { BannerToast, Button } from "@jack.winter/pancake-ui";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { BrowserAudio, initialAudioState } from "./browserAudio";
 import {
   BrowserTranscription,
@@ -13,10 +13,12 @@ export type TranscriptEntry = {
 };
 
 export function LiveTranscript({
+  children,
   onTranscript,
   onUseAsQuestion,
   onResetDetection,
 }: {
+  children?: ReactNode;
   onTranscript?: (entry: TranscriptEntry) => void;
   onUseAsQuestion?: (text: string) => void;
   onResetDetection?: () => void;
@@ -184,46 +186,50 @@ export function LiveTranscript({
           {state.error}
         </BannerToast>
       )}
+      {children}
       {(active || entries.length > 0) && (
-        <section aria-label="Live transcript" className="transcript-entries">
-          {entries.length > 0 && (
-            <div className="transcript-toolbar">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setEntries([]);
-                  resetDetectionCallback.current?.();
-                }}
-              >
-                Clear transcript
-              </Button>
-            </div>
-          )}
-          {entries.length === 0 ? (
-            <p className="muted">
-              {loading
-                ? "Transcripts will begin when the model is ready."
-                : "No transcript yet. Listening for speech…"}
-            </p>
-          ) : (
-            entries.map((entry) => (
-              <article key={entry.id}>
-                <p className="transcript-source">
-                  {entry.source === "shared" ? "Shared audio" : "Microphone"}
-                </p>
-                <p>{entry.text}</p>
-                {entry.source === "shared" && onUseAsQuestion && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => onUseAsQuestion(entry.text)}
-                  >
-                    Use as question
-                  </Button>
-                )}
-              </article>
-            ))
-          )}
-        </section>
+        <details className="transcript-details">
+          <summary>Transcript ({entries.length})</summary>
+          <section aria-label="Live transcript" className="transcript-entries">
+            {entries.length > 0 && (
+              <div className="transcript-toolbar">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setEntries([]);
+                    resetDetectionCallback.current?.();
+                  }}
+                >
+                  Clear transcript
+                </Button>
+              </div>
+            )}
+            {entries.length === 0 ? (
+              <p className="muted">
+                {loading
+                  ? "Transcripts will begin when the model is ready."
+                  : "No transcript yet. Listening for speech…"}
+              </p>
+            ) : (
+              entries.map((entry) => (
+                <article key={entry.id}>
+                  <p className="transcript-source">
+                    {entry.source === "shared" ? "Shared audio" : "Microphone"}
+                  </p>
+                  <p>{entry.text}</p>
+                  {entry.source === "shared" && onUseAsQuestion && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => onUseAsQuestion(entry.text)}
+                    >
+                      Use as question
+                    </Button>
+                  )}
+                </article>
+              ))
+            )}
+          </section>
+        </details>
       )}
       <details className="listening-settings">
         <summary>Listening settings</summary>

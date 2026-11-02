@@ -159,6 +159,7 @@ test("local speech shows separate transcripts, clears text and removes only its 
     panel.getByRole("region", { name: "Local speech model" }),
   ).toContainText("Speech model ready");
   await panel.getByRole("button", { name: "Start listening" }).click();
+  await panel.locator(".transcript-details > summary").click();
   const transcript = panel.getByRole("region", { name: "Live transcript" });
   await expect(transcript).toContainText("shared controlled transcript", {
     timeout: 15000,

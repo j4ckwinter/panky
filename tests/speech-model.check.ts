@@ -84,6 +84,7 @@ test("production speech reaches an editable question and the answer endpoint", a
       panel.getByRole("region", { name: "Local speech model" }),
     ).toContainText("Speech model ready", { timeout: 90_000 });
     await panel.getByRole("button", { name: "Start listening" }).click();
+    await panel.locator(".transcript-details > summary").click();
     const entries = panel
       .getByRole("region", { name: "Live transcript" })
       .locator("article");
@@ -106,7 +107,7 @@ test("production speech reaches an editable question and the answer endpoint", a
     await expect(card).toContainText("Sent to model");
     await expect(
       page.getByRole("region", { name: "Interview answer", exact: true }),
-    ).toContainText("Immediate cues");
+    ).toContainText("Suggested approach");
     await page.getByRole("button", { name: "Stop", exact: true }).click();
     expect(await page.evaluate("window.allSpeechTracksEnded()")).toBe(true);
     await panel.screenshot({

@@ -15,6 +15,10 @@ export class QuestionDetector {
 
   constructor(private readonly now: () => number = Date.now) {}
 
+  get pending() {
+    return this.buffer.length > 0;
+  }
+
   push(text: string): string | null {
     const value = text.trim();
     if (this.buffer && this.now() - this.startedAt > 20_000) this.reset();

@@ -20,75 +20,88 @@ export function SpokenQuestions({
         Review the transcript before sending.
       </p>
       {questions.notice && <p role="status">{questions.notice}</p>}
-      {questions.cards.map((card) => (
-        <article
-          className="spoken-question"
-          aria-label="Detected question"
-          key={card.id}
-        >
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void questions.submit(card.id);
-            }}
+      <section
+        className="spoken-question-list"
+        aria-label="Question queue"
+        tabIndex={0}
+      >
+        {questions.cards.map((card) => (
+          <article
+            className="spoken-question"
+            aria-label="Detected question"
+            key={card.id}
           >
-            <Textarea
-              label="Question to ask"
-              rows={3}
-              maxLength={8000}
-              value={card.text}
-              disabled={card.status !== "draft"}
-              onChange={(event) =>
-                questions.edit(card.id, event.currentTarget.value)
-              }
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-                  event.preventDefault();
-                  void questions.submit(card.id);
-                }
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void questions.submit(card.id);
               }}
-            />
-            <div className="interview-actions">
-              {card.status === "draft" && (
-                <Button
-                  type="submit"
-                  disabled={questions.unavailable || !card.text.trim()}
-                >
-                  Use this question
-                </Button>
+            >
+              {card.status === "accepted" ? (
+                <p className="accepted-question">{card.text}</p>
+              ) : (
+                <Textarea
+                  label="Question to ask"
+                  rows={3}
+                  maxLength={8000}
+                  value={card.text}
+                  disabled={card.status !== "draft"}
+                  onChange={(event) =>
+                    questions.edit(card.id, event.currentTarget.value)
+                  }
+                  onKeyDown={(event) => {
+                    if (
+                      event.key === "Enter" &&
+                      (event.ctrlKey || event.metaKey)
+                    ) {
+                      event.preventDefault();
+                      void questions.submit(card.id);
+                    }
+                  }}
+                />
               )}
-              {card.status === "pending" && (
-                <span role="status">Sending question…</span>
-              )}
-              {card.status === "accepted" && (
-                <span role="status">Sent to model</span>
-              )}
-              {card.status === "failed" && (
-                <>
-                  <span role="status">
-                    Submission not confirmed. Check chat history before trying
-                    again.
-                  </span>
+              <div className="interview-actions">
+                {card.status === "draft" && (
                   <Button
-                    variant="secondary"
-                    disabled={questions.unavailable}
-                    onClick={() => questions.review(card.id)}
+                    type="submit"
+                    disabled={questions.unavailable || !card.text.trim()}
                   >
-                    Review again
+                    Use this question
                   </Button>
-                </>
-              )}
-              <Button
-                variant="ghost"
-                disabled={card.status === "pending"}
-                onClick={() => questions.dismiss(card.id)}
-              >
-                Dismiss question
-              </Button>
-            </div>
-          </form>
-        </article>
-      ))}
+                )}
+                {card.status === "pending" && (
+                  <span role="status">Sending question…</span>
+                )}
+                {card.status === "accepted" && (
+                  <span role="status">Sent to model</span>
+                )}
+                {card.status === "failed" && (
+                  <>
+                    <span role="status">
+                      Submission not confirmed. Check chat history before trying
+                      again.
+                    </span>
+                    <Button
+                      variant="secondary"
+                      disabled={questions.unavailable}
+                      onClick={() => questions.review(card.id)}
+                    >
+                      Review again
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  disabled={card.status === "pending"}
+                  onClick={() => questions.dismiss(card.id)}
+                >
+                  Dismiss question
+                </Button>
+              </div>
+            </form>
+          </article>
+        ))}
+      </section>
     </section>
   );
 }
