@@ -1,6 +1,7 @@
 import type { GoogleIdentity } from "../apps/server/src/auth/google.js";
 import { loadConfig } from "../apps/server/src/config.js";
 import { createApp } from "../apps/server/src/http.js";
+import { HttpError } from "../apps/server/src/http-utils.js";
 
 const config = loadConfig({
   AUTH_TOKEN: "panky-browser-test-token-never-use-in-production",
@@ -11,12 +12,44 @@ const config = loadConfig({
   OWNER_EMAIL: "owner@gmail.com",
   GOOGLE_CLIENT_ID: "123456789-browser-tests.apps.googleusercontent.com",
   MODEL_PROVIDER: "mock",
+  NOTION_TOKEN: "synthetic-notion-token-for-browser-tests",
 });
+let imports = 0;
 const app = createApp(
   config,
   undefined,
   undefined,
   async (credential) => JSON.parse(credential) as GoogleIdentity,
+  async (pageId) => {
+    if (pageId !== "11111111-1111-4111-8111-111111111111")
+      throw new HttpError(
+        403,
+        "Notion could not read this page. Check the integration's page access.",
+      );
+    imports++;
+    if (imports >= 3)
+      throw new HttpError(
+        502,
+        "Notion could not refresh the page. Try again manually.",
+      );
+    return {
+      pageId,
+      title:
+        imports === 1
+          ? "Synthetic migration project"
+          : "Synthetic migration project updated",
+      passages: [
+        {
+          blockId: "22222222-2222-4222-8222-222222222222",
+          text:
+            imports === 1
+              ? "I proposed a staged database migration with a rollback rehearsal. The team implemented the rollout. No measured revenue outcome was recorded."
+              : "I compared queue retries and idempotency keys for the notification service. The team implemented durable delivery.",
+        },
+      ],
+      warnings: ["Skipped unsupported block: image."],
+    };
+  },
 );
 app.server.listen(3101, "127.0.0.1");
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

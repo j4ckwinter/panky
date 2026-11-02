@@ -20,6 +20,9 @@ import type { Config } from "./config.js";
 import { HttpError, json, readJson } from "./http-utils.js";
 import { OllamaProvider } from "./providers/ollama.js";
 import { MockProvider, type ModelProvider } from "./providers/provider.js";
+import { ExperienceStore } from "./experience/store.js";
+import { ExperienceApi } from "./experience/http.js";
+import { importNotionPage } from "./experience/notion.js";
 
 async function readSubmission(request: IncomingMessage) {
   const result = submissionSchema.safeParse(await readJson(request));
@@ -42,10 +45,17 @@ export function createApp(
     : new MockProvider(),
   tools?: readonly Tool[],
   googleVerifier?: GoogleVerifier,
+  notionImporter: typeof importNotionPage = importNotionPage,
 ) {
   const store = new Store(config.DATABASE_PATH);
   const auth = new Auth(config, googleVerifier);
   const chat = new Chat(store, provider, config, tools);
+  const experience = new ExperienceStore(config.DATABASE_PATH);
+  const experienceApi = new ExperienceApi(
+    experience,
+    config.NOTION_TOKEN,
+    notionImporter,
+  );
   const expectedToken = createHash("sha256")
     .update(`Bearer ${config.AUTH_TOKEN}`)
     .digest();
@@ -102,6 +112,13 @@ export function createApp(
       response.setHeader("WWW-Authenticate", "Bearer");
       throw new HttpError(401, "Sign in to continue.");
     }
+    if (
+      await experienceApi.route(request, response, url.pathname, userId, () => {
+        if (!bearer && auth.authenticate(request)?.id !== userId)
+          throw new HttpError(401, "Sign in to continue.");
+      })
+    )
+      return;
     if (url.pathname === "/api/health" && request.method === "GET") {
       json(response, 200, {
         provider: config.MODEL_PROVIDER,
@@ -209,6 +226,7 @@ export function createApp(
           controller.signal,
           includeActivity,
           interview,
+          interview ? experience.search(userId, content) : [],
         );
         response.end();
       } finally {
@@ -241,13 +259,16 @@ export function createApp(
     server,
     store,
     chat,
+    experience,
     async close() {
+      await experienceApi.stop();
       await chat.stop();
       await new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),
       );
       auth.close();
       store.close();
+      experience.close();
     },
   };
 }

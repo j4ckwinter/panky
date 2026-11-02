@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { evidenceSchema } from "./experience.js";
+export * from "./experience.js";
 import { interviewInputSchema } from "./interview.js";
 
 export { type InterviewInput, interviewInputSchema } from "./interview.js";
@@ -21,6 +23,7 @@ export const messageSchema = z.object({
   content: z.string(),
   status: z.enum(["streaming", "completed", "interrupted"]),
   createdAt: z.string(),
+  sources: z.array(evidenceSchema).max(3).default([]),
 });
 export const submissionSchema = z
   .object({

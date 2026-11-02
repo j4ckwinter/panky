@@ -3,6 +3,7 @@ import { PankyMark } from "../components/PankyMark";
 import { CopyButton } from "./CopyButton";
 import { Markdown } from "./Markdown";
 import { TaskActivity } from "./TaskActivity";
+import { SourceEvidence } from "./SourceEvidence";
 
 export function MessageList({
   messages,
@@ -47,6 +48,9 @@ export function MessageList({
                   ? "Preparing reply…"
                   : "No reply text was saved.")}
             </div>
+            {message.role === "assistant" && (
+              <SourceEvidence sources={message.sources ?? []} />
+            )}
             {message.status === "interrupted" && (
               <p className="interrupted">
                 {task?.status === "cancelled"

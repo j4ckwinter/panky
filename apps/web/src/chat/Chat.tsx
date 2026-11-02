@@ -126,7 +126,7 @@ export function Chat({
           </div>
         )}
         {interview ? (
-          <Interview chat={chat} />
+          <Interview chat={chat} api={api} />
         ) : (
           <div className={`chat-body${hasMessages ? "" : " chat-body-empty"}`}>
             <div className="chat-scroll" ref={scrollArea} onScroll={onScroll}>

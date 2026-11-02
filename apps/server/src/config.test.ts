@@ -8,6 +8,26 @@ const base = {
   MODEL_NAME: "qwen3:4b",
 };
 
+test("optional Notion credentials validate without exposing values", () => {
+  assert.equal(
+    loadConfig({ ...base, NOTION_TOKEN: "" }).NOTION_TOKEN,
+    undefined,
+  );
+  for (const value of [
+    "private token with whitespace",
+    "private-secret\nheader:bad",
+    "short",
+  ]) {
+    assert.throws(
+      () => loadConfig({ ...base, NOTION_TOKEN: value }),
+      (error) =>
+        error instanceof Error &&
+        error.message.includes("NOTION_TOKEN") &&
+        !error.message.includes(value),
+    );
+  }
+});
+
 test("Ollama accepts numeric loopback origins and bounded context configuration", () => {
   for (const endpoint of [
     "http://127.0.0.1:11434",

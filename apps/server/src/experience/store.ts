@@ -1,0 +1,248 @@
+import { randomUUID } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import {
+  type Evidence,
+  evidenceSchema,
+  type ExperienceSource,
+  experienceSourceSchema,
+} from "@panky/shared";
+import { z } from "zod";
+import { HttpError } from "../http-utils.js";
+import type { ImportedPage } from "./notion.js";
+import { experienceQuery } from "./search.js";
+
+const importedPageSchema = z
+  .object({
+    pageId: z.uuid().transform((id) => id.toLowerCase()),
+    title: z.string().trim().min(1).max(300),
+    passages: z
+      .array(
+        z.object({
+          blockId: z.uuid().transform((id) => id.toLowerCase()),
+          text: z.string().trim().min(1).max(1200),
+        }),
+      )
+      .max(100),
+    warnings: z.array(z.string().max(500)).max(100),
+  })
+  .refine(
+    (page) =>
+      page.passages.reduce(
+        (total, passage) => total + passage.text.length,
+        0,
+      ) <= 60000,
+  );
+
+function source(row: Record<string, unknown>): ExperienceSource {
+  return experienceSourceSchema.parse({
+    ...row,
+    warnings: JSON.parse(String(row.warnings)),
+  });
+}
+
+export class ExperienceStore {
+  private readonly db: DatabaseSync;
+
+  constructor(path: string) {
+    if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
+    this.db = new DatabaseSync(path);
+    this.db.exec(`
+      PRAGMA journal_mode = WAL;
+      PRAGMA foreign_keys = ON;
+      CREATE TABLE IF NOT EXISTS experience_sources (
+        id TEXT PRIMARY KEY, ownerId TEXT NOT NULL, pageId TEXT NOT NULL,
+        title TEXT NOT NULL, url TEXT NOT NULL, importedAt TEXT NOT NULL,
+        lastAttemptAt TEXT NOT NULL, error TEXT, warnings TEXT NOT NULL,
+        passageCount INTEGER NOT NULL, UNIQUE(ownerId, pageId)
+      );
+      CREATE TABLE IF NOT EXISTS experience_passages (
+        id INTEGER PRIMARY KEY, sourceId TEXT NOT NULL REFERENCES experience_sources(id),
+        blockId TEXT NOT NULL, text TEXT NOT NULL, ordinal INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS experience_passages_source ON experience_passages(sourceId);
+      CREATE VIRTUAL TABLE IF NOT EXISTS experience_search USING fts5(title, text, tokenize='porter unicode61');
+    `);
+  }
+
+  close() {
+    this.db.close();
+  }
+
+  list(ownerId: string): ExperienceSource[] {
+    return this.db
+      .prepare(
+        "SELECT * FROM experience_sources WHERE ownerId = ? ORDER BY importedAt DESC, id",
+      )
+      .all(ownerId)
+      .map(source);
+  }
+
+  findByPage(ownerId: string, pageId: string): ExperienceSource | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT * FROM experience_sources WHERE ownerId = ? AND pageId = ?",
+      )
+      .get(ownerId, pageId.toLowerCase());
+    return row ? source(row) : undefined;
+  }
+
+  detail(
+    ownerId: string,
+    id: string,
+  ): { source: ExperienceSource; passages: Evidence[] } | undefined {
+    const row = this.db
+      .prepare("SELECT * FROM experience_sources WHERE ownerId = ? AND id = ?")
+      .get(ownerId, id);
+    if (!row) return undefined;
+    const saved = source(row);
+    const passages = this.db
+      .prepare(
+        "SELECT * FROM experience_passages WHERE sourceId = ? ORDER BY ordinal",
+      )
+      .all(id);
+    return {
+      source: saved,
+      passages: passages.map((passage) => this.evidence(saved, passage)),
+    };
+  }
+
+  replace(ownerId: string, imported: ImportedPage): ExperienceSource {
+    const parsed = importedPageSchema.safeParse(imported);
+    if (!parsed.success)
+      throw new HttpError(
+        400,
+        "Imported experience exceeds supported content limits.",
+      );
+    const page = parsed.data;
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const previous = this.findByPage(ownerId, page.pageId);
+      const count = Number(
+        this.db
+          .prepare(
+            "SELECT COUNT(*) AS count FROM experience_sources WHERE ownerId = ?",
+          )
+          .get(ownerId)?.count ?? 0,
+      );
+      if (!previous && count >= 50)
+        throw new HttpError(
+          409,
+          "You can import up to 50 experience sources. Remove a source before adding another.",
+        );
+      const id = previous?.id ?? randomUUID();
+      const now = new Date().toISOString();
+      const url = `https://www.notion.so/${page.pageId.replaceAll("-", "")}`;
+      this.db
+        .prepare(`INSERT INTO experience_sources (id,ownerId,pageId,title,url,importedAt,lastAttemptAt,error,warnings,passageCount)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)
+        ON CONFLICT(ownerId,pageId) DO UPDATE SET title=excluded.title,url=excluded.url,importedAt=excluded.importedAt,lastAttemptAt=excluded.lastAttemptAt,error=NULL,warnings=excluded.warnings,passageCount=excluded.passageCount`)
+        .run(
+          id,
+          ownerId,
+          page.pageId,
+          page.title,
+          url,
+          now,
+          now,
+          JSON.stringify(page.warnings),
+          page.passages.length,
+        );
+      this.deletePassages(id);
+      const insert = this.db.prepare(
+        "INSERT INTO experience_passages (sourceId,blockId,text,ordinal) VALUES (?, ?, ?, ?)",
+      );
+      const index = this.db.prepare(
+        "INSERT INTO experience_search (rowid,title,text) VALUES (?, ?, ?)",
+      );
+      for (const [ordinal, passage] of page.passages.entries()) {
+        const { lastInsertRowid } = insert.run(
+          id,
+          passage.blockId,
+          passage.text,
+          ordinal,
+        );
+        index.run(lastInsertRowid, page.title, passage.text);
+      }
+      const saved = this.findByPage(ownerId, page.pageId);
+      if (!saved) throw new Error("Imported source could not be read.");
+      this.db.exec("COMMIT");
+      return saved;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  fail(ownerId: string, id: string, message: string): void {
+    this.db
+      .prepare(
+        "UPDATE experience_sources SET lastAttemptAt = ?, error = ? WHERE ownerId = ? AND id = ?",
+      )
+      .run(new Date().toISOString(), message.slice(0, 500), ownerId, id);
+  }
+
+  remove(ownerId: string, id: string): boolean {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const existing = this.db
+        .prepare(
+          "SELECT id FROM experience_sources WHERE ownerId = ? AND id = ?",
+        )
+        .get(ownerId, id);
+      if (!existing) {
+        this.db.exec("COMMIT");
+        return false;
+      }
+      this.deletePassages(id);
+      this.db
+        .prepare("DELETE FROM experience_sources WHERE ownerId = ? AND id = ?")
+        .run(ownerId, id);
+      this.db.exec("COMMIT");
+      return true;
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  search(ownerId: string, question: string): Evidence[] {
+    const query = experienceQuery(question);
+    if (!query) return [];
+    const rows = this.db
+      .prepare(`SELECT s.*, p.blockId, p.text FROM experience_search
+      JOIN experience_passages p ON p.id = experience_search.rowid
+      JOIN experience_sources s ON s.id = p.sourceId
+      WHERE experience_search MATCH ? AND s.ownerId = ? AND s.error IS NULL
+      ORDER BY bm25(experience_search, 2.0, 1.0), s.id, p.ordinal LIMIT 3`)
+      .all(query, ownerId);
+    return rows.map((row) => this.evidence(source(row), row));
+  }
+
+  private evidence(
+    saved: ExperienceSource,
+    passage: Record<string, unknown>,
+  ): Evidence {
+    return evidenceSchema.parse({
+      sourceId: saved.id,
+      pageId: saved.pageId,
+      blockId: passage.blockId,
+      title: saved.title,
+      url: `${saved.url}#${String(passage.blockId).replaceAll("-", "")}`,
+      excerpt: passage.text,
+      importedAt: saved.importedAt,
+    });
+  }
+
+  private deletePassages(id: string) {
+    this.db
+      .prepare(
+        "DELETE FROM experience_search WHERE rowid IN (SELECT id FROM experience_passages WHERE sourceId = ?)",
+      )
+      .run(id);
+    this.db
+      .prepare("DELETE FROM experience_passages WHERE sourceId = ?")
+      .run(id);
+  }
+}

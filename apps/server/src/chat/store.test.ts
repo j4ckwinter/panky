@@ -56,9 +56,25 @@ test("additive migration preserves Milestone 1 conversations and recovers old pa
       ],
     );
     assert.deepEqual(migrated.runs(conversationId), []);
+    assert.deepEqual(
+      migrated.messages(conversationId).map((message) => message.sources),
+      [[], []],
+    );
+    const sources = [
+      {
+        sourceId: randomUUID(),
+        pageId: randomUUID(),
+        blockId: randomUUID(),
+        title: "Saved source",
+        url: "https://www.notion.so/11111111111141118111111111111111",
+        excerpt: "My contribution was the rollback plan.",
+        importedAt: now,
+      },
+    ];
     const { run, assistant } = migrated.beginResponse(
       conversationId,
       "New task",
+      sources,
     );
     migrated.addActivity(run.id, {
       kind: "run_started",
@@ -69,6 +85,7 @@ test("additive migration preserves Milestone 1 conversations and recovers old pa
     migrated.close();
     const reopened = new Store(path);
     assert.equal(reopened.messages(conversationId).length, 4);
+    assert.deepEqual(reopened.messages(conversationId)[3]?.sources, sources);
     assert.equal(reopened.runs(conversationId)[0]?.status, "completed");
     assert.equal(reopened.activities(conversationId).length, 2);
     reopened.close();

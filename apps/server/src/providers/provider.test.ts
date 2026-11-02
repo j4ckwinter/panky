@@ -11,6 +11,7 @@ test("maximum-length prompts stream in bounded chunks without losing Unicode or 
     id: randomUUID(),
     conversationId: randomUUID(),
     role: "user",
+    sources: [],
     content,
     status: "completed",
     createdAt: new Date().toISOString(),

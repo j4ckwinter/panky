@@ -5,6 +5,9 @@ import {
   conversationSchema,
   conversationsSchema,
   errorSchema,
+  experienceDetailSchema,
+  experienceListSchema,
+  experienceSourceSchema,
   healthSchema,
   historySchema,
   type InterviewInput,
@@ -76,6 +79,43 @@ export function createApi(token?: string) {
     return response;
   }
   return {
+    async experience() {
+      return experienceListSchema.parse(
+        await (await request("/experience")).json(),
+      );
+    },
+    async importExperience(page: string) {
+      return experienceSourceSchema.parse(
+        await (
+          await request("/experience", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ page }),
+            signal: AbortSignal.timeout(35_000),
+          })
+        ).json(),
+      );
+    },
+    async experienceDetail(id: string) {
+      return experienceDetailSchema.parse(
+        await (await request(`/experience/${encodeURIComponent(id)}`)).json(),
+      );
+    },
+    async refreshExperience(id: string) {
+      return experienceSourceSchema.parse(
+        await (
+          await request(`/experience/${encodeURIComponent(id)}/refresh`, {
+            method: "POST",
+            signal: AbortSignal.timeout(35_000),
+          })
+        ).json(),
+      );
+    },
+    async removeExperience(id: string) {
+      await request(`/experience/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    },
     async health() {
       return healthSchema.parse(await (await request("/health")).json());
     },

@@ -10,6 +10,7 @@
 @import "./chat/composer.css";
 @import "./chat/manage-chat.css";
 @import "./chat/interview.css";
+@import "./chat/experience.css";
 
 :root {
   font-family: var(--font-pancake);

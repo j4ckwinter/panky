@@ -1,4 +1,4 @@
-import type { InterviewInput, StreamEvent } from "@panky/shared";
+import type { Evidence, InterviewInput, StreamEvent } from "@panky/shared";
 import type { Config } from "../config.js";
 import { HttpError } from "../http-utils.js";
 import type { ModelProvider } from "../providers/provider.js";
@@ -31,6 +31,7 @@ export class Chat {
     signal: AbortSignal,
     includeActivity = false,
     interview?: InterviewInput,
+    sources: Evidence[] = [],
   ): Promise<void> {
     if (this.active)
       throw new HttpError(
@@ -40,7 +41,12 @@ export class Chat {
     if (!this.store.conversation(conversationId))
       throw new HttpError(404, "Conversation not found.");
     const context = interview
-      ? interviewContext(content, interview, this.config.HISTORY_MAX_CHARS)
+      ? interviewContext(
+          content,
+          interview,
+          this.config.HISTORY_MAX_CHARS,
+          sources,
+        )
       : undefined;
     const controller = new AbortController();
     const active: NonNullable<Chat["active"]> = { controller, conversationId };
@@ -93,6 +99,7 @@ export class Chat {
     const { user, assistant, run } = this.store.beginResponse(
       conversationId,
       content,
+      interview?.sources,
     );
     active.runId = run.id;
     let status: "completed" | "failed" | "cancelled" | "interrupted" =

@@ -2,8 +2,17 @@ import { Button, Text, Textarea } from "@jack.winter/pancake-ui";
 import { useState } from "react";
 import { Markdown } from "./Markdown";
 import type { useChat } from "./useChat";
+import type { Api } from "../api/chat";
+import { ExperienceSources } from "./ExperienceSources";
+import { SourceEvidence } from "./SourceEvidence";
 
-export function Interview({ chat }: { chat: ReturnType<typeof useChat> }) {
+export function Interview({
+  chat,
+  api,
+}: {
+  chat: ReturnType<typeof useChat>;
+  api: Api;
+}) {
   const [draft, setDraft] = useState("");
   const [experience, setExperience] = useState("");
   const question = chat.messages.findLast((item) => item.role === "user");
@@ -64,9 +73,10 @@ export function Interview({ chat }: { chat: ReturnType<typeof useChat> }) {
         <p className="interview-mode">
           {chat.providerLabel}
           {chat.providerLabel === "Demo mode"
-            ? " · Scripted synthetic examples, not your experience. No AI reasoning or Notion retrieval."
-            : " · Uses only the experience you paste below. Notion is not connected."}
+            ? " · Scripted synthetic examples, not your experience. No AI reasoning. Retrieved evidence is shown separately."
+            : " · Uses relevant imported passages and the experience you paste below. Check the evidence behind personal claims."}
         </p>
+        <ExperienceSources api={api} disabled={chat.pending} />
         <form
           className="interview-form"
           autoComplete="off"
@@ -138,6 +148,7 @@ export function Interview({ chat }: { chat: ReturnType<typeof useChat> }) {
             <div className="interview-cues">
               <Markdown>{cues || "Waiting for talking points…"}</Markdown>
             </div>
+            <SourceEvidence sources={answer?.sources ?? []} />
             {detail.trim() && (
               <details className="interview-detail" key={answer?.id}>
                 <summary>Supporting detail</summary>

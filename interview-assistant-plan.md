@@ -1,6 +1,6 @@
 # Panky Interview Assistant — Milestone Plan
 
-Status: IA-1 implemented and locally verified; real-model acceptance pending. IA-2 onward have not started.
+Status: IA-1 and IA-2 implemented and locally verified; live Notion and real-model acceptance pending. IA-3 onward have not started.
 
 ## Outcome
 
@@ -16,7 +16,7 @@ The interface should offer a few useful cues at a glance, with supporting detail
 
 This is a proposed implementation track for the “One Useful Workflow” direction in [brief.md](brief.md). Its milestones use the prefix IA to avoid conflicting with the existing project milestones. It does not schedule the broader approvals, routines or automation roadmap.
 
-Milestone 3 remains the baseline. The user authorized IA-1 implementation and verification on 2 November 2026; [AGENTS.md](AGENTS.md) permits that slice while retaining the restriction on later work. Other safeguards remain in force.
+Milestone 3 remains the baseline. The user authorized IA-1 and then IA-2 implementation and verification on 2 November 2026; [AGENTS.md](AGENTS.md) permits those slices while retaining the restriction on later work. IA-1 was committed as `88afede` before starting IA-2. The user authorized proceeding while the PC remains unavailable; outstanding real-model acceptance checks remain open. Other safeguards remain in force.
 
 Work through one IA milestone at a time. Review its outcome and evidence before starting the next. Creating this plan does not authorize deployment, model downloads, external provisioning or subsequent implementation.
 
@@ -78,7 +78,9 @@ Verification on 2 November 2026:
 
 ## IA-2 — Import and retrieve personal experience
 
-Status: not started. Depends on IA-1.
+Status: implemented and locally verified; live connection, personal-corpus and real-model acceptance pending. Depends on IA-1's implemented flow.
+
+Implemented: owner-only server Notion connection, explicit page imports, bounded traversal with warnings, inspect/refresh/remove controls, per-user SQLite FTS5 retrieval, and persisted source snapshots displayed separately from generated text. A failed refresh retains the old timestamp and inspectable copy but excludes that source from new answers. Re-import and removal are transactional. See [setup, limits and verification](docs/notion-experience.md).
 
 **Outcome:** Answers use relevant, inspectable evidence from selected Notion pages.
 
@@ -95,12 +97,21 @@ Scope:
 
 Completion checks:
 
-- [ ] Representative questions retrieve expected source passages, including differently worded queries and no-match cases.
+- [x] Representative questions retrieve expected source passages, including differently worded queries and no-match cases (synthetic corpus tests; personal-corpus evaluation pending).
 - [ ] Personal claims can be traced to imported passages and their Notion pages.
-- [ ] Re-import is idempotent; edits and removals update retrieval without duplicate records.
-- [ ] Failed refreshes are visible and do not silently present old material as newly synced.
-- [ ] Tests prove another user cannot import into, search or read this user's corpus.
+- [x] Re-import is idempotent; edits and removals update retrieval without duplicate records.
+- [x] Failed refreshes are visible and do not silently present old material as newly synced.
+- [x] Tests prove another user cannot import into, search or read this user's corpus.
 - [ ] Malicious instructions inside source text do not change tool permissions or override trusted instructions.
+
+Verification on 2 November 2026:
+
+- `pnpm install --frozen-lockfile`, `pnpm check` and `pnpm build` passed, including 86 backend tests. Existing message migration and evidence snapshots after restart are covered.
+- `pnpm test:e2e` passed all 39 browser tests against isolated storage. Import, inspection, retrieved links, refresh/re-import failure, stale-source exclusion, removal and saved snapshots were exercised with synthetic Notion data.
+- Desktop and mobile screenshots were inspected: `test-results/experience-desktop.png` and `test-results/experience-mobile.png` (overwritten by future runs).
+- Independent review identified stale UI after failed re-import and whitespace-only import chunks. Both were fixed with regression checks; final review had no remaining actionable findings.
+- Permission enforcement is verified: source text cannot grant tools, even if a provider requests one. Real-model resistance to misleading instructions and fidelity of personal claims/citations remain unverified; those acceptance boxes remain open.
+- No personal Notion pages, live credentials, deployed services or real models were used. The owner must configure `NOTION_TOKEN` privately, select a page, and evaluate its copied content and answers when the PC is available.
 
 ## IA-3 — Technical reasoning and conversational follow-ups
 

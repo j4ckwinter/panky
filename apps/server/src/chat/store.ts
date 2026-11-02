@@ -8,6 +8,7 @@ import {
   type Conversation,
   conversationSchema,
   type Message,
+  type Evidence,
   messageSchema,
   type TaskRun,
   taskRunSchema,
@@ -52,6 +53,12 @@ export class Store {
     this.db.exec(
       "CREATE INDEX IF NOT EXISTS conversations_owner ON conversations(ownerId)",
     );
+    const messageColumns = this.db.prepare("PRAGMA table_info(messages)").all();
+    if (!messageColumns.some((column) => column.name === "sources")) {
+      this.db.exec(
+        "ALTER TABLE messages ADD COLUMN sources TEXT NOT NULL DEFAULT '[]'",
+      );
+    }
     for (const row of this.db
       .prepare("SELECT * FROM task_runs WHERE status = 'running'")
       .all()) {
@@ -144,12 +151,18 @@ export class Store {
     return this.db
       .prepare("SELECT * FROM messages WHERE conversationId = ? ORDER BY rowid")
       .all(id)
-      .map((row) => messageSchema.parse(row));
+      .map((row) =>
+        messageSchema.parse({
+          ...row,
+          sources: JSON.parse(String(row.sources)),
+        }),
+      );
   }
 
   beginResponse(
     conversationId: string,
     content: string,
+    sources: Evidence[] = [],
   ): { user: Message; assistant: Message; run: TaskRun } {
     const now = new Date().toISOString();
     const user: Message = {
@@ -159,6 +172,7 @@ export class Store {
       content,
       status: "completed",
       createdAt: now,
+      sources: [],
     };
     const assistant: Message = {
       id: randomUUID(),
@@ -167,12 +181,13 @@ export class Store {
       content: "",
       status: "streaming",
       createdAt: now,
+      sources,
     };
     this.db.exec("BEGIN IMMEDIATE");
     try {
       const firstMessage = this.messages(conversationId).length === 0;
       const insert = this.db.prepare(
-        "INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO messages (id,conversationId,role,content,status,createdAt,sources) VALUES (?, ?, ?, ?, ?, ?, ?)",
       );
       for (const message of [user, assistant])
         insert.run(
@@ -182,6 +197,7 @@ export class Store {
           message.content,
           message.status,
           now,
+          JSON.stringify(message.sources),
         );
       if (
         firstMessage &&

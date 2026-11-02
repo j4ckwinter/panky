@@ -11,6 +11,15 @@ const originSchema = z
   }, "Origins must be exact HTTP(S) origins without paths or credentials.");
 
 const configSchema = z.object({
+  NOTION_TOKEN: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .string()
+      .min(20)
+      .max(500)
+      .regex(/^[A-Za-z0-9_-]+$/)
+      .optional(),
+  ),
   AUTH_TOKEN: z
     .string()
     .min(32)
