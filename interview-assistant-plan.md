@@ -1,6 +1,6 @@
 # Panky Interview Assistant — Milestone Plan
 
-Status: IA-1 through IA-3 implemented; real-model acceptance pending. Native IA-4/IA-4a experiments have been removed. The active direction is browser-only capture feasibility (IA-4b), followed by browser-local transcription (IA-4c). IA-5 onward have not started.
+Status: IA-1 through IA-3 implemented; real-model acceptance pending. Native IA-4/IA-4a experiments have been removed. Browser-only capture (IA-4b) and local transcription (IA-4c) are implemented with controlled verification; human interview acceptance remains pending. IA-5 onward have not started.
 
 ## Outcome
 
@@ -16,7 +16,7 @@ The interface should offer a few useful cues at a glance, with supporting detail
 
 This is a proposed implementation track for the “One Useful Workflow” direction in [brief.md](brief.md). Its milestones use the prefix IA to avoid conflicting with the existing project milestones. It does not schedule the broader approvals, routines or automation roadmap.
 
-Milestone 3 remains the baseline. The user previously authorized IA-1 through IA-4 and IA-4a implementation and verification on 2 November 2026, then replaced the native direction with IA-4b and requested removal of the Swift experiment. [AGENTS.md](AGENTS.md) now permits IA-1 through IA-3 and IA-4b while retaining the restriction on later work. IA-1 was committed as `88afede` before starting IA-2; IA-2 was committed as `bde60e6` before starting IA-3; IA-3 was committed as `2a1370d` before IA-4. The user authorized proceeding while the PC remains unavailable; outstanding real-model acceptance checks remain open. Other safeguards remain in force.
+Milestone 3 remains the baseline. The user previously authorized IA-1 through IA-4 and IA-4a implementation and verification on 2 November 2026, then replaced the native direction with IA-4b and requested removal of the Swift experiment. [AGENTS.md](AGENTS.md) now permits IA-1 through IA-3, IA-4b and the subsequently authorized IA-4c while retaining the restriction on later work. IA-1 was committed as `88afede` before starting IA-2; IA-2 was committed as `bde60e6` before starting IA-3; IA-3 was committed as `2a1370d` before IA-4. The user authorized proceeding while the PC remains unavailable; outstanding real-model acceptance checks remain open. Other safeguards remain in force.
 
 Work through one IA milestone at a time. Review its outcome and evidence before starting the next. Creating this plan does not authorize deployment, model downloads, external provisioning or subsequent implementation.
 
@@ -182,12 +182,24 @@ Verification: nine focused browser tests pass with controlled media streams and 
 
 ## IA-4c — Browser-local transcription
 
-Status: planned; depends on IA-4b demonstrating usable shared audio on the intended browser/source.
+Status: implemented and controlled integration verified. Browser-tab capture is verified; human interview quality and full-system/native-app capture acceptance remain pending.
+
+Implemented: pinned Whisper tiny.en q8 runs in a browser worker on WASM. Load/cancel/remove controls manage a dedicated model cache. Separate AudioWorklets resample input to 16 kHz mono and deliver five-second chunks. Inference is serial with two queued chunks; overflow/error stops listening. Stop terminates the worker and drops pending work. Up to 50 source-labelled transcript segments remain only in the current view. No automatic question generation or audio upload. See [setup and verification](docs/browser-audio.md).
 
 - Run a local speech model in a browser worker using a supported WASM/WebGPU runtime. Make model download size, progress and cache removal explicit.
 - Preserve separate microphone/shared streams, bounded queues, cancellation and no raw-audio upload. Do not use a speech API that silently sends audio to a cloud service.
 - Show source-labelled transcript text and measure warm/cold latency, memory, accuracy and chunk boundaries on this Mac.
 - Verify full browser capture-to-transcript behavior before accepting live interview use. Revisit call location if only browser-tab audio is supported; do not reintroduce a native helper without an explicit decision.
+
+Verification evidence (2 November 2026):
+
+- Three real AudioWorklet tests passed: 44.1/48 kHz conversion, separate source values, Stop cleanup and bounded-delivery overflow. Twelve capture/transcript UI tests passed, including model failure, late-result rejection, model-cache isolation and slow-inference overload.
+- Real WASM model evaluation in Chromium 156.0.8078.4 took 3.74 seconds to load and 1.25 seconds to reload from cache. A five-second chunk processed in 1.01–1.12 seconds; the two serial source results arrived about 6.16 and 7.17 seconds after capture started. These are one controlled run, not performance guarantees.
+- Generated speech “I led a database migration with a rollback plan” became “I let a database migration with the rollback plan” on both streams. The test establishes source-to-text integration, and also demonstrates recognition errors.
+- The real-model production-build test passed with source-labelled transcripts, stopped tracks and dedicated cache deletion. The standalone evaluator observed zero network writes. Tests use generated speech, not recorded microphone audio, and an isolated in-memory backend.
+- Independent implementation and production-harness reviews found no actionable issues. `pnpm check` passes (90 backend tests, lint, formatting and typechecks), all 59 browser regression tests pass, and the production build passes. A separate opt-in production speech test also passed with the real model.
+
+Remaining acceptance: sustained memory measurement, human/technical speech accuracy, speech crossing five-second boundaries, overlapping speakers, full-system/native-call-app capture and agreed latency/accuracy targets. Fixed RMS filtering can miss quiet speech. No live-interview acceptance is claimed from generated speech tests.
 
 ## IA-5 — Live question detection and suggestions
 

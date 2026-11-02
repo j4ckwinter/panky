@@ -1,25 +1,46 @@
-# Browser audio feasibility
+# Browser audio and local transcription
 
-Open **Interview → Browser audio**, then **Start listening**. Choose the call tab, window or screen in the browser picker and enable its audio option if offered. Allow the microphone when prompted. No Mac helper, pairing code or executable path is used.
+Open **Interview → Browser audio**. Choose **Load speech model** to enable transcripts, then **Start listening**. Select the call tab, window or screen in the browser picker, enable its audio option, and allow your microphone. Start without loading the model still provides the audio-level feasibility test.
 
-This milestone checks capture only. It shows separate shared-audio and microphone meters; it does not transcribe, record, upload or generate answers from audio. Browser-local transcription is planned in IA-4c. Existing typed interview assistance remains available.
+The English Whisper tiny.en model runs locally in a browser worker using WebAssembly. The first load downloads roughly 70 MB of model/runtime assets, plus application JavaScript. Model files come from Hugging Face; the application serves the bundled runtime. The dedicated browser cache retains those downloaded assets for reuse. **Remove downloaded model** stops the worker and deletes that cache. Ordinary browser HTTP caching may retain application assets until the browser clears them.
 
-Use headphones and play a known sound in the selected source. The shared-audio meter should move independently of your microphone. An audio track with a silent meter is not evidence that call audio is captured. A tab test proves only that tab; separately test a native call app or entire screen if those are required.
+No audio or transcript is uploaded to Hugging Face or the Panky backend. Transcripts appear as separate **Shared audio** and **Microphone** segments; these identify input streams, not individual speakers. Up to 50 segments of at most 4,000 characters stay in this view. **Clear transcript** removes them; leaving Interview also clears them. Audio does not automatically generate questions or answers. Typed interview assistance remains available.
 
-Stop or Pause releases the capture. Start again requires a new browser picker. Leaving Interview or stopping sharing through the browser also ends the session. A pending permission request can still resolve after Stop; Panky discards and stops that late stream.
+Use headphones and play a known sound in the selected source. The shared-audio meter should move independently of the microphone. A silent meter is not evidence that call audio is captured. A tab test proves only that tab; separately test a native call app or entire screen if those are required.
+
+## Stop, buffering and limitations
+
+Pause, Stop, navigation and browser share termination release both streams, terminate the speech worker and discard pending audio/results. Text already displayed remains until cleared or you leave Interview. Reload the cached model before restarting transcription. Each fresh Start requires a new browser picker. If a permission prompt remains open after Stop, dismiss it; any late stream is discarded.
+
+Separate AudioWorklets convert each input to 16 kHz mono five-second chunks. Each worklet allows at most one undelivered chunk. Inference runs serially with at most two waiting chunks plus one active chunk; overload stops capture rather than growing an audio backlog. Model loading times out after 120 seconds, each inference after 60 seconds. Quiet chunks below RMS 0.001 are skipped, so quiet speech can be missed. Stop discards partial chunks. Five-second boundaries can split words and context; the small English model can mishear technical terms and invent text. Check every transcript before using it.
+
+Raw audio is held only in bounded memory buffers; it is not recorded to disk or played back. The display API requires a video track, but Panky does not render, inspect, record or transmit its frames. Local models still use CPU and memory. Measured sustained memory use, human speech accuracy, overlapping speakers and chunk-boundary quality remain acceptance work.
 
 ## Browser requirements
 
-Use HTTPS or localhost and a browser exposing `getDisplayMedia`, `getUserMedia`, and Web Audio. The sharing picker and permissions cannot be bypassed. Audio availability depends on the browser, operating system and selected source. If no shared-audio track is returned, Panky stops rather than pretending the microphone contains the call.
+Use HTTPS or localhost with `getDisplayMedia`, `getUserMedia`, AudioWorklet, Worker and WebAssembly support. Browser pickers and permissions cannot be bypassed. Audio availability depends on browser, operating system and source. If no shared-audio track is returned, Panky stops instead of silently using the microphone alone.
 
-The display API requires a video track alongside shared audio. Panky does not render, inspect, record or transmit those frames; the track remains part of the browser sharing session until Stop.
+Chrome's `systemAudio: "include"` requests that the browser offer system audio; it does not guarantee availability. See [Chrome screen-sharing controls](https://developer.chrome.com/docs/web-platform/screen-sharing-controls) and [getDisplayMedia requirements](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia).
 
-Chrome's `systemAudio: "include"` is a request to offer system audio, not a guarantee. Do not infer macOS full-system support from tab sharing or API presence. See [Chrome screen-sharing controls](https://developer.chrome.com/docs/web-platform/screen-sharing-controls) and [getDisplayMedia requirements](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia).
+On 2 November 2026, Chrome 156.0.8078.80 on this Mac captured a controlled WAV from a shared browser tab with a separate microphone signal. Stop cleared both meters and capture indicators. Entire-screen capture remains unverified because Chrome requested OS screen-recording permission and a browser restart. The Swift companion and its integration have been removed.
 
 ## Verification
 
-Automated browser tests use controlled media streams to check meters, missing audio, permission failures and resource cleanup. These tests do not establish operating-system capture compatibility. Actual picker and signal results are recorded in `interview-assistant-plan.md` separately.
+```sh
+pnpm check
+pnpm build
+pnpm test:e2e
+pnpm test:speech
+```
 
-The Swift companion, its backend endpoints and local transcription tooling have been removed. Browser capture has no native-helper dependency.
+`test:speech` is an opt-in production-build test that downloads the real model into an isolated browser context. On macOS it uses `say` and `afconvert` to generate temporary synthetic speech, passes controlled streams through production capture and the real speech worker, checks both labelled transcripts and resource/cache cleanup, then deletes the generated files. It does not record a microphone or use the live database.
 
-On 2 November 2026, Chrome 156.0.8078.80 on this Mac captured a controlled WAV from a shared browser tab with a separate microphone signal. Stop cleared both meters and browser capture indicators. Entire-screen capture remains unverified because Chrome requested OS screen-recording permission and a browser restart. No captured audio was saved.
+For timing and no-network-write evidence, start a Vite development server on loopback port 5176, then run:
+
+```sh
+pnpm exec tsx scripts/evaluate-browser-transcription.ts http://127.0.0.1:5176
+```
+
+The evaluator runs controlled audio through the real capture/worklet/worker path, measures cold/cached load and source processing times, checks no network writes, and removes the dedicated model cache. Its report is saved under ignored `test-results/`. Synthetic tests establish integration, not human-interview quality.
+
+Pinned dependencies: Transformers.js 4.3.2 and ONNX Runtime Web 1.31.0-dev.20260914-8d85527a0, matching that Transformers release. Model: `Xenova/whisper-tiny.en` revision `79fb389fc764e7c395bd330e9531d9d32ada7049`, q8 encoder and decoder. See [Transformers.js](https://huggingface.co/docs/transformers.js/en/index) and the [model repository](https://huggingface.co/Xenova/whisper-tiny.en/tree/79fb389fc764e7c395bd330e9531d9d32ada7049).

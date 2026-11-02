@@ -236,3 +236,145 @@ test("unsupported browser reports capture unavailable without opening a picker",
     0,
   );
 });
+
+async function speechFixture(page: Page, mode = "success") {
+  await page.addInitScript((mode) => {
+    const OriginalWorker = window.Worker;
+    const workers: FakeWorker[] = [];
+    class FakeWorker {
+      onmessage: ((event: { data: unknown }) => void) | null = null;
+      onerror: (() => void) | null = null;
+      onmessageerror: (() => void) | null = null;
+      terminated = false;
+      postMessage(message: { type: string; id: number; source: string }) {
+        if (message.type === "load") {
+          setTimeout(
+            () =>
+              this.onmessage?.({
+                data:
+                  mode === "load-error"
+                    ? {
+                        type: "error",
+                        error: "Controlled model download failure",
+                      }
+                    : { type: "ready" },
+              }),
+            10,
+          );
+        } else if (mode !== "hold") {
+          setTimeout(
+            () =>
+              this.onmessage?.({
+                data: {
+                  type: "result",
+                  id: message.id,
+                  source: message.source,
+                  text: `${message.source} controlled transcript`,
+                  elapsedMs: 42,
+                },
+              }),
+            10,
+          );
+        }
+      }
+      terminate() {
+        this.terminated = true;
+      }
+    }
+    window.Worker = class extends OriginalWorker {
+      constructor(url: string | URL, options?: WorkerOptions) {
+        if (String(url).includes("transcription.worker")) {
+          const worker = new FakeWorker();
+          workers.push(worker);
+          return worker as unknown as Worker;
+        }
+        super(url, options);
+      }
+    };
+    Object.assign(window, {
+      speechTest: {
+        terminated: () => workers.every((worker) => worker.terminated),
+        late: () =>
+          workers[0]?.onmessage?.({
+            data: {
+              type: "result",
+              id: 1,
+              source: "shared",
+              text: "late forbidden result",
+              elapsedMs: 1,
+            },
+          }),
+      },
+    });
+  }, mode);
+}
+
+test("local speech shows separate transcripts, clears text and removes only its model cache", async ({
+  page,
+}) => {
+  await speechFixture(page);
+  const panel = await audioFixture(page);
+  await page.evaluate(async () => {
+    await caches.open("panky-speech-model-v1");
+    await caches.open("unrelated-cache");
+  });
+  await panel
+    .getByRole("button", { name: "Load speech model", exact: true })
+    .click();
+  await expect(
+    panel.getByRole("region", { name: "Local speech model" }),
+  ).toContainText("Speech model ready");
+  await panel.getByRole("button", { name: "Start listening" }).click();
+  const transcript = panel.getByRole("region", { name: "Live transcript" });
+  await expect(transcript).toContainText("shared controlled transcript", {
+    timeout: 15000,
+  });
+  await expect(transcript).toContainText("microphone controlled transcript");
+  await expect(
+    page.getByLabel("Interview question", { exact: true }),
+  ).toHaveValue("");
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+  await expectReleased(page);
+  expect(await page.evaluate("window.speechTest.terminated()")).toBe(true);
+  await page.evaluate("window.speechTest.late()");
+  await expect(transcript).not.toContainText("late forbidden result");
+  await panel.getByRole("button", { name: "Clear transcript" }).click();
+  await expect(transcript).toContainText("No transcript yet");
+  await panel.getByRole("button", { name: "Remove downloaded model" }).click();
+  await expect(panel).toContainText("Downloaded speech model removed");
+  expect(await page.evaluate(() => caches.keys())).toEqual(["unrelated-cache"]);
+});
+
+test("speech download failure is explicit and does not start capture", async ({
+  page,
+}) => {
+  await speechFixture(page, "load-error");
+  const panel = await audioFixture(page);
+  await panel
+    .getByRole("button", { name: "Load speech model", exact: true })
+    .click();
+  await expect(panel.getByRole("alert")).toContainText(
+    "Controlled model download failure",
+  );
+  expect(await page.evaluate("window.audioTest.snapshot().displayCalls")).toBe(
+    0,
+  );
+  expect(await page.evaluate("window.speechTest.terminated()")).toBe(true);
+});
+
+test("slow transcription stops capture when bounded queue fills", async ({
+  page,
+}) => {
+  await speechFixture(page, "hold");
+  const panel = await audioFixture(page);
+  await panel
+    .getByRole("button", { name: "Load speech model", exact: true })
+    .click();
+  await expect(panel).toContainText("Speech model ready");
+  await panel.getByRole("button", { name: "Start listening" }).click();
+  await expect(panel.getByRole("alert")).toContainText("cannot keep up", {
+    timeout: 20000,
+  });
+  await expectReleased(page);
+  expect(await page.evaluate("window.speechTest.terminated()")).toBe(true);
+});

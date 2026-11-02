@@ -3,5 +3,7 @@ packages:
   - packages/*
 allowBuilds:
   esbuild: true
+  onnxruntime-node: false
+  protobufjs: false
 minimumReleaseAgeExclude:
   - "@jack.winter/pancake-ui@0.1.1"

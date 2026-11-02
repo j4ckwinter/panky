@@ -1,3 +1,5 @@
+import { attachPcmCapture, type AudioSource } from "./pcmCapture";
+
 export type AudioCaptureState = {
   status: "idle" | "starting" | "listening" | "paused" | "stopped" | "error";
   sharedLevel: number;
@@ -18,10 +20,12 @@ type Session = {
   streams: MediaStream[];
   context?: AudioContext;
   timer?: ReturnType<typeof setInterval>;
+  cleanups: (() => void)[];
 };
 
 function release(session: Session) {
   clearInterval(session.timer);
+  for (const cleanup of session.cleanups.splice(0)) cleanup();
   for (const stream of session.streams.splice(0)) {
     for (const track of stream.getTracks()) track.stop();
   }
@@ -32,7 +36,13 @@ function release(session: Session) {
 export class BrowserAudio {
   private session?: Session;
   private disposed = false;
-  constructor(private readonly update: (state: AudioCaptureState) => void) {}
+  constructor(
+    private readonly update: (state: AudioCaptureState) => void,
+    private readonly onChunk?: (
+      source: AudioSource,
+      samples: Float32Array,
+    ) => void,
+  ) {}
 
   stop(status: "paused" | "stopped" = "stopped") {
     const previous = this.session;
@@ -62,7 +72,7 @@ export class BrowserAudio {
       });
       return;
     }
-    const session: Session = { streams: [] };
+    const session: Session = { streams: [], cleanups: [] };
     this.session = session;
     const current = () => !this.disposed && this.session === session;
     this.update({ ...initialAudioState, status: "starting" });
@@ -133,6 +143,33 @@ export class BrowserAudio {
           return Math.min(100, rms * 500);
         };
       };
+      if (this.onChunk) {
+        await context.audioWorklet.addModule(
+          new URL("./capture.worklet.js", import.meta.url),
+        );
+        if (!current()) return release(session);
+        const fail = (error: string) => {
+          if (!current()) return;
+          this.session = undefined;
+          release(session);
+          this.update({ ...initialAudioState, status: "error", error });
+        };
+        for (const [source, stream] of [
+          ["shared", shared],
+          ["microphone", microphone],
+        ] as const) {
+          session.cleanups.push(
+            attachPcmCapture(
+              context,
+              stream,
+              (samples) => {
+                if (current()) this.onChunk?.(source, samples);
+              },
+              fail,
+            ),
+          );
+        }
+      }
       const sharedLevel = meter(shared);
       const microphoneLevel = meter(microphone);
       await context.resume();

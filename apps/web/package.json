@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@huggingface/transformers": "4.3.2",
     "@jack.winter/pancake-ui": "0.1.1",
     "@panky/shared": "workspace:*",
+    "onnxruntime-web": "1.31.0-dev.20260914-8d85527a0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-markdown": "^10.1.0",
