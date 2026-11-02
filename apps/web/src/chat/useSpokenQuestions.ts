@@ -1,6 +1,6 @@
 import { INTERVIEW_LIMITS, MESSAGE_MAX_CHARS } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
-import type { TranscriptEntry } from "./LiveTranscript";
+import type { TranscriptEntry } from "./useLiveTranscription";
 import { normalizeQuestion, QuestionDetector } from "./questionDetection";
 import { type DetectionTiming, useResponseTiming } from "./ResponseTiming";
 import type { useChat } from "./useChat";

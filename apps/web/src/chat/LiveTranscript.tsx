@@ -1,21 +1,11 @@
 import { BannerToast, Button } from "@jack.winter/pancake-ui";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AudioSourceStatus } from "./AudioSourceStatus";
-import { BrowserAudio, initialAudioState } from "./browserAudio";
 import {
-  BrowserTranscription,
-  initialTranscriptionState,
-} from "./transcription";
-
-export type TranscriptEntry = {
-  id: number;
-  source: "shared" | "microphone";
-  text: string;
-  receivedAt: number;
-  transcriptionMs: number;
-  endedAtPause: boolean;
-};
+  useLiveTranscription,
+  type TranscriptEntry,
+} from "./useLiveTranscription";
 
 export function LiveTranscript({
   children,
@@ -30,94 +20,19 @@ export function LiveTranscript({
   onUseAsQuestion?: (text: string) => void;
   onResetDetection?: () => void;
 }) {
-  const transcriptCallback = useRef(onTranscript);
-  transcriptCallback.current = onTranscript;
-  const resetDetectionCallback = useRef(onResetDetection);
-  resetDetectionCallback.current = onResetDetection;
-  const [state, setState] = useState(initialAudioState);
-  const [speech, setSpeech] = useState(initialTranscriptionState);
-  const [entries, setEntries] = useState<TranscriptEntry[]>([]);
-  const [removing, setRemoving] = useState(false);
-  const capture = useRef<BrowserAudio | null>(null);
-  const transcriber = useRef<BrowserTranscription | null>(null);
-  const captureStatus = useRef(initialAudioState.status);
-  const speechStatus = useRef(initialTranscriptionState.status);
-  const attempt = useRef(0);
-  const nextId = useRef(0);
-  useEffect(() => {
-    let mounted = true;
-    const model = new BrowserTranscription(
-      (value) => {
-        speechStatus.current = value.status;
-        if (mounted) setSpeech(value);
-      },
-      (source, text, transcriptionMs, endedAtPause) => {
-        if (mounted && text.trim()) {
-          const entry = {
-            id: nextId.current++,
-            source,
-            text,
-            transcriptionMs,
-            endedAtPause,
-            receivedAt: performance.now(),
-          };
-          setEntries((items) => [...items, entry].slice(-50));
-          transcriptCallback.current?.(entry);
-        }
-      },
-      () => controller.stop(),
-    );
-    const controller = new BrowserAudio(
-      (value) => {
-        captureStatus.current = value.status;
-        if (mounted) setState(value);
-        if (["stopped", "paused", "error"].includes(value.status)) {
-          resetDetectionCallback.current?.();
-          attempt.current++;
-          if (speechStatus.current !== "error") model.stop();
-        }
-      },
-      (source, samples, endedAtPause) => {
-        if (["ready", "transcribing"].includes(speechStatus.current))
-          model.submit(source, samples, endedAtPause);
-      },
-    );
-    capture.current = controller;
-    transcriber.current = model;
-    const stop = () => {
-      controller.stop();
-      model.stop();
-    };
-    window.addEventListener("pagehide", stop);
-    return () => {
-      mounted = false;
-      attempt.current++;
-      window.removeEventListener("pagehide", stop);
-      controller.dispose();
-      model.dispose();
-      capture.current = null;
-      transcriber.current = null;
-    };
-  }, []);
-  async function start() {
-    const controller = capture.current;
-    const model = transcriber.current;
-    if (
-      !controller ||
-      !model ||
-      ["starting", "listening"].includes(captureStatus.current)
-    )
-      return;
-    const current = ++attempt.current;
-    await controller.start();
-    if (
-      current === attempt.current &&
-      capture.current === controller &&
-      captureStatus.current === "listening" &&
-      !["ready", "transcribing"].includes(speechStatus.current)
-    )
-      await model.load();
-  }
+  const {
+    state,
+    speech,
+    entries,
+    removing,
+    start,
+    pause,
+    stop,
+    cancelModelLoad,
+    loadModel,
+    clearTranscript,
+    removeModel,
+  } = useLiveTranscription({ onTranscript, onResetDetection });
   const active = state.status === "listening";
   const pending = state.status === "starting";
   const loading = speech.status === "loading";
@@ -163,7 +78,7 @@ export function LiveTranscript({
               variant="secondary"
               size={40}
               className="capture-action"
-              onClick={() => capture.current?.stop("paused")}
+              onClick={pause}
             >
               <svg
                 width="16"
@@ -183,7 +98,7 @@ export function LiveTranscript({
               variant="secondary"
               size={40}
               className="capture-action"
-              onClick={() => capture.current?.stop()}
+              onClick={stop}
             >
               <svg
                 width="16"
@@ -198,10 +113,7 @@ export function LiveTranscript({
             </Button>
           )}
           {loading && !active && !pending && (
-            <Button
-              variant="secondary"
-              onClick={() => transcriber.current?.stop()}
-            >
+            <Button variant="secondary" onClick={cancelModelLoad}>
               Cancel model load
             </Button>
           )}
@@ -224,13 +136,7 @@ export function LiveTranscript({
           <section aria-label="Live transcript" className="transcript-entries">
             {entries.length > 0 && (
               <div className="transcript-toolbar">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setEntries([]);
-                    resetDetectionCallback.current?.();
-                  }}
-                >
+                <Button variant="ghost" onClick={clearTranscript}>
                   Clear transcript
                 </Button>
               </div>
@@ -278,21 +184,14 @@ export function LiveTranscript({
                   disabled={
                     active || pending || loading || modelReady || removing
                   }
-                  onClick={() => void transcriber.current?.load()}
+                  onClick={() => void loadModel()}
                 >
                   Load speech model
                 </Button>
                 <Button
                   variant="ghost"
                   disabled={active || pending || removing}
-                  onClick={async () => {
-                    setRemoving(true);
-                    try {
-                      await transcriber.current?.clearCache();
-                    } finally {
-                      setRemoving(false);
-                    }
-                  }}
+                  onClick={removeModel}
                 >
                   Remove downloaded model
                 </Button>
