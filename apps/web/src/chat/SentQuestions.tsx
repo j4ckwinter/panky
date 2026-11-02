@@ -59,17 +59,6 @@ export function SentQuestions({
           ))}
         </ol>
       </details>
-      {questions.topicCount > 0 && (
-        <Button
-          variant="ghost"
-          size={40}
-          className="new-topic-button"
-          disabled={questions.unavailable}
-          onClick={questions.newTopic}
-        >
-          New topic
-        </Button>
-      )}
     </div>
   );
 }

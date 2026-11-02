@@ -8,6 +8,20 @@ export function SpokenQuestions({
 }) {
   return (
     <section className="spoken-questions" aria-label="Detected questions">
+      <div className="question-tools">
+        {questions.topicCount > 0 && (
+          <Button
+            variant="ghost"
+            size={40}
+            className="new-topic-button"
+            title="Clear follow-up context"
+            disabled={questions.unavailable}
+            onClick={questions.newTopic}
+          >
+            New topic
+          </Button>
+        )}
+      </div>
       {questions.notice && <p role="status">{questions.notice}</p>}
       <section
         className="spoken-question-list"

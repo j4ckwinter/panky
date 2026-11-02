@@ -165,3 +165,60 @@ test("answer copy preserves Markdown and reports clipboard failure on mobile", a
     "Could not copy. Select the text instead.",
   );
 });
+
+test("New topic belongs to question controls and resets context without removing history", async ({
+  page,
+}) => {
+  const panel = await audioFixture(page);
+  const submissions: Array<{ interview: { context: unknown[] } }> = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && /\/messages$/.test(request.url()))
+      submissions.push(request.postDataJSON());
+  });
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'What is a closure in JavaScript?')",
+  );
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Send question", exact: true })
+    .click({ timeout: 15000 });
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  const controls = page.getByRole("region", {
+    name: "Detected questions",
+    exact: true,
+  });
+  await expect(
+    page
+      .locator(".sent-questions")
+      .getByRole("button", { name: "New topic", exact: true }),
+  ).toHaveCount(0);
+  await controls
+    .getByRole("button", { name: "New topic", exact: true })
+    .click();
+  await expect(
+    controls.getByRole("button", { name: "New topic", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Sent questions (1)", { exact: true }),
+  ).toBeVisible();
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'How does lexical scope work?')",
+  );
+  await controls
+    .getByRole("button", { name: "Send question", exact: true })
+    .click({ timeout: 15000 });
+  await expect(
+    page.getByText("Sent questions (2)", { exact: true }),
+  ).toBeVisible();
+  expect(submissions).toHaveLength(2);
+  expect(submissions[1]?.interview.context).toEqual([]);
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "test-results/interview-topic-controls.png" });
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});

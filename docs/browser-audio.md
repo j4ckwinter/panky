@@ -59,3 +59,5 @@ Spoken follow-ups include up to four previously accepted spoken questions, with 
 
 
 Pause detection is an audio heuristic, not proof that a sentence is complete. Quiet speech and pauses inside a question can affect segmentation. A pause crossing a five-second chunk boundary may still use the normal detector settling timer. In a single model-preloaded synthetic closure-question check, capture-to-visible-question fell from 7,546 ms to 5,507 ms with the same transcribed text; this is not a live-call accuracy or latency benchmark.
+
+Listening controls remain visible while the workspace scrolls. New question cards briefly highlight without moving focus or the answer’s reading position; reduced-motion preferences disable the highlight. **Copy answer** copies the displayed answer as Markdown. **New topic**, beside the question controls, clears follow-up context while keeping sent questions available.
