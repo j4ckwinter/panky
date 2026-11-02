@@ -1,5 +1,6 @@
 import { Button, Text, Textarea } from "@jack.winter/pancake-ui";
 import { useState } from "react";
+import type { InterviewInput } from "@panky/shared";
 import { Markdown } from "./Markdown";
 import type { useChat } from "./useChat";
 import type { Api } from "../api/chat";
@@ -15,6 +16,10 @@ export function Interview({
 }) {
   const [draft, setDraft] = useState("");
   const [experience, setExperience] = useState("");
+  const [context, setContext] = useState<
+    NonNullable<InterviewInput["context"]>
+  >([]);
+  const [spokenAnswer, setSpokenAnswer] = useState("");
   const question = chat.messages.findLast((item) => item.role === "user");
   const answer = chat.messages.findLast((item) => item.role === "assistant");
   const run = chat.runs.at(-1);
@@ -54,8 +59,8 @@ export function Interview({
               A few cues for your next answer
             </Text>
             <p className="muted">
-              Experience, technical questions, or both. Type the full question;
-              each request is independent.
+              Experience, technical questions, or both. Follow up on recent
+              questions and add notes about what you actually said.
             </p>
           </div>
           <Button
@@ -65,6 +70,8 @@ export function Interview({
               chat.create();
               setDraft("");
               setExperience("");
+              setContext([]);
+              setSpokenAnswer("");
             }}
           >
             New interview
@@ -83,8 +90,18 @@ export function Interview({
           onSubmit={(event) => {
             event.preventDefault();
             if (!unavailable && draft.trim()) {
-              void chat.send(draft.trim(), { experience }).then((sent) => {
-                if (sent) setDraft("");
+              const submitted = draft.trim();
+              const prior = context.map((turn, index) =>
+                index === context.length - 1 ? { ...turn, spokenAnswer } : turn,
+              );
+              void chat.send(submitted, { experience, context: prior }, () => {
+                setContext(
+                  [...prior, { question: submitted, spokenAnswer: "" }].slice(
+                    -4,
+                  ),
+                );
+                setSpokenAnswer("");
+                setDraft("");
               });
             }
           }}
@@ -101,6 +118,61 @@ export function Interview({
               helperText="Paste a short project example, your contribution, and its outcome. Up to 4,000 characters. The sample stays in this view until you leave; answers may quote it and are saved in chat history."
             />
           </details>
+          <div className="interview-context">
+            <div className="interview-actions">
+              <Text as="h2" variant="heading">
+                Conversation context
+              </Text>
+              <Button
+                variant="ghost"
+                disabled={chat.pending || context.length === 0}
+                onClick={() => {
+                  setContext([]);
+                  setSpokenAnswer("");
+                }}
+              >
+                Start new topic
+              </Button>
+            </div>
+            <p className="interview-note">
+              Up to four recent questions and your notes can inform the next
+              answer. Older context may be omitted to fit the model. Suggestions
+              are never treated as things you said. Context clears when you
+              leave this view and is not restored from saved history.
+            </p>
+            {context.length > 0 ? (
+              <>
+                <details>
+                  <summary>Recent questions ({context.length})</summary>
+                  <ol>
+                    {context.map((turn, index) => (
+                      <li key={`${index}-${turn.question}`}>
+                        <p>{turn.question}</p>
+                        {index < context.length - 1 && turn.spokenAnswer && (
+                          <p className="muted">You said: {turn.spokenAnswer}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+                <Textarea
+                  label="What I actually said"
+                  value={spokenAnswer}
+                  rows={3}
+                  maxLength={2000}
+                  disabled={chat.pending}
+                  onChange={(event) =>
+                    setSpokenAnswer(event.currentTarget.value)
+                  }
+                  helperText={`Optional summary of your answer to: ${context.at(-1)?.question}. Used for the next question; generated replies may quote it and are saved.`}
+                />
+              </>
+            ) : (
+              <p className="interview-note">
+                No previous questions in context.
+              </p>
+            )}
+          </div>
           <Textarea
             label="Interview question"
             value={draft}
@@ -169,8 +241,9 @@ export function Interview({
         )}
         <p className="interview-note">
           Questions and replies are saved in your chat history. Audio is not
-          captured. Check personal facts and technical suggestions before using
-          them.
+          captured. No live research is available; technical knowledge may be
+          incomplete or outdated. Check personal facts and technical suggestions
+          before using them.
         </p>
       </div>
     </div>

@@ -104,6 +104,19 @@ test("interview submissions validate before saving and retain existing authentic
     { experience: 42 },
     { experience: "a".repeat(4001) },
     { experience: "", extra: true },
+    {
+      experience: "",
+      context: Array(5).fill({ question: "Q", spokenAnswer: "" }),
+    },
+    { experience: "", context: [{ question: "", spokenAnswer: "" }] },
+    {
+      experience: "",
+      context: [{ question: "Q", spokenAnswer: "x".repeat(2001) }],
+    },
+    {
+      experience: "",
+      context: [{ question: "Q", spokenAnswer: "", suggestion: "fabrication" }],
+    },
   ]) {
     assert.equal((await app.submit({ ...valid, interview })).status, 400);
   }
@@ -141,7 +154,15 @@ test("interview requests reach the provider without tools or prior suggestions; 
   const experience = "I proposed staged releases; the team implemented them.";
   const response = await app.submit({
     content: "Explain your contribution.",
-    interview: { experience },
+    interview: {
+      experience,
+      context: [
+        {
+          question: "Which release plan?",
+          spokenAnswer: "I chose staged releases.",
+        },
+      ],
+    },
     includeActivity: true,
   });
   assert.equal(response.status, 200);
@@ -153,6 +174,12 @@ test("interview requests reach the provider without tools or prior suggestions; 
   assert.deepEqual(JSON.parse(calls[0]?.history[1]?.content ?? ""), {
     question: "Explain your contribution.",
     experience,
+    context: [
+      {
+        question: "Which release plan?",
+        spokenAnswer: "I chose staged releases.",
+      },
+    ],
   });
   const saved = app.store.messages(app.conversation.id);
   assert.equal(saved[2]?.content, "Explain your contribution.");

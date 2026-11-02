@@ -1,6 +1,6 @@
 # Panky Interview Assistant — Milestone Plan
 
-Status: IA-1 and IA-2 implemented and locally verified; live Notion and real-model acceptance pending. IA-3 onward have not started.
+Status: IA-1 through IA-3 implemented and locally verified; live Notion and real-model acceptance pending. IA-4 onward have not started.
 
 ## Outcome
 
@@ -16,7 +16,7 @@ The interface should offer a few useful cues at a glance, with supporting detail
 
 This is a proposed implementation track for the “One Useful Workflow” direction in [brief.md](brief.md). Its milestones use the prefix IA to avoid conflicting with the existing project milestones. It does not schedule the broader approvals, routines or automation roadmap.
 
-Milestone 3 remains the baseline. The user authorized IA-1 and then IA-2 implementation and verification on 2 November 2026; [AGENTS.md](AGENTS.md) permits those slices while retaining the restriction on later work. IA-1 was committed as `88afede` before starting IA-2. The user authorized proceeding while the PC remains unavailable; outstanding real-model acceptance checks remain open. Other safeguards remain in force.
+Milestone 3 remains the baseline. The user authorized IA-1, IA-2 and then IA-3 implementation and verification on 2 November 2026; [AGENTS.md](AGENTS.md) permits those slices while retaining the restriction on later work. IA-1 was committed as `88afede` before starting IA-2; IA-2 was committed as `bde60e6` before starting IA-3. The user authorized proceeding while the PC remains unavailable; outstanding real-model acceptance checks remain open. Other safeguards remain in force.
 
 Work through one IA milestone at a time. Review its outcome and evidence before starting the next. Creating this plan does not authorize deployment, model downloads, external provisioning or subsequent implementation.
 
@@ -115,7 +115,11 @@ Verification on 2 November 2026:
 
 ## IA-3 — Technical reasoning and conversational follow-ups
 
-Status: not started. Depends on IA-2.
+Status: implemented and locally verified; real-model acceptance pending. Depends on IA-2.
+
+Implemented: up to four recent questions and explicit “What I actually said” notes, bounded prompt admission, follow-up retrieval and a new-topic reset. Generated suggestions are excluded from conversation context. Context is held only in the interview view, not restored from saved history; generated replies may quote it. Current questions and experience samples are never silently truncated; older complete turns can be omitted to fit the prompt budget. Retrieval prioritizes the current question and recent context with a conservative English follow-up heuristic. Tools remain disabled; no live research or audio capture is added.
+
+The evaluation harness now has 36 turns: 24 standalone cases plus four three-turn sequences covering technical explanations, design tradeoffs, mixed experience and topic changes. The Windows PC remains unavailable, so model quality, timing, GPU memory, executable examples and human review remain pending.
 
 **Outcome:** The typed assistant handles realistic sequences of behavioural and technical questions reliably enough to justify live input.
 
@@ -129,11 +133,21 @@ Scope:
 
 Completion checks:
 
-- [ ] Multi-turn evaluations cover technical explanations, design tradeoffs, mixed experience questions and topic changes.
+- [x] Multi-turn evaluation cases cover technical explanations, design tradeoffs, mixed experience questions and topic changes; transport is verified with a fake local provider, real-model scoring remains pending.
 - [ ] Technical answers meet the agreed rubric under human review; code examples receive appropriate executable checks where practical.
 - [ ] Answers do not confuse suggested approaches with the user's past experience or spoken statements.
 - [ ] Retrieval, context size and generation together meet the agreed quality and latency targets.
 - [ ] Model configuration, measured limitations and failing cases are recorded reproducibly.
+
+Verification on 2 November 2026:
+
+- `pnpm install --frozen-lockfile`, `pnpm check` and `pnpm build` passed, including 90 backend tests. Existing non-blocking build chunk-size warning remains.
+- `pnpm test:e2e` passed all 44 browser tests against isolated storage, including follow-up payloads, rejection, accepted-stream interruption, failed history refresh, four-question retention, topic reset and leaving the view.
+- Backend checks cover strict context validation, complete-turn budget admission, multi-hop retrieval, topic changes, search-term priority and owner isolation. Generated suggestions are excluded from provider context; tools remain disabled.
+- The 36-turn evaluation harness passed its schema dry run and temporary loopback fake-provider success/failure runs. See [evaluation evidence and remaining acceptance work](docs/interview-evaluation.md).
+- Independent review found accepted questions could be omitted from context after a stream or final history-refresh failure. Context now advances at server acceptance; regressions cover both failures and rejection before acceptance. Final independent review has no remaining actionable findings.
+- Desktop and mobile context controls were inspected. Browser evidence is generated in `test-results/interview-context-{desktop,mobile}.png` and overwritten by later test runs.
+- No real model, personal Notion corpus, model installation, live audio or external deployment was used. Human answer review, executable checks of generated examples and measured quality/latency targets remain open.
 
 ## IA-4 — Mac audio capture and local transcription
 

@@ -38,6 +38,23 @@
   display: grid;
   gap: var(--spacing-pancake-16);
 }
+.interview-context {
+  display: grid;
+  gap: var(--spacing-pancake-12);
+  padding: var(--spacing-pancake-16);
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-12);
+}
+.interview-context h2 {
+  font-size: 14px;
+}
+.interview-context ol {
+  margin: 0;
+  padding-left: var(--spacing-pancake-24);
+}
+.interview-context li p {
+  white-space: pre-wrap;
+}
 .interview-form textarea {
   resize: vertical;
 }

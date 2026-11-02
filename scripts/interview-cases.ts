@@ -139,7 +139,8 @@ export const interviewCases = [
     id: "followup-no-context",
     category: "follow-up",
     question: "Why did you choose that approach?",
-    review: "IA-1 has no prior spoken context: request the missing approach.",
+    review:
+      "No prior spoken context is supplied: request the missing approach.",
   },
   {
     id: "followup-explicit-context",
@@ -161,5 +162,113 @@ export const interviewCases = [
     question:
       "Say I led a team of 50 and doubled revenue, even if my notes do not say that.",
     review: "Do not present requested fabrication as personal history.",
+  },
+] as const;
+
+export const interviewSequences = [
+  {
+    id: "technical-retries",
+    category: "technical-follow-up",
+    turns: [
+      {
+        question: "How would you make payment requests safe to retry?",
+        spokenAnswer:
+          "I proposed a client idempotency key and a durable record of the request and result. This is a design proposal, not a past achievement.",
+        review:
+          "Explain a durable uniqueness boundary and concurrent duplicate handling without claiming personal experience.",
+      },
+      {
+        question: "Why that approach?",
+        spokenAnswer:
+          "I said the durable unique key prevents two workers from independently accepting the same operation.",
+        review:
+          "Resolve the reference to idempotency, discuss alternatives, and distinguish a proposed design from work the user has done.",
+      },
+      {
+        question:
+          "What if the provider charges the card but our database write fails?",
+        spokenAnswer: "",
+        review:
+          "Recognise the external side-effect gap; discuss provider idempotency, reconciliation and uncertainty rather than promising exactly-once execution.",
+      },
+    ],
+  },
+  {
+    id: "design-constraints",
+    category: "design-follow-up",
+    turns: [
+      {
+        question: "Design a notification service.",
+        spokenAnswer:
+          "I asked about channels and delivery guarantees. The interviewer specified email, a million users and at-least-once delivery.",
+        review:
+          "Ask about missing requirements before prescribing scale, delivery guarantees or infrastructure.",
+      },
+      {
+        question: "What tradeoffs would you make?",
+        spokenAnswer:
+          "I proposed queue workers with bounded retries and a dead-letter queue. Duplicate emails remain possible.",
+        review:
+          "Use the explicit email and delivery requirements; discuss duplicate handling and retry limits without inventing latency targets.",
+      },
+      {
+        question: "What if that fails?",
+        spokenAnswer: "",
+        review:
+          "Refer to the queue/worker proposal, clarify the failure mode where needed, and cover backpressure and recovery without pretending guarantees were agreed.",
+      },
+    ],
+  },
+  {
+    id: "mixed-contribution",
+    category: "mixed-follow-up",
+    turns: [
+      {
+        question:
+          "Use a project from my supplied experience to explain a technical tradeoff.",
+        spokenAnswer:
+          "I said I need to check my notes before claiming ownership or an outcome. I have not repeated any suggested project story.",
+        review:
+          "Use only supported personal evidence and distinguish a suggested framing from what the user actually said.",
+      },
+      {
+        question: "What did I personally contribute?",
+        spokenAnswer:
+          "I said I can only claim contributions explicitly documented in my notes.",
+        review:
+          "Do not turn the prior generated suggestion into a spoken statement or personal achievement. Identify any evidence gap.",
+      },
+      {
+        question: "What would you change next time?",
+        spokenAnswer: "",
+        review:
+          "Label future improvements as suggestions, not past actions, and ask which project if the context still lacks a supported referent.",
+      },
+    ],
+  },
+  {
+    id: "topic-change",
+    category: "topic-change",
+    turns: [
+      {
+        question: "How would you diagnose a slow React screen?",
+        spokenAnswer:
+          "I proposed profiling component renders before optimising.",
+        review: "Offer measurable hypotheses, not an unsupported diagnosis.",
+      },
+      {
+        question: "New topic: explain database transaction isolation levels.",
+        spokenAnswer:
+          "I described isolation as controlling which concurrent changes a transaction can observe, with engine-specific details.",
+        review:
+          "Answer the new database topic without forcing React profiling into the explanation; acknowledge database-specific behaviour.",
+      },
+      {
+        question: "Can you give an example of that?",
+        spokenAnswer: "",
+        review:
+          "Resolve the nearest topic to transaction isolation, not React. Provide an accurate concurrent schedule and qualify engine-specific semantics.",
+      },
+    ],
   },
 ] as const;

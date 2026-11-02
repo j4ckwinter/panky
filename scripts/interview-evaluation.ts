@@ -2,10 +2,41 @@ import { randomBytes } from "node:crypto";
 import { once } from "node:events";
 import { readFile, stat } from "node:fs/promises";
 import { parseArgs } from "node:util";
-import { conversationSchema, streamEventSchema } from "@panky/shared";
+import {
+  conversationSchema,
+  interviewInputSchema,
+  streamEventSchema,
+} from "@panky/shared";
 import { loadConfig } from "../apps/server/src/config.js";
 import { createApp } from "../apps/server/src/http.js";
-import { interviewCases } from "./interview-cases.js";
+import { interviewCases, interviewSequences } from "./interview-cases.js";
+
+const cases = [
+  ...interviewCases.map((test) => ({
+    ...test,
+    sequenceId: test.id,
+    turn: 1,
+    context: [] as Array<{ question: string; spokenAnswer: string }>,
+  })),
+  ...interviewSequences.flatMap((sequence) =>
+    sequence.turns.map((test, index) => ({
+      id: `${sequence.id}-${index + 1}`,
+      category: sequence.category,
+      question: test.question,
+      review: test.review,
+      sequenceId: sequence.id,
+      turn: index + 1,
+      context: sequence.turns
+        .slice(Math.max(0, index - 4), index)
+        .map((prior) => ({
+          question: prior.question,
+          spokenAnswer: prior.spokenAnswer,
+        })),
+    })),
+  ),
+];
+for (const test of cases)
+  interviewInputSchema.parse({ experience: "", context: test.context });
 
 const { values } = parseArgs({
   options: {
@@ -18,7 +49,7 @@ const { values } = parseArgs({
 
 if (!values.run) {
   process.stdout.write(
-    `Interview evaluation: ${interviewCases.length} cases, no model calls made.\nRun on the PC: pnpm evaluate:interview --run --experience-file /path/to/private-sample.txt\nOptional: --model panky-qwen3:4b --endpoint http://127.0.0.1:11434\nUses an in-memory database. JSON on stdout includes generated personal content; save it privately. See docs/interview-evaluation.md.\n`,
+    `Interview evaluation: ${cases.length} turns (${interviewCases.length} standalone cases and ${interviewSequences.length} three-turn sequences), input schemas validated; no model calls made.\nRun on the PC: pnpm evaluate:interview --run --experience-file /path/to/private-sample.txt\nOptional: --model panky-qwen3:4b --endpoint http://127.0.0.1:11434\nUses an in-memory database. JSON on stdout includes generated personal content; save it privately. See docs/interview-evaluation.md.\n`,
   );
 } else {
   const file = values["experience-file"];
@@ -42,7 +73,8 @@ if (!values.run) {
   const app = createApp(config);
   const results: Array<Record<string, unknown>> = [];
   let failure: string | null = null;
-  const deadline = AbortSignal.timeout(3300000);
+  const deadline = AbortSignal.timeout(cases.length * 125000 + 30000);
+  const conversations = new Map<string, string>();
   try {
     app.server.listen(0, "127.0.0.1");
     await once(app.server, "listening");
@@ -59,20 +91,28 @@ if (!values.run) {
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: AbortSignal.any([deadline, AbortSignal.timeout(125000)]),
       });
-    for (const test of interviewCases) {
-      const created = await request("/api/conversations");
-      if (!created.ok)
-        throw new Error(`Conversation creation failed: HTTP ${created.status}`);
-      const { id } = conversationSchema.parse(await created.json());
+    for (const test of cases) {
+      let id = conversations.get(test.sequenceId);
+      if (!id) {
+        const created = await request("/api/conversations");
+        if (!created.ok)
+          throw new Error(
+            `Conversation creation failed: HTTP ${created.status}`,
+          );
+        id = conversationSchema.parse(await created.json()).id;
+        conversations.set(test.sequenceId, id);
+      }
       const started = performance.now();
       let firstDeltaMs: number | null = null;
       let firstCompleteCueMs: number | null = null;
       let output = "";
       let status = "missing_terminal";
       let taskError: string | null = null;
+      let admittedContextChars: number | null = null;
+      let sourceCount = 0;
       const response = await request(`/api/conversations/${id}/messages`, {
         content: test.question,
-        interview: { experience },
+        interview: { experience, context: test.context },
         includeActivity: true,
       });
       if (!response.ok || !response.body)
@@ -99,6 +139,13 @@ if (!values.run) {
               throw new Error("Invalid SSE frame.");
             const event = streamEventSchema.parse(JSON.parse(frame.slice(6)));
             const elapsed = Math.round(performance.now() - started);
+            if (event.type === "start")
+              sourceCount = event.assistant.sources.length;
+            if (
+              event.type === "activity" &&
+              event.activity.kind === "run_started"
+            )
+              admittedContextChars = event.activity.historyChars;
             if (event.type === "delta") {
               firstDeltaMs ??= elapsed;
               output += event.text;
@@ -131,6 +178,8 @@ if (!values.run) {
         firstDeltaMs,
         firstCompleteCueMs,
         durationMs,
+        admittedContextChars,
+        sourceCount,
         output,
         reviewStatus: "pending-human-review",
         scores: {
@@ -142,6 +191,12 @@ if (!values.run) {
         },
         unsupportedPersonalClaims: null,
         usefulCueConfirmed: null,
+        confusedSuggestionWithSpokenAnswer: null,
+        executableExampleCheck: {
+          status: "not-reviewed",
+          command: "",
+          result: "",
+        },
         reviewerNotes: "",
       });
       process.stderr.write(`${test.id}: ${status}, ${durationMs} ms\n`);
@@ -160,7 +215,23 @@ if (!values.run) {
           historyMaxChars: config.HISTORY_MAX_CHARS,
           taskTimeoutMs: config.MAX_TASK_DURATION_MS,
           database: ":memory:",
-          expectedCases: interviewCases.length,
+          expectedCases: cases.length,
+          sequences: interviewSequences.length,
+          contextPolicy:
+            "Up to four prior questions and scripted user-confirmed spoken summaries; generated outputs are never forwarded.",
+          limitations: [
+            "No imported Notion corpus: source retrieval and ranking latency require a separate live-corpus evaluation.",
+            "Scripted spoken summaries do not validate human transcription or live interview usability.",
+            "No GPU memory or model digest measurement is automated; record them with the run conditions.",
+            "Code examples are not executed automatically; review and run suitable examples in an isolated environment.",
+          ],
+          runConditions: {
+            gpu: null,
+            peakGpuMemoryMiB: null,
+            ollamaVersion: null,
+            modelDigest: null,
+            sampleRevision: null,
+          },
           failure,
           acceptance: "pending-human-review-and-agreed-targets",
           results,

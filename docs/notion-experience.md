@@ -15,7 +15,7 @@ The importer makes only GET requests to `https://api.notion.com/v1`, using API v
 
 ## Ask and inspect evidence
 
-Each interview question searches the local corpus. Up to three matching passages are included within the configured context budget, alongside any pasted sample. Each question remains standalone.
+Each interview question searches the local corpus. Up to three matching passages are included within the configured context budget, alongside any pasted sample. Short follow-ups can use recent questions and explicit spoken-answer notes to find the referenced experience. Standalone questions search their own terms; **Start new topic** clears earlier context. This is a bounded lexical heuristic, not semantic search.
 
 Expand **Retrieved evidence** beneath an answer for the exact supplied excerpts, import timestamps and Notion block links. Labels `[S1]`, `[S2]` and `[S3]` identify the supplied passages. The real model is instructed to cite them, distinguish individual contributions from team work and label general suggestions. Inspect generated claims against the excerpts; citations are not a guarantee of factual accuracy.
 

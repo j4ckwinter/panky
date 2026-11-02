@@ -161,7 +161,11 @@ export function useChat(api: Api) {
       }
     });
   }
-  function send(content: string, interview?: InterviewInput) {
+  function send(
+    content: string,
+    interview?: InterviewInput,
+    onAccepted?: () => void,
+  ) {
     return run(async () => {
       const conversation = current ?? (await api.create());
       if (!mounted.current) return;
@@ -183,9 +187,11 @@ export function useChat(api: Api) {
         if (!mounted.current) return;
         switch (event.type) {
           case "start":
+            if (assistantId) return;
             setSubmissionAccepted(true);
             assistantId = event.assistant.id;
             runId = event.run.id;
+            onAccepted?.();
             setRuns((items) => [...items, event.run]);
             setMessages((items) => [...items, event.user, event.assistant]);
             setDrafts((items) => {

@@ -22,6 +22,7 @@ import { OllamaProvider } from "./providers/ollama.js";
 import { MockProvider, type ModelProvider } from "./providers/provider.js";
 import { ExperienceStore } from "./experience/store.js";
 import { ExperienceApi } from "./experience/http.js";
+import { interviewRetrievalQuery } from "./interview/retrieval.js";
 import { importNotionPage } from "./experience/notion.js";
 
 async function readSubmission(request: IncomingMessage) {
@@ -29,7 +30,7 @@ async function readSubmission(request: IncomingMessage) {
   if (!result.success)
     throw new HttpError(
       400,
-      "Message must contain 1–8000 characters, an optional includeActivity boolean and optional interview experience of up to 4000 characters.",
+      "Message must contain 1–8000 characters, an optional includeActivity boolean and optional interview experience of up to 4000 characters and up to four context turns (8000-character questions and 2000-character spoken summaries).",
     );
   return result.data;
 }
@@ -226,7 +227,12 @@ export function createApp(
           controller.signal,
           includeActivity,
           interview,
-          interview ? experience.search(userId, content) : [],
+          interview
+            ? experience.search(
+                userId,
+                interviewRetrievalQuery(content, interview),
+              )
+            : [],
         );
         response.end();
       } finally {
