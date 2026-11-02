@@ -1,5 +1,6 @@
 import { BannerToast, Button } from "@jack.winter/pancake-ui";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { AudioSourceStatus } from "./AudioSourceStatus";
 import { BrowserAudio, initialAudioState } from "./browserAudio";
 import {
   BrowserTranscription,
@@ -186,6 +187,7 @@ export function LiveTranscript({
           {state.error}
         </BannerToast>
       )}
+      <AudioSourceStatus state={state} />
       {children}
       {(active || entries.length > 0) && (
         <details className="transcript-details">

@@ -14,11 +14,13 @@ export async function audioFixture(
     const tracks: MediaStreamTrack[] = [];
     let displayCalls = 0;
     let microphoneCalls = 0;
+    const gains: GainNode[] = [];
     function audio() {
       const context = new AudioContext();
       const oscillator = context.createOscillator();
       const gain = context.createGain();
       gain.gain.value = 0.1;
+      gains.push(gain);
       const destination = context.createMediaStreamDestination();
       oscillator.connect(gain).connect(destination);
       oscillator.start();
@@ -73,6 +75,10 @@ export async function audioFixture(
     });
     Object.assign(window, {
       audioTest: {
+        levels: (shared: number, microphone: number) => {
+          if (gains[0]) gains[0].gain.value = shared;
+          if (gains[1]) gains[1].gain.value = microphone;
+        },
         snapshot: () => ({
           displayCalls,
           microphoneCalls,

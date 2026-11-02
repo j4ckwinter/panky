@@ -288,3 +288,11 @@ Verified: checks and build pass, including 92 backend tests and a gated-provider
 
 
 Second-question verification: the user's screenshot showed a Microphone transcript, which intentionally does not trigger a question. Separately, a controlled continuous shared-audio test reproduced timer starvation after the first answer: every five-second chunk reset the 6.5-second settling timeout. Detection now retains the pause-based timeout and uses a separate 15-second maximum wait for a complete candidate. An initial fixed-timeout approach was rejected in review because it truncated three-chunk questions. All nine focused browser/detector checks pass, including three-chunk continuation, Stop/reset, microphone exclusion and a second explicit submission/answer during continuous audio. Checks/build and 92 backend tests pass. Independent rereview found no remaining actionable issues. Actual screenshot-source routing still requires sharing the sound-producing tab with tab audio enabled.
+
+
+### Sequential flow improvements
+
+1. Audio-source visibility: implemented a recent-activity indicator beside the listening controls, including microphone-only guidance, neutral silence and recovery. Verified all 16 capture/transcript browser tests, checks (92 backend tests) and build.
+2. Queue management: next.
+3. Stage latency measurement: pending.
+4. Spoken follow-up context without personal experience: pending; explicitly authorized by the user for this sequence.

@@ -288,3 +288,27 @@ test("Start listening loads speech automatically and Stop cancels a pending mode
   await expect(panel).toContainText("Stopped — audio released");
   expect(await page.evaluate("window.speechTest.loads()")).toBe(1);
 });
+
+test("source status distinguishes microphone-only activity, shared audio and silence", async ({
+  page,
+}) => {
+  const panel = await audioFixture(page);
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  const status = panel.getByRole("status", { name: "Audio source status" });
+  await expect(status).toContainText("Shared audio detected");
+  await page.evaluate("window.audioTest.levels(0, 0.1)");
+  await expect(status).toContainText("Only microphone audio detected", {
+    timeout: 10000,
+  });
+  await expect(status).toContainText("Share tab audio");
+  await page.evaluate("window.audioTest.levels(0.1, 0)");
+  await expect(status).toContainText("Shared audio detected");
+  await page.evaluate("window.audioTest.levels(0, 0)");
+  await expect(status).toContainText("Waiting for shared audio", {
+    timeout: 10000,
+  });
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(status).toHaveCount(0);
+});

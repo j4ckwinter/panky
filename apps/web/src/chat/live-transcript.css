@@ -110,3 +110,13 @@
 .live-transcript-active .listening-status {
   font-size: 12px;
 }
+
+.audio-source-status {
+  display: grid;
+  gap: var(--spacing-pancake-4);
+  font-size: 13px;
+  color: var(--color-pancake-muted);
+}
+.audio-source-status strong {
+  color: var(--color-pancake-deep);
+}
