@@ -114,11 +114,18 @@ export function createApp(
       response.setHeader("WWW-Authenticate", "Bearer");
       throw new HttpError(401, "Sign in to continue.");
     }
+    const assertAccess = () => {
+      if (!bearer && auth.authenticate(request)?.id !== userId)
+        throw new HttpError(401, "Sign in to continue.");
+    };
     if (
-      await experienceApi.route(request, response, url.pathname, userId, () => {
-        if (!bearer && auth.authenticate(request)?.id !== userId)
-          throw new HttpError(401, "Sign in to continue.");
-      })
+      await experienceApi.route(
+        request,
+        response,
+        url.pathname,
+        userId,
+        assertAccess,
+      )
     )
       return;
     if (url.pathname === "/api/health" && request.method === "GET") {
@@ -177,8 +184,7 @@ export function createApp(
         const result = renameConversationSchema.safeParse(
           await readJson(request),
         );
-        if (!bearer && auth.authenticate(request)?.id !== userId)
-          throw new HttpError(401, "Sign in to continue.");
+        assertAccess();
         if (!result.success)
           throw new HttpError(400, "Title must contain 1–120 characters.");
         title = result.data.title;
@@ -202,8 +208,7 @@ export function createApp(
     if (match[2] && request.method === "POST") {
       const { content, includeActivity, interview } =
         await readSubmission(request);
-      if (!bearer && auth.authenticate(request)?.id !== userId)
-        throw new HttpError(401, "Sign in to continue.");
+      assertAccess();
       if (!store.ownsConversation(id.data, userId))
         throw new HttpError(404, "Conversation not found.");
       const controller = new AbortController();
