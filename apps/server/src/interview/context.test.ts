@@ -21,6 +21,7 @@ const turns = [
 test("context contract defaults old clients and rejects untrusted extra fields", () => {
   assert.deepEqual(interviewInputSchema.parse({ experience: "" }), {
     experience: "",
+    useExperience: true,
     context: [],
   });
   assert.equal(

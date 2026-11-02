@@ -1,6 +1,6 @@
 # Panky Interview Assistant — Milestone Plan
 
-Status: IA-1 through IA-3 implemented; real-model acceptance pending. Native IA-4/IA-4a experiments have been removed. Browser-only capture (IA-4b) and local transcription (IA-4c) are implemented with controlled verification; human interview acceptance remains pending. IA-5 onward have not started.
+Status: IA-1 through IA-3 implemented; real-model acceptance pending. Native IA-4/IA-4a experiments have been removed. Browser-only capture (IA-4b) and local transcription (IA-4c) are implemented with controlled verification; human interview acceptance remains pending. The manual general-knowledge slice of IA-5 is implemented; automatic mode and IA-6 remain deferred.
 
 ## Outcome
 
@@ -205,7 +205,15 @@ Remaining acceptance: sustained memory measurement, human/technical speech accur
 
 ## IA-5 — Live question detection and suggestions
 
-Status: not started. Depends on IA-4c.
+Status: manual question-to-model slice implemented and verified with controlled audio and an isolated answer provider. Depends on IA-4c.
+
+Current slice: shared-audio text produces editable question cards; **Use this question** explicitly submits to the existing answer endpoint with experience retrieval disabled. Microphone text is not used for detection or personal context. Keep automatic submission and experience enrichment deferred. The simplified UI was committed as `c9c6d89` before starting this slice.
+
+Implemented: up to five editable cards, bounded duplicate history, Ctrl/Cmd+Enter, explicit failure review and transcript fallback. A backwards-compatible `useExperience` option skips retrieval and pasted experience for spoken questions. Detection waits for chunk continuation, expires stale fragments, and resets on Stop/Pause/clear. Accepted questions remain attached to their response; no automatic sends or retries. Independent review identified the chunk-settling mismatch; it is fixed and rereview found no remaining actionable issues.
+
+Verification: `pnpm check` passes (91 backend tests), `pnpm build` passes, and all 69 browser tests pass. Controlled browser coverage includes editing, duplicate suppression, microphone exclusion, failure without retry, split-chunk detection, Stop/restart and response cancellation. Desktop/mobile cards were visually inspected. `pnpm test:speech` passes against the production build: generated closure-question audio passes through the real Whisper model into one editable shared-audio card and an explicitly requested answer from the isolated mock provider. No live database or real-model answer-quality claim is involved.
+
+Remaining acceptance: live Google Meet accuracy, question-end-to-useful-cue latency with Windows Ollama, microphone context and optional automatic mode. The user reports manually asking the closure question successfully; this is not a measured live speech acceptance run.
 
 **Outcome:** Spoken interview questions become editable question cards and useful suggestions in the panel.
 

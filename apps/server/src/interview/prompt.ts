@@ -14,12 +14,13 @@ export function interviewContext(
   budget: number,
   candidates: readonly Evidence[] = [],
 ) {
+  const evidence = input.useExperience === false ? [] : candidates;
   const sources: Evidence[] = [];
   const context: NonNullable<InterviewInput["context"]> = [];
   const content = () =>
     JSON.stringify({
       question,
-      experience: input.experience,
+      experience: input.useExperience === false ? "" : input.experience,
       ...(context.length ? { context } : {}),
       ...(sources.length ? { sources } : {}),
     });
@@ -43,7 +44,7 @@ export function interviewContext(
   const remaining = budget - historyChars;
   const contextBudget = Math.min(
     8000,
-    candidates.length ? Math.floor(remaining / 2) : remaining,
+    evidence.length ? Math.floor(remaining / 2) : remaining,
   );
   for (const turn of [...(input.context ?? [])].slice(-4).reverse()) {
     context.unshift(turn);
@@ -58,7 +59,7 @@ export function interviewContext(
   }
   history[1] = { role: "user", content: content() };
   historyChars = interviewInstructions.length + history[1].content.length;
-  for (const candidate of candidates.slice(0, 3)) {
+  for (const candidate of evidence.slice(0, 3)) {
     sources.push(candidate);
     const next = content();
     if (interviewInstructions.length + next.length > budget) {

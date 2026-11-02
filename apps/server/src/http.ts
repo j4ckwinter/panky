@@ -227,7 +227,7 @@ export function createApp(
           controller.signal,
           includeActivity,
           interview,
-          interview
+          interview && interview.useExperience
             ? experience.search(
                 userId,
                 interviewRetrievalQuery(content, interview),

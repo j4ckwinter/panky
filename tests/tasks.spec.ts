@@ -20,9 +20,7 @@ test("real clock tool result appears in the mock reply and survives refresh with
   request,
 }) => {
   await connect(page);
-  await page
-    .getByRole("button", { name: "New conversation", exact: true })
-    .click();
+  await page.getByLabel("New conversation", { exact: true }).click();
   const before = Date.now();
   const submitted = page.waitForRequest(
     (req) => req.method() === "POST" && req.url().endsWith("/messages"),
@@ -126,9 +124,7 @@ test("Stop response stops a live reply and persists cancellation across refresh"
   request,
 }) => {
   await connect(page);
-  await page
-    .getByRole("button", { name: "New conversation", exact: true })
-    .click();
+  await page.getByLabel("New conversation", { exact: true }).click();
   const submitted = page.waitForRequest(
     (req) => req.method() === "POST" && req.url().endsWith("/messages"),
   );

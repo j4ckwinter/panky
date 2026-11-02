@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { afterEach, test } from "node:test";
 import { conversationSchema, streamEventSchema } from "@panky/shared";
@@ -102,6 +103,8 @@ test("interview submissions validate before saving and retain existing authentic
     null,
     {},
     { experience: 42 },
+    { experience: "", useExperience: "false" },
+    { experience: "", useExperience: null },
     { experience: "a".repeat(4001) },
     { experience: "", extra: true },
     {
@@ -128,6 +131,73 @@ test("interview submissions validate before saving and retain existing authentic
   assert.match(JSON.stringify(await tooLarge.json()), /context budget/);
   assert.equal(app.store.messages(app.conversation.id).length, 0);
   assert.equal(app.chat.busy, false);
+});
+
+test("general questions exclude pasted and imported experience while existing clients retain both", async (t) => {
+  const histories: (readonly ContextMessage[])[] = [];
+  const app = await fixture({
+    async *stream(history) {
+      histories.push(history);
+      yield {
+        type: "delta",
+        text: "A closure retains its lexical environment.",
+      };
+      yield { type: "complete" };
+    },
+  });
+  const question = "What is a closure in JavaScript?";
+  const imported = "I taught JavaScript closure workshops at Private Employer.";
+  const pasted = "My confidential JavaScript closure project.";
+  app.experience.replace("owner", {
+    pageId: randomUUID(),
+    title: "JavaScript closures",
+    passages: [{ blockId: randomUUID(), text: imported }],
+    warnings: [],
+  });
+  const evidence = app.experience.search("owner", question);
+  assert.equal(evidence.length, 1);
+  const context = [{ question: "Explain lexical scope.", spokenAnswer: "" }];
+  const general = interviewContext(
+    question,
+    { experience: pasted, useExperience: false, context },
+    8000,
+    evidence,
+  );
+  assert.deepEqual(general.sources, []);
+  assert.deepEqual(JSON.parse(general.history[1]?.content ?? ""), {
+    question,
+    experience: "",
+    context,
+  });
+  const search = t.mock.method(app.experience, "search");
+  for (const useExperience of [false, undefined, true]) {
+    const response = await app.submit({
+      content: question,
+      interview: { experience: pasted, useExperience },
+      includeActivity: true,
+    });
+    assert.equal(response.status, 200);
+    const stream = events(await response.text());
+    const last = stream.at(-1);
+    assert(last?.type === "done");
+    assert.equal(last.run.status, "completed");
+    const payload = JSON.parse(histories.at(-1)?.[1]?.content ?? "");
+    assert.equal(payload.question, question);
+    if (useExperience === false) {
+      assert.equal(search.mock.callCount(), 0);
+      assert.equal(payload.experience, "");
+      assert.equal(payload.sources, undefined);
+      assert.deepEqual(last.message.sources, []);
+      assert.deepEqual(app.store.messages(app.conversation.id)[1]?.sources, []);
+      assert(!JSON.stringify(histories.at(-1)).includes(imported));
+      assert(!JSON.stringify(histories.at(-1)).includes(pasted));
+    } else {
+      assert.equal(payload.experience, pasted);
+      assert.equal(payload.sources[0]?.excerpt, imported);
+      assert.equal(last.message.sources[0]?.excerpt, imported);
+    }
+  }
+  assert.equal(search.mock.callCount(), 2);
 });
 
 test("interview requests reach the provider without tools or prior suggestions; only questions and responses persist", async () => {

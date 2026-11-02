@@ -128,3 +128,19 @@
     padding: var(--spacing-pancake-16);
   }
 }
+.spoken-questions {
+  display: grid;
+  gap: var(--spacing-pancake-12);
+}
+.spoken-question {
+  padding: var(--spacing-pancake-16);
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-12);
+}
+.spoken-question form {
+  display: grid;
+  gap: var(--spacing-pancake-12);
+}
+.spoken-question textarea {
+  resize: vertical;
+}

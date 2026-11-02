@@ -6,16 +6,28 @@ import {
   initialTranscriptionState,
 } from "./transcription";
 
-type Entry = {
+export type TranscriptEntry = {
   id: number;
   source: "shared" | "microphone";
   text: string;
 };
 
-export function LiveTranscript() {
+export function LiveTranscript({
+  onTranscript,
+  onUseAsQuestion,
+  onResetDetection,
+}: {
+  onTranscript?: (entry: TranscriptEntry) => void;
+  onUseAsQuestion?: (text: string) => void;
+  onResetDetection?: () => void;
+}) {
+  const transcriptCallback = useRef(onTranscript);
+  transcriptCallback.current = onTranscript;
+  const resetDetectionCallback = useRef(onResetDetection);
+  resetDetectionCallback.current = onResetDetection;
   const [state, setState] = useState(initialAudioState);
   const [speech, setSpeech] = useState(initialTranscriptionState);
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const [entries, setEntries] = useState<TranscriptEntry[]>([]);
   const [removing, setRemoving] = useState(false);
   const capture = useRef<BrowserAudio | null>(null);
   const transcriber = useRef<BrowserTranscription | null>(null);
@@ -31,10 +43,11 @@ export function LiveTranscript() {
         if (mounted) setSpeech(value);
       },
       (source, text) => {
-        if (mounted && text.trim())
-          setEntries((items) =>
-            [...items, { id: nextId.current++, source, text }].slice(-50),
-          );
+        if (mounted && text.trim()) {
+          const entry = { id: nextId.current++, source, text };
+          setEntries((items) => [...items, entry].slice(-50));
+          transcriptCallback.current?.(entry);
+        }
       },
       () => controller.stop(),
     );
@@ -43,6 +56,7 @@ export function LiveTranscript() {
         captureStatus.current = value.status;
         if (mounted) setState(value);
         if (["stopped", "paused", "error"].includes(value.status)) {
+          resetDetectionCallback.current?.();
           attempt.current++;
           if (speechStatus.current !== "error") model.stop();
         }
@@ -174,7 +188,13 @@ export function LiveTranscript() {
         <section aria-label="Live transcript" className="transcript-entries">
           {entries.length > 0 && (
             <div className="transcript-toolbar">
-              <Button variant="ghost" onClick={() => setEntries([])}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setEntries([]);
+                  resetDetectionCallback.current?.();
+                }}
+              >
                 Clear transcript
               </Button>
             </div>
@@ -192,6 +212,14 @@ export function LiveTranscript() {
                   {entry.source === "shared" ? "Shared audio" : "Microphone"}
                 </p>
                 <p>{entry.text}</p>
+                {entry.source === "shared" && onUseAsQuestion && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => onUseAsQuestion(entry.text)}
+                  >
+                    Use as question
+                  </Button>
+                )}
               </article>
             ))
           )}
@@ -261,11 +289,12 @@ export function LiveTranscript() {
           silent meter does not confirm audio capture.
         </p>
         <p className="interview-note">
-          Audio and transcripts stay on this device. Up to 50 transcript
+          Audio and unsent transcripts stay on this device. Up to 50 transcript
           segments remain until cleared or you leave Interview. Pause and Stop
           discard pending audio and transcription; Start asks you to choose a
           source again. Dismiss any permission prompt left open after Stop.
-          Questions and answers are not generated automatically.
+          Shared speech can suggest editable questions. Only Use this question
+          sends a question to the model; microphone speech is never submitted.
         </p>
       </details>
     </section>

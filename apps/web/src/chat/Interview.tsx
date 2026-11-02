@@ -1,12 +1,14 @@
 import { Button, Text, Textarea } from "@jack.winter/pancake-ui";
-import { useState } from "react";
 import type { InterviewInput } from "@panky/shared";
-import { Markdown } from "./Markdown";
-import type { useChat } from "./useChat";
+import { useState } from "react";
 import type { Api } from "../api/chat";
 import { ExperienceSources } from "./ExperienceSources";
 import { LiveTranscript } from "./LiveTranscript";
+import { Markdown } from "./Markdown";
 import { SourceEvidence } from "./SourceEvidence";
+import { SpokenQuestions } from "./SpokenQuestions";
+import type { useChat } from "./useChat";
+import { useSpokenQuestions } from "./useSpokenQuestions";
 
 export function Interview({
   chat,
@@ -15,6 +17,8 @@ export function Interview({
   chat: ReturnType<typeof useChat>;
   api: Api;
 }) {
+  const questions = useSpokenQuestions(chat);
+  const [session, setSession] = useState(0);
   const [draft, setDraft] = useState("");
   const [experience, setExperience] = useState("");
   const [context, setContext] = useState<
@@ -54,7 +58,16 @@ export function Interview({
   return (
     <div className="interview-scroll">
       <div className="interview-panel">
-        <LiveTranscript />
+        <LiveTranscript
+          key={session}
+          onTranscript={questions.onTranscript}
+          onResetDetection={questions.resetDetection}
+          onUseAsQuestion={questions.propose}
+        />
+        <SpokenQuestions
+          questions={questions}
+          providerLabel={chat.providerLabel}
+        />
         <details className="interview-tools">
           <summary>Ask a question</summary>
           <div className="interview-tools-content">
@@ -64,6 +77,8 @@ export function Interview({
                 disabled={chat.pending}
                 onClick={() => {
                   chat.create();
+                  questions.reset();
+                  setSession((value) => value + 1);
                   setDraft("");
                   setExperience("");
                   setContext([]);
@@ -92,7 +107,7 @@ export function Interview({
                       ? { ...turn, spokenAnswer }
                       : turn,
                   );
-                  void chat.send(
+                  void questions.sendTyped(
                     submitted,
                     { experience, context: prior },
                     () => {
@@ -190,20 +205,9 @@ export function Interview({
                 placeholder="Tell me about a technical decision you influenced…"
               />
               <div className="interview-actions">
-                {run?.status === "running" ? (
-                  <Button
-                    disabled={chat.cancelling}
-                    onClick={() => {
-                      void chat.cancel(run.id);
-                    }}
-                  >
-                    Stop response
-                  </Button>
-                ) : (
-                  <Button type="submit" disabled={unavailable || !draft.trim()}>
-                    Get talking points
-                  </Button>
-                )}
+                <Button type="submit" disabled={unavailable || !draft.trim()}>
+                  Get talking points
+                </Button>
                 {question && (
                   <Button
                     variant="ghost"
@@ -213,32 +217,8 @@ export function Interview({
                     Edit last question
                   </Button>
                 )}
-                <span role="status">{state}</span>
               </div>
             </form>
-            {question ? (
-              <section
-                className="interview-result"
-                aria-label="Interview answer"
-              >
-                <div className="interview-question">
-                  <Text as="h2" variant="heading">
-                    Current question
-                  </Text>
-                  <p>{question.content}</p>
-                </div>
-                <div className="interview-cues">
-                  <Markdown>{cues || "Waiting for talking points…"}</Markdown>
-                </div>
-                <SourceEvidence sources={answer?.sources ?? []} />
-                {detail.trim() && (
-                  <details className="interview-detail" key={answer?.id}>
-                    <summary>Supporting detail</summary>
-                    <Markdown>{detail}</Markdown>
-                  </details>
-                )}
-              </section>
-            ) : null}
             <p className="interview-note">
               Questions and replies are saved in your chat history. Audio
               capture starts only through the browser audio controls above. No
@@ -248,6 +228,40 @@ export function Interview({
             </p>
           </div>
         </details>
+        {(question || questions.cards.length > 0) && (
+          <div className="interview-actions">
+            <span role="status">{state}</span>
+            {run?.status === "running" && (
+              <Button
+                disabled={chat.cancelling}
+                onClick={() => void chat.cancel(run.id)}
+              >
+                Stop response
+              </Button>
+            )}
+          </div>
+        )}
+        {question ? (
+          <section className="interview-result" aria-label="Interview answer">
+            <div className="interview-question">
+              <Text as="h2" variant="heading">
+                Current question
+              </Text>
+              <p>{question.content}</p>
+              <p className="interview-note">{chat.providerLabel}</p>
+            </div>
+            <div className="interview-cues">
+              <Markdown>{cues || "Waiting for talking points…"}</Markdown>
+            </div>
+            <SourceEvidence sources={answer?.sources ?? []} />
+            {detail.trim() && (
+              <details className="interview-detail" key={answer?.id}>
+                <summary>Supporting detail</summary>
+                <Markdown>{detail}</Markdown>
+              </details>
+            )}
+          </section>
+        ) : null}
       </div>
     </div>
   );

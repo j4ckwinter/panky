@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { expect } from "@playwright/test";
 import { test, login } from "./auth-fixture.js";
 
-test("production browser speech model transcribes both controlled sources", async ({
+test("production speech reaches an editable question and the answer endpoint", async ({
   page,
 }) => {
   const temporary = await mkdtemp(join(tmpdir(), "panky-built-speech-"));
@@ -17,7 +17,7 @@ test("production browser speech model transcribes both controlled sources", asyn
       "145",
       "-o",
       join(temporary, "speech.aiff"),
-      "I led a database migration with a rollback plan.",
+      "What is a closure in JavaScript?",
     ]);
     execFileSync("afconvert", [
       "-f",
@@ -89,11 +89,24 @@ test("production browser speech model transcribes both controlled sources", asyn
       .locator("article");
     await expect(entries).toHaveCount(2, { timeout: 25000 });
     await expect(entries.filter({ hasText: "Shared audio" })).toContainText(
-      "database migration",
+      /closure/i,
     );
     await expect(entries.filter({ hasText: "Microphone" })).toContainText(
-      "database migration",
+      /closure/i,
     );
+    const card = page.getByRole("article", {
+      name: "Detected question",
+      exact: true,
+    });
+    await expect(card).toHaveCount(1, { timeout: 10000 });
+    await expect(card.getByLabel("Question to ask")).toHaveValue(/closure/i);
+    await card
+      .getByRole("button", { name: "Use this question", exact: true })
+      .click();
+    await expect(card).toContainText("Sent to model");
+    await expect(
+      page.getByRole("region", { name: "Interview answer", exact: true }),
+    ).toContainText("Immediate cues");
     await page.getByRole("button", { name: "Stop", exact: true }).click();
     expect(await page.evaluate("window.allSpeechTracksEnded()")).toBe(true);
     await panel.screenshot({

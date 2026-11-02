@@ -3,6 +3,7 @@ import { z } from "zod";
 export const interviewInputSchema = z
   .object({
     experience: z.string().trim().max(4000),
+    useExperience: z.boolean().default(true),
     context: z
       .array(
         z
