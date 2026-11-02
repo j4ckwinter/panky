@@ -18,6 +18,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     receivedAt: number;
     transcriptionMs: number;
   } | null>(null);
+  const [topicQuestions, setTopicQuestions] = useState<string[]>([]);
   const [cards, setCards] = useState<SpokenQuestion[]>([]);
   const [acceptedQuestions, setAcceptedQuestions] = useState<
     { id: number; text: string }[]
@@ -172,10 +173,18 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     try {
       await chat.send(
         submitted,
-        { experience: "", context: [], useExperience: false },
+        {
+          experience: "",
+          context: topicQuestions.map((question) => ({
+            question,
+            spokenAnswer: "",
+          })),
+          useExperience: false,
+        },
         () => {
           accepted = true;
           if (!mounted.current || generation.current !== current) return;
+          setTopicQuestions((previous) => [...previous, submitted].slice(-4));
           remember(card.original);
           remember(submitted);
           setAcceptedQuestions((previous) =>
@@ -215,6 +224,10 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
       ),
     );
   }
+  function newTopic() {
+    if (sending.current) return;
+    setTopicQuestions([]);
+  }
   function resetDetection() {
     clearTimeout(timer.current);
     timer.current = undefined;
@@ -230,11 +243,14 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     history.current = [];
     update([]);
     setAcceptedQuestions([]);
+    setTopicQuestions([]);
     setNotice("");
   }
   return {
     cards,
     acceptedQuestions,
+    topicCount: topicQuestions.length,
+    newTopic,
     timing: responseTiming.timing,
     notice,
     unavailable,

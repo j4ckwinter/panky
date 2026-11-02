@@ -112,6 +112,28 @@ test("shared speech becomes an editable general question and sends once only on 
     "Explain a JavaScript closure with a short example.",
   );
   expect(submissions).toHaveLength(1);
+  await cards
+    .getByRole("button", { name: "Use this question", exact: true })
+    .click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  expect(submissions).toHaveLength(2);
+  expect(submissions[1]).toMatchObject({
+    content: "How does lexical scope work?",
+    interview: {
+      experience: "",
+      useExperience: false,
+      context: [
+        {
+          question: "Explain a JavaScript closure with a short example.",
+          spokenAnswer: "",
+        },
+      ],
+    },
+  });
+  expect(JSON.stringify(submissions[1])).not.toContain("Synthetic example");
+  expect(JSON.stringify(submissions[1])).not.toContain("PRIVATE EXPERIENCE");
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
   await cards.screenshot({ path: "test-results/spoken-question-cards.png" });
 });
@@ -410,6 +432,17 @@ test("accepted requests leave room for more than five questions in one session",
 }) => {
   test.setTimeout(60000);
   const panel = await audioFixture(page);
+  const submissions: {
+    interview: {
+      context: { question: string; spokenAnswer: string }[];
+      experience: string;
+      useExperience: boolean;
+    };
+  }[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && /\/messages$/.test(request.url()))
+      submissions.push(request.postDataJSON());
+  });
   await page.evaluate(
     "window.speechTest.transcript('shared', 'Explain concept number 1?')",
   );
@@ -439,6 +472,14 @@ test("accepted requests leave room for more than five questions in one session",
       page.getByText("Response ready.", { exact: true }),
     ).toBeVisible();
     await expect(card).toHaveCount(0);
+    expect(submissions.at(-1)?.interview).toEqual({
+      experience: "",
+      useExperience: false,
+      context: Array.from({ length: Math.min(number - 1, 4) }, (_, index) => ({
+        question: `Explain concept number ${Math.max(1, number - 4) + index}?`,
+        spokenAnswer: "",
+      })),
+    });
     await expect(
       page.getByText(`Sent questions (${number})`, { exact: true }),
     ).toBeVisible();
@@ -449,5 +490,97 @@ test("accepted requests leave room for more than five questions in one session",
   );
   await page.getByText("Sent questions (6)", { exact: true }).click();
   await expect(page.locator(".accepted-questions li")).toHaveCount(6);
+  await page.getByRole("button", { name: "New topic", exact: true }).click();
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'Can you give an example?')",
+  );
+  const next = page.getByRole("article", {
+    name: "Detected question",
+    exact: true,
+  });
+  await expect(next.getByLabel("Question to ask")).toHaveValue(
+    "Can you give an example?",
+    { timeout: 12000 },
+  );
+  await next
+    .getByRole("button", { name: "Use this question", exact: true })
+    .click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  expect(submissions.at(-1)?.interview.context).toEqual([]);
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
+  await page
+    .getByRole("button", { name: "New interview", exact: true })
+    .click();
+  await expect(page.getByText(/Sent questions \(/)).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "New topic", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("typed topic reset also clears spoken context while disconnected", async ({
+  page,
+}) => {
+  test.setTimeout(45000);
+  const panel = await audioFixture(page);
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'Explain JavaScript closures?')",
+  );
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  const card = page.getByRole("article", {
+    name: "Detected question",
+    exact: true,
+  });
+  await expect(card).toBeVisible({ timeout: 12000 });
+  await card
+    .getByRole("button", { name: "Use this question", exact: true })
+    .click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Ask a question", { exact: true }).click();
+  await page
+    .getByLabel("Interview question", { exact: true })
+    .fill("Explain lexical scope");
+  await page.getByRole("button", { name: "Get response", exact: true }).click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  await page.route("**/api/health", (route) => route.abort("failed"));
+  await expect(
+    page.getByText("Connection lost. Refresh history to reconnect.", {
+      exact: true,
+    }),
+  ).toBeVisible({ timeout: 10000 });
+  await page
+    .getByRole("button", { name: "Start new topic", exact: true })
+    .click();
+  await expect(page.getByText(/Using 1 recent spoken question/)).toHaveCount(0);
+  await page.unroute("**/api/health");
+  await expect(page.getByText("Response ready.", { exact: true })).toBeVisible({
+    timeout: 10000,
+  });
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'What is the event loop?')",
+  );
+  await expect(card.getByLabel("Question to ask")).toHaveValue(
+    "What is the event loop?",
+    { timeout: 12000 },
+  );
+  const request = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" && request.url().endsWith("/messages"),
+  );
+  await card
+    .getByRole("button", { name: "Use this question", exact: true })
+    .click();
+  expect((await request).postDataJSON().interview.context).toEqual([]);
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });

@@ -24,6 +24,22 @@ export function SpokenQuestions({
           : " · General knowledge; your experience is not included."}{" "}
         Review the transcript before sending.
       </p>
+      {questions.topicCount > 0 && (
+        <div className="interview-actions">
+          <span className="interview-note">
+            Using {questions.topicCount} recent spoken{" "}
+            {questions.topicCount === 1 ? "question" : "questions"} for
+            follow-ups.
+          </span>
+          <Button
+            variant="ghost"
+            disabled={questions.unavailable}
+            onClick={questions.newTopic}
+          >
+            New topic
+          </Button>
+        </div>
+      )}
       {questions.notice && <p role="status">{questions.notice}</p>}
       <section
         className="spoken-question-list"

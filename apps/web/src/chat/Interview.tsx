@@ -191,6 +191,7 @@ export function Interview({
                     disabled={chat.pending || context.length === 0}
                     onClick={() => {
                       setContext([]);
+                      questions.newTopic();
                       setSpokenAnswer("");
                     }}
                   >
