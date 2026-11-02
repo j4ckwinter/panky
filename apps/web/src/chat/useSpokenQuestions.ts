@@ -26,6 +26,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   const [notice, setNotice] = useState("");
   const items = useRef(cards);
   const history = useRef<string[]>([]);
+  const lastAutomatic = useRef("");
   const detector = useRef(new QuestionDetector());
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const deadline = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -52,9 +53,13 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   function remember(text: string) {
     history.current = [...history.current, normalizeQuestion(text)].slice(-100);
   }
-  function propose(text: string, timing?: DetectionTiming) {
+  function propose(text: string, timing?: DetectionTiming, automatic = false) {
     const value = text.trim().slice(0, 8000);
     const key = normalizeQuestion(value);
+    if (automatic) {
+      if (key === lastAutomatic.current) return;
+      lastAutomatic.current = key;
+    }
     if (
       !key ||
       history.current.includes(key) ||
@@ -98,7 +103,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     timer.current = undefined;
     deadline.current = undefined;
     const candidate = detector.current.flush();
-    if (candidate) propose(candidate, detectionTiming());
+    if (candidate) propose(candidate, detectionTiming(), true);
   }
   function onTranscript(entry: TranscriptEntry) {
     if (entry.source !== "shared") return;
@@ -116,7 +121,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
             transcriptionMs: entry.transcriptionMs,
           };
     const candidate = detector.current.push(entry.text);
-    if (candidate) propose(candidate, detectionTiming());
+    if (candidate) propose(candidate, detectionTiming(), true);
     if (!detector.current.pending) {
       resetDetection();
       return;
@@ -185,6 +190,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           accepted = true;
           if (!mounted.current || generation.current !== current) return;
           setTopicQuestions((previous) => [...previous, submitted].slice(-4));
+          history.current = [];
           remember(card.original);
           remember(submitted);
           setAcceptedQuestions((previous) =>
@@ -227,6 +233,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   function newTopic() {
     if (sending.current) return;
     setTopicQuestions([]);
+    history.current = [];
   }
   function resetDetection() {
     clearTimeout(timer.current);
@@ -241,6 +248,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     responseTiming.reset();
     resetDetection();
     history.current = [];
+    lastAutomatic.current = "";
     update([]);
     setAcceptedQuestions([]);
     setTopicQuestions([]);

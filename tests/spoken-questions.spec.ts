@@ -584,3 +584,80 @@ test("typed topic reset also clears spoken context while disconnected", async ({
   ).toBeVisible();
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });
+
+test("the same follow-up can be asked after context changes without replaying consecutive chunks", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  const panel = await audioFixture(page);
+  const texts = [
+    "Explain closures?",
+    "Can you give an example?",
+    "Explain the event loop?",
+    "Can you give an example?",
+  ];
+  await page.evaluate(
+    (text) =>
+      (
+        window as unknown as {
+          speechTest: { transcript(source: string, text: string): void };
+        }
+      ).speechTest.transcript("shared", text),
+    texts[0]!,
+  );
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  let submissions = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/messages"))
+      submissions++;
+  });
+  for (const [index, text] of texts.entries()) {
+    await page.evaluate(
+      (text) =>
+        (
+          window as unknown as {
+            speechTest: { transcript(source: string, text: string): void };
+          }
+        ).speechTest.transcript("shared", text),
+      text,
+    );
+    const card = page.getByRole("article", {
+      name: "Detected question",
+      exact: true,
+    });
+    await expect(card.getByLabel("Question to ask")).toHaveValue(text, {
+      timeout: 12000,
+    });
+    await card
+      .getByRole("button", { name: "Use this question", exact: true })
+      .click();
+    await expect(
+      page.getByText("Response ready.", { exact: true }),
+    ).toBeVisible();
+    expect(submissions).toBe(index + 1);
+    await expect(card).toHaveCount(0);
+  }
+  await page.waitForTimeout(5500);
+  await expect(
+    page.getByRole("article", { name: "Detected question", exact: true }),
+  ).toHaveCount(0);
+  expect(submissions).toBe(4);
+  await page.getByRole("button", { name: "New topic", exact: true }).click();
+  await panel.locator(".transcript-details > summary").click();
+  await panel
+    .getByRole("region", { name: "Live transcript", exact: true })
+    .locator("article")
+    .filter({ hasText: "Can you give an example?" })
+    .last()
+    .getByRole("button", { name: "Use as question", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("article", { name: "Detected question", exact: true })
+      .getByLabel("Question to ask"),
+  ).toHaveValue("Can you give an example?", { timeout: 12000 });
+  expect(submissions).toBe(4);
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});

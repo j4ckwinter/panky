@@ -296,3 +296,12 @@ Second-question verification: the user's screenshot showed a Microphone transcri
 2. Queue management: accepted requests move to collapsed history (last 20), freeing the five active slots. Pending and failed cards remain actionable. Verified all eight spoken-question browser tests, including six successive accepted questions, plus checks/build. Independent review found no actionable issues.
 3. Stage latency measurement: collapsed local timing details show summed transcription compute, question assembly and Send-to-first-text (including network/backend/model). Capture, queue and review time are explicitly excluded; no end-to-end total is claimed. Verified 20 chat/interview/spoken browser tests, checks/build and independent review.
 4. Spoken follow-up context: requests carry the last four accepted spoken questions with empty spoken-answer notes and experience disabled. New topic clears spoken context; typed Start new topic clears both, including offline; New interview clears context and accepted history. Verified the full 73-test browser suite, the additional mixed/offline reset regression, production speech-model test, checks (92 backend tests) and build. Independent review identified an offline reset mismatch, which was fixed and rereviewed. Model answer quality/Windows latency still require live evaluation.
+
+
+### Next manual-flow improvements
+
+The user reports testing through Google Meet; no accuracy score or latency measurements were supplied.
+
+1. Repeated follow-ups: implemented context-scoped suppression. Accepting a different question releases older fingerprints; consecutive automatic transcript candidates remain suppressed. New topic clears submitted/dismissed fingerprints but keeps protection against replay of the currently repeated transcript; Use as question explicitly reuses it. Verified ten spoken-flow cases across the full run and targeted corrections, checks/build and independent review.
+2. Question completion: next; evaluate pause-aware chunks with real browser speech before changing defaults.
+3. Reopening earlier answers inside Interview: pending.
