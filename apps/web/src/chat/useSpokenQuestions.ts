@@ -186,6 +186,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
         submitted,
         {
           experience: "",
+          inputSource: "speech",
           context: topicQuestions.map((question) => ({
             question,
             spokenAnswer: "",

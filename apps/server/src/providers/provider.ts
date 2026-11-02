@@ -1,7 +1,11 @@
 import { setTimeout } from "node:timers/promises";
 import { z } from "zod";
 import { mockInterviewReply } from "../interview/mock.js";
-import { interviewInstructions } from "../interview/prompt.js";
+import {
+  interviewInstructions,
+  generalInterviewInstructions,
+  transcriptionInstructions,
+} from "../interview/prompt.js";
 
 export type ContextMessage =
   | { role: "system"; content: string }
@@ -51,7 +55,12 @@ export class MockProvider implements ModelProvider {
     const toolResult = history.at(-1);
     const interview = history.some(
       (message) =>
-        message.role === "system" && message.content === interviewInstructions,
+        message.role === "system" &&
+        [interviewInstructions, generalInterviewInstructions].some(
+          (base) =>
+            message.content === base ||
+            message.content === `${base}\n${transcriptionInstructions}`,
+        ),
     );
     const demo =
       prompt.trim().toLowerCase().replace(/\s+/gu, " ") ===

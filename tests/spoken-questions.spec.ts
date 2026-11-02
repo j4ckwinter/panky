@@ -116,7 +116,12 @@ test("shared speech becomes an editable general question and sends once only on 
   expect(submissions).toHaveLength(1);
   expect(submissions[0]).toMatchObject({
     content: "Explain a JavaScript closure with a short example.",
-    interview: { experience: "", context: [], useExperience: false },
+    interview: {
+      experience: "",
+      inputSource: "speech",
+      context: [],
+      useExperience: false,
+    },
   });
   expect(JSON.stringify(submissions)).not.toContain("PRIVATE EXPERIENCE");
   await expect(card).toHaveCount(0);
@@ -164,6 +169,7 @@ test("shared speech becomes an editable general question and sends once only on 
     interview: {
       experience: "",
       useExperience: false,
+      inputSource: "speech",
       context: [
         {
           question: "Explain a JavaScript closure with a short example.",
@@ -519,6 +525,7 @@ test("accepted requests leave room for more than five questions in one session",
     expect(submissions.at(-1)?.interview).toEqual({
       experience: "",
       useExperience: false,
+      inputSource: "speech",
       context: Array.from({ length: Math.min(number - 1, 4) }, (_, index) => ({
         question: `Explain concept number ${Math.max(1, number - 4) + index}?`,
         spokenAnswer: "",
@@ -905,4 +912,59 @@ test("sent questions reopen their own answers without stopping listening or repl
   await expect(answer).toContainText("How would you design a queue?");
   expect(submissions).toBe(3);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});
+
+test("speech-derived questions keep their submitted text and typed questions do not opt into correction", async ({
+  page,
+}) => {
+  const panel = await audioFixture(page);
+  const question = "What is use state in React?";
+  const submissions: Array<{
+    content: string;
+    interview: { inputSource?: string };
+  }> = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && /\/messages$/.test(request.url()))
+      submissions.push(request.postDataJSON());
+  });
+  await page.evaluate((text) => {
+    (
+      window as unknown as {
+        speechTest: { transcript(source: string, text: string): void };
+      }
+    ).speechTest.transcript("shared", text);
+  }, question);
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  const draft = page.getByLabel("Question to ask", { exact: true });
+  await expect(draft).toHaveValue(question, { timeout: 15000 });
+  await page
+    .getByRole("button", { name: "Send question", exact: true })
+    .click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  expect(submissions).toHaveLength(1);
+  expect(submissions[0]).toMatchObject({
+    content: question,
+    interview: { inputSource: "speech" },
+  });
+  await expect(page.locator(".interview-question > p").first()).toHaveText(
+    question,
+  );
+  await page.getByText("Sent questions (1)", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: `View answer: ${question}`, exact: true }),
+  ).toBeVisible();
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+  await toggleTypedQuestion(page);
+  await page.getByLabel("Interview question", { exact: true }).fill(question);
+  await page.getByRole("button", { name: "Get response", exact: true }).click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  expect(submissions).toHaveLength(2);
+  expect(submissions[1]?.content).toBe(question);
+  expect(submissions[1]?.interview.inputSource).toBeUndefined();
 });

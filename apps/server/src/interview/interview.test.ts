@@ -15,6 +15,7 @@ import {
   interviewContext,
   interviewInstructions,
   generalInterviewInstructions,
+  transcriptionInstructions,
 } from "./prompt.js";
 
 const token = "isolated-interview-token-with-enough-characters";
@@ -198,6 +199,28 @@ test("general questions exclude pasted and imported experience while existing cl
     tight.historyChars,
     tight.history.reduce((sum, message) => sum + message.content.length, 0),
   );
+  const speechInput = { experience: "", inputSource: "speech" as const };
+  const speechBase = interviewContext(question, speechInput, 8000);
+  const speechSourced = interviewContext(question, speechInput, 8000, evidence);
+  assert.equal(
+    speechSourced.history[0]?.content,
+    `${interviewInstructions}\n${transcriptionInstructions}`,
+  );
+  assert.equal(speechSourced.sources.length, 1);
+  assert.equal(
+    speechSourced.historyChars,
+    speechSourced.history.reduce(
+      (sum, message) => sum + message.content.length,
+      0,
+    ),
+  );
+  const speechTight = interviewContext(
+    question,
+    speechInput,
+    speechBase.historyChars,
+    evidence,
+  );
+  assert.deepEqual(speechTight, speechBase);
   const search = t.mock.method(app.experience, "search");
   for (const useExperience of [false, undefined, true]) {
     const response = await app.submit({
@@ -441,5 +464,118 @@ test("questions without experience use a compact prompt with exact budget accoun
       () => interviewContext(question, input, result.historyChars - 1),
       /context budget/,
     );
+  }
+});
+
+test("speech guidance is opt-in and included in prompt budgets without rewriting input", () => {
+  const question = "Explain closer in JavaScript, not Java, with 2 examples.";
+  const context = [
+    { question: "What is use state in React?", spokenAnswer: "" },
+  ];
+  for (const experience of ["", "I worked on React applications."]) {
+    const typed = interviewContext(question, { experience, context }, 8000);
+    const speech = interviewContext(
+      question,
+      { experience, context, inputSource: "speech" },
+      8000,
+    );
+    assert(!typed.history[0]?.content.includes(transcriptionInstructions));
+    assert(speech.history[0]?.content.includes(transcriptionInstructions));
+    assert.deepEqual(JSON.parse(speech.history[1]!.content), {
+      question,
+      experience,
+      context,
+    });
+    assert.equal(
+      speech.historyChars,
+      speech.history.reduce((sum, message) => sum + message.content.length, 0),
+    );
+    const base = interviewContext(
+      question,
+      { experience, inputSource: "speech" },
+      8000,
+    );
+    assert.doesNotThrow(() =>
+      interviewContext(
+        question,
+        { experience, inputSource: "speech" },
+        base.historyChars,
+      ),
+    );
+    assert.throws(
+      () =>
+        interviewContext(
+          question,
+          { experience, inputSource: "speech" },
+          base.historyChars - 1,
+        ),
+      /context budget/,
+    );
+  }
+});
+
+test("speech requests use one model call, preserve submitted text and reject invalid source markers", async () => {
+  const seen: Array<readonly ContextMessage[]> = [];
+  const app = await fixture({
+    async *stream(history, tools) {
+      seen.push(history);
+      assert.deepEqual(tools, []);
+      yield { type: "delta", text: "Controlled response" };
+      yield { type: "complete" };
+    },
+  });
+  const question = "Explain closer in JavaScript?";
+  for (const inputSource of ["microphone", "", 1, null]) {
+    const response = await app.submit({
+      content: question,
+      interview: { experience: "", inputSource },
+    });
+    assert.equal(response.status, 400);
+  }
+  assert.equal(seen.length, 0);
+  assert.equal(app.store.messages(app.conversation.id).length, 0);
+  for (const inputSource of [undefined, "typed", "speech"]) {
+    const response = await app.submit({
+      content: question,
+      interview: { experience: "", inputSource, useExperience: false },
+    });
+    assert.equal(response.status, 200);
+    const output = events(await response.text());
+    assert.equal(output.at(-1)?.type, "done");
+    assert.equal(
+      seen.at(-1)?.[0]?.content.includes(transcriptionInstructions),
+      inputSource === "speech",
+    );
+    assert.equal(JSON.parse(seen.at(-1)![1]!.content).question, question);
+  }
+  assert.equal(seen.length, 3);
+  const savedQuestions = app.store
+    .messages(app.conversation.id)
+    .filter((message) => message.role === "user");
+  assert.deepEqual(
+    savedQuestions.map((message) => message.content),
+    [question, question, question],
+  );
+});
+
+test("demo replies recognize compact and full prompts with or without speech guidance", async () => {
+  for (const experience of ["", "I designed an API."]) {
+    for (const inputSource of ["typed", "speech"] as const) {
+      const context = interviewContext(
+        "Explain closures.",
+        { experience, inputSource },
+        8000,
+      );
+      let reply = "";
+      for await (const event of new MockProvider(0).stream(
+        context.history,
+        [],
+        new AbortController().signal,
+      )) {
+        if (event.type === "delta") reply += event.text;
+      }
+      assert.match(reply, /deterministic synthetic demo/);
+      assert.doesNotMatch(reply, /You said:/);
+    }
   }
 });
