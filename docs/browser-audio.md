@@ -46,3 +46,10 @@ pnpm exec tsx scripts/evaluate-browser-transcription.ts http://127.0.0.1:5176
 The evaluator runs controlled audio through the real capture/worklet/worker path, measures cold/cached load and source processing times, checks no network writes, and removes the dedicated model cache. Its report is saved under ignored `test-results/`. Synthetic tests establish integration, not human-interview quality.
 
 Pinned dependencies: Transformers.js 4.3.2 and ONNX Runtime Web 1.31.0-dev.20260914-8d85527a0, matching that Transformers release. Model: `Xenova/whisper-tiny.en` revision `79fb389fc764e7c395bd330e9531d9d32ada7049`, q8 encoder and decoder. See [Transformers.js](https://huggingface.co/docs/transformers.js/en/index) and the [model repository](https://huggingface.co/Xenova/whisper-tiny.en/tree/79fb389fc764e7c395bd330e9531d9d32ada7049).
+
+
+## Flow diagnostics
+
+The source indicator reports recent shared-audio activity, microphone-only activity, or silence. Silence is not proof of a capture failure. Accepted questions move to collapsed **Sent questions** history (last 20 in this view), leaving five slots for questions awaiting action.
+
+**Response timing** shows worker transcription compute, question assembly from the first transcript to the card, and Send to first streamed text. The last measurement includes connection setup, backend and model time. Capture buffering, worker queue time and review time are excluded; the values are not an end-to-end total. Typed questions and manually selected transcript segments show unmeasured detection stages explicitly. These measurements stay in the current view and are not sent to the server.

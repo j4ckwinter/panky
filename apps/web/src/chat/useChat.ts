@@ -165,6 +165,7 @@ export function useChat(api: Api) {
     content: string,
     interview?: InterviewInput,
     onAccepted?: () => void,
+    onFirstText?: () => void,
   ) {
     return run(async () => {
       const conversation = current ?? (await api.create());
@@ -183,6 +184,7 @@ export function useChat(api: Api) {
       setStreaming(true);
       let assistantId: string | undefined;
       let runId: string | undefined;
+      let receivedText = false;
       const receive = (event: StreamEvent) => {
         if (!mounted.current) return;
         switch (event.type) {
@@ -201,6 +203,10 @@ export function useChat(api: Api) {
             });
             break;
           case "delta":
+            if (!receivedText && event.text.trim()) {
+              receivedText = true;
+              onFirstText?.();
+            }
             setMessages((items) =>
               items.map((item) =>
                 item.id === assistantId

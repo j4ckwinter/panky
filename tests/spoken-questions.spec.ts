@@ -72,6 +72,17 @@ test("shared speech becomes an editable general question and sends once only on 
   await expect(answer.locator(".interview-response")).toBeInViewport();
   await expect(answer).not.toContainText("Immediate cues");
   await expect(answer).not.toContainText("Supporting detail");
+  await page.getByText("Response timing", { exact: true }).click();
+  const timing = page.locator(".response-timing");
+  await expect(timing.locator("dd").nth(0)).toHaveText("42 ms");
+  await expect(timing.locator("dd").nth(1)).toHaveText(/\d+ ms/);
+  await expect(timing.locator("dd").nth(2)).toHaveText(/\d+ ms/);
+  const firstTextTime = await timing.locator("dd").nth(2).textContent();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  await expect(timing.locator("dd").nth(2)).toHaveText(firstTextTime!);
+  await page.getByText("Response timing", { exact: true }).click();
   await page.screenshot({
     path: "test-results/interview-workspace-desktop.png",
   });
@@ -179,6 +190,10 @@ test("failed spoken submissions are not retried automatically", async ({
     .getByLabel("Question to ask", { exact: true })
     .press("Control+Enter");
   await expect(card).toContainText("Submission not confirmed");
+  await page.getByText("Response timing", { exact: true }).click();
+  await expect(page.locator(".response-timing")).toContainText(
+    "No response text received",
+  );
   await expect(page.getByRole("alert")).toContainText(
     "Controlled provider failure",
   );

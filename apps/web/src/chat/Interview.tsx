@@ -5,6 +5,7 @@ import type { Api } from "../api/chat";
 import { ExperienceSources } from "./ExperienceSources";
 import { LiveTranscript } from "./LiveTranscript";
 import { Markdown } from "./Markdown";
+import { ResponseTiming } from "./ResponseTiming";
 import { SourceEvidence } from "./SourceEvidence";
 import { SpokenQuestions } from "./SpokenQuestions";
 import type { useChat } from "./useChat";
@@ -107,6 +108,7 @@ export function Interview({
                     <SourceEvidence sources={answer?.sources ?? []} />
                   </section>
                 ) : null}
+                <ResponseTiming timing={questions.timing} />
               </div>
             </div>
           )}

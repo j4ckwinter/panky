@@ -1,16 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import type { TranscriptEntry } from "./LiveTranscript";
 import { normalizeQuestion, QuestionDetector } from "./questionDetection";
+import { type DetectionTiming, useResponseTiming } from "./ResponseTiming";
 import type { useChat } from "./useChat";
 
 export type SpokenQuestion = {
   id: number;
   text: string;
   original: string;
+  timing?: DetectionTiming;
   status: "draft" | "pending" | "failed";
 };
 
 export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
+  const responseTiming = useResponseTiming();
+  const pendingTiming = useRef<{
+    receivedAt: number;
+    transcriptionMs: number;
+  } | null>(null);
   const [cards, setCards] = useState<SpokenQuestion[]>([]);
   const [acceptedQuestions, setAcceptedQuestions] = useState<
     { id: number; text: string }[]
@@ -44,7 +51,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   function remember(text: string) {
     history.current = [...history.current, normalizeQuestion(text)].slice(-100);
   }
-  function propose(text: string) {
+  function propose(text: string, timing?: DetectionTiming) {
     const value = text.trim().slice(0, 8000);
     const key = normalizeQuestion(value);
     if (
@@ -65,8 +72,24 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     }
     update([
       ...items.current,
-      { id: nextId.current++, text: value, original: value, status: "draft" },
+      {
+        id: nextId.current++,
+        text: value,
+        original: value,
+        timing,
+        status: "draft",
+      },
     ]);
+  }
+  function detectionTiming(): DetectionTiming | undefined {
+    const value = pendingTiming.current;
+    pendingTiming.current = null;
+    return value
+      ? {
+          transcriptionMs: value.transcriptionMs,
+          assemblyMs: performance.now() - value.receivedAt,
+        }
+      : undefined;
   }
   function settle() {
     clearTimeout(timer.current);
@@ -74,12 +97,25 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     timer.current = undefined;
     deadline.current = undefined;
     const candidate = detector.current.flush();
-    if (candidate) propose(candidate);
+    if (candidate) propose(candidate, detectionTiming());
   }
   function onTranscript(entry: TranscriptEntry) {
     if (entry.source !== "shared") return;
+    const previous = pendingTiming.current;
+    pendingTiming.current =
+      detector.current.pending &&
+      previous &&
+      entry.receivedAt - previous.receivedAt <= 20000
+        ? {
+            ...previous,
+            transcriptionMs: previous.transcriptionMs + entry.transcriptionMs,
+          }
+        : {
+            receivedAt: entry.receivedAt,
+            transcriptionMs: entry.transcriptionMs,
+          };
     const candidate = detector.current.push(entry.text);
-    if (candidate) propose(candidate);
+    if (candidate) propose(candidate, detectionTiming());
     if (!detector.current.pending) {
       resetDetection();
       return;
@@ -121,6 +157,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
       return;
     }
     sending.current = true;
+    const measurement = responseTiming.start(submitted, card.timing);
     const current = generation.current;
     const changeStatus = (status: SpokenQuestion["status"]) => {
       if (mounted.current && generation.current === current)
@@ -147,8 +184,10 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           update(items.current.filter((item) => item.id !== id));
           setNotice("");
         },
+        measurement.firstText,
       );
     } finally {
+      measurement.finish();
       if (!accepted) changeStatus("failed");
       sending.current = false;
     }
@@ -156,9 +195,14 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   async function sendTyped(...args: Parameters<typeof chat.send>) {
     if (unavailable || sending.current) return;
     sending.current = true;
+    const measurement = responseTiming.start(args[0]);
     try {
-      await chat.send(...args);
+      await chat.send(args[0], args[1], args[2], () => {
+        measurement.firstText();
+        args[3]?.();
+      });
     } finally {
+      measurement.finish();
       sending.current = false;
     }
   }
@@ -177,9 +221,11 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     clearTimeout(deadline.current);
     deadline.current = undefined;
     detector.current.reset();
+    pendingTiming.current = null;
   }
   function reset() {
     generation.current++;
+    responseTiming.reset();
     resetDetection();
     history.current = [];
     update([]);
@@ -189,6 +235,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
   return {
     cards,
     acceptedQuestions,
+    timing: responseTiming.timing,
     notice,
     unavailable,
     onTranscript,

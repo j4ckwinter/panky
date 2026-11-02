@@ -11,6 +11,8 @@ export type TranscriptEntry = {
   id: number;
   source: "shared" | "microphone";
   text: string;
+  receivedAt: number;
+  transcriptionMs: number;
 };
 
 export function LiveTranscript({
@@ -45,9 +47,15 @@ export function LiveTranscript({
         speechStatus.current = value.status;
         if (mounted) setSpeech(value);
       },
-      (source, text) => {
+      (source, text, transcriptionMs) => {
         if (mounted && text.trim()) {
-          const entry = { id: nextId.current++, source, text };
+          const entry = {
+            id: nextId.current++,
+            source,
+            text,
+            transcriptionMs,
+            receivedAt: performance.now(),
+          };
           setEntries((items) => [...items, entry].slice(-50));
           transcriptCallback.current?.(entry);
         }

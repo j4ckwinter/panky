@@ -188,3 +188,15 @@
   outline: 2px solid var(--color-pancake-control-focus);
   outline-offset: 3px;
 }
+
+.response-timing {
+  font-size: 13px;
+}
+.response-timing dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-pancake-8);
+}
+.response-timing dd {
+  margin: 0;
+}
