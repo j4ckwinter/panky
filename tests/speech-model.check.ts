@@ -76,6 +76,7 @@ test("production browser speech model transcribes both controlled sources", asyn
     await login(page);
     await page.getByRole("button", { name: "Interview", exact: true }).click();
     const panel = page.getByRole("region", { name: "Browser audio capture" });
+    await panel.getByText("Listening settings", { exact: true }).click();
     await panel
       .getByRole("button", { name: "Load speech model", exact: true })
       .click();

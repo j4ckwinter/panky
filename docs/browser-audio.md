@@ -1,8 +1,10 @@
 # Browser audio and local transcription
 
-Open **Interview → Browser audio**. Choose **Load speech model** to enable transcripts, then **Start listening**. Select the call tab, window or screen in the browser picker, enable its audio option, and allow your microphone. Start without loading the model still provides the audio-level feasibility test.
+Open **Interview** and choose **Start listening**. Select the call tab, window or screen in the browser picker, enable its audio option, and allow your microphone. Panky prepares the local speech model automatically after capture starts, then shows source-labelled transcripts. Speech during model preparation is not transcribed.
 
-The English Whisper tiny.en model runs locally in a browser worker using WebAssembly. The first load downloads roughly 70 MB of model/runtime assets, plus application JavaScript. Model files come from Hugging Face; the application serves the bundled runtime. The dedicated browser cache retains those downloaded assets for reuse. **Remove downloaded model** stops the worker and deletes that cache. Ordinary browser HTTP caching may retain application assets until the browser clears them.
+The opening view follows New chat: one centered heading and a primary action. **Listening settings** contains optional model preloading, cache removal, audio meters and capture details. **Ask a question** opens typed questions, experience sources and conversation context. You can preload the model in settings before a call to avoid waiting during capture.
+
+The English Whisper tiny.en model runs locally in a browser worker using WebAssembly. The first load downloads roughly 70 MB of model/runtime assets, plus application JavaScript. Model files come from Hugging Face; the application serves the bundled runtime. The dedicated browser cache retains those downloaded assets for reuse. **Remove downloaded model** in Listening settings stops the worker and deletes that cache. Ordinary browser HTTP caching may retain application assets until the browser clears them.
 
 No audio or transcript is uploaded to Hugging Face or the Panky backend. Transcripts appear as separate **Shared audio** and **Microphone** segments; these identify input streams, not individual speakers. Up to 50 segments of at most 4,000 characters stay in this view. **Clear transcript** removes them; leaving Interview also clears them. Audio does not automatically generate questions or answers. Typed interview assistance remains available.
 
@@ -10,7 +12,7 @@ Use headphones and play a known sound in the selected source. The shared-audio m
 
 ## Stop, buffering and limitations
 
-Pause, Stop, navigation and browser share termination release both streams, terminate the speech worker and discard pending audio/results. Text already displayed remains until cleared or you leave Interview. Reload the cached model before restarting transcription. Each fresh Start requires a new browser picker. If a permission prompt remains open after Stop, dismiss it; any late stream is discarded.
+Pause, Stop, navigation and browser share termination release both streams, terminate the speech worker and discard pending audio/results. Text already displayed remains until cleared or you leave Interview. Starting again reloads the cached model automatically; optional preloading remains in Listening settings. Each fresh Start requires a new browser picker. If a permission prompt remains open after Stop, dismiss it; any late stream is discarded.
 
 Separate AudioWorklets convert each input to 16 kHz mono five-second chunks. Each worklet allows at most one undelivered chunk. Inference runs serially with at most two waiting chunks plus one active chunk; overload stops capture rather than growing an audio backlog. Model loading times out after 120 seconds, each inference after 60 seconds. Quiet chunks below RMS 0.001 are skipped, so quiet speech can be missed. Stop discards partial chunks. Five-second boundaries can split words and context; the small English model can mishear technical terms and invent text. Check every transcript before using it.
 

@@ -13,6 +13,7 @@ test("Interview navigation stays in the sidebar on desktop, collapsed and mobile
     exact: true,
   });
   await interview.click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await expect(interview).toHaveAttribute("aria-current", "page");
   await expect(
     page
@@ -73,6 +74,7 @@ test("Interview navigation stays in the sidebar on desktop, collapsed and mobile
     .click();
   await expect(interview).not.toHaveAttribute("aria-current", "page");
   await interview.click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await expect(question).toBeVisible();
   expect(
     await page.evaluate(
@@ -88,6 +90,7 @@ test("chat follows streamed output after leaving a populated interview panel", a
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await page
     .getByLabel("Interview question", { exact: true })
     .fill("Interview return scroll regression");
@@ -148,6 +151,7 @@ test("interview questions stream through the backend, support editing, and retai
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Interview assistant" }),
   ).toBeVisible();
@@ -255,6 +259,7 @@ test("interview cancellation preserves partial output without retrying", async (
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await page
     .getByLabel("Interview question", { exact: true })
     .fill("How would you design a reliable service?");
@@ -293,6 +298,7 @@ test("interview reports an unavailable backend and retains the question without 
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   let submissions = 0;
   let historyUrl = "";
   await page.route("**/api/conversations/*/messages", async (route) => {

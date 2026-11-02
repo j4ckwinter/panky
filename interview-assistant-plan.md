@@ -184,7 +184,7 @@ Verification: nine focused browser tests pass with controlled media streams and 
 
 Status: implemented and controlled integration verified. Browser-tab capture is verified; human interview quality and full-system/native-app capture acceptance remain pending.
 
-Implemented: pinned Whisper tiny.en q8 runs in a browser worker on WASM. Load/cancel/remove controls manage a dedicated model cache. Separate AudioWorklets resample input to 16 kHz mono and deliver five-second chunks. Inference is serial with two queued chunks; overflow/error stops listening. Stop terminates the worker and drops pending work. Up to 50 source-labelled transcript segments remain only in the current view. No automatic question generation or audio upload. See [setup and verification](docs/browser-audio.md).
+Implemented: pinned Whisper tiny.en q8 runs in a browser worker on WASM. Start listening prepares the model after the browser grants capture. Optional preload/remove controls are under Listening settings; cancellation remains available during preparation. A dedicated model cache supports reuse. Separate AudioWorklets resample input to 16 kHz mono and deliver five-second chunks. Inference is serial with two queued chunks; overflow/error stops listening. Stop terminates the worker and drops pending work. Up to 50 source-labelled transcript segments remain only in the current view. No automatic question generation or audio upload. See [setup and verification](docs/browser-audio.md).
 
 - Run a local speech model in a browser worker using a supported WASM/WebGPU runtime. Make model download size, progress and cache removal explicit.
 - Preserve separate microphone/shared streams, bounded queues, cancellation and no raw-audio upload. Do not use a speech API that silently sends audio to a cloud service.
@@ -198,6 +198,8 @@ Verification evidence (2 November 2026):
 - Generated speech “I led a database migration with a rollback plan” became “I let a database migration with the rollback plan” on both streams. The test establishes source-to-text integration, and also demonstrates recognition errors.
 - The real-model production-build test passed with source-labelled transcripts, stopped tracks and dedicated cache deletion. The standalone evaluator observed zero network writes. Tests use generated speech, not recorded microphone audio, and an isolated in-memory backend.
 - Independent implementation and production-harness reviews found no actionable issues. `pnpm check` passes (90 backend tests, lint, formatting and typechecks), all 59 browser regression tests pass, and the production build passes. A separate opt-in production speech test also passed with the real model.
+
+UI refinement: Interview now opens like New chat, with a centered **Start listening** action. Listening settings and typed-question tools are collapsed. Start prepares the model automatically after capture permission, with cancellation guards. Desktop/mobile layouts were inspected; all 62 browser regression tests, `pnpm check`, the build and the real-model production speech test pass. Independent review found no actionable issues.
 
 Remaining acceptance: sustained memory measurement, human/technical speech accuracy, speech crossing five-second boundaries, overlapping speakers, full-system/native-call-app capture and agreed latency/accuracy targets. Fixed RMS filtering can miss quiet speech. No live-interview acceptance is claimed from generated speech tests.
 

@@ -1,7 +1,12 @@
 import { expect, type Page } from "@playwright/test";
 import { test, login } from "./auth-fixture.js";
 
-async function audioFixture(page: Page, mode = "success") {
+async function audioFixture(
+  page: Page,
+  mode = "success",
+  speechMode = "success",
+) {
+  await speechFixture(page, speechMode);
   await page.addInitScript((initialMode) => {
     let mode = initialMode;
     let resolveDisplay: ((stream: MediaStream) => void) | undefined;
@@ -105,6 +110,7 @@ test("browser audio measures separate sources and releases them on pause, stop a
   ).toHaveCount(0);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await expect(panel).toContainText("Listening in this browser");
+  await panel.getByText("Listening settings", { exact: true }).click();
   await expect
     .poll(() =>
       panel
@@ -162,6 +168,7 @@ for (const mode of ["no-audio", "denied", "denied-mic"]) {
         : "permission was denied",
     );
     await expectReleased(page);
+    expect(await page.evaluate("window.speechTest.loads()")).toBe(0);
     expect(
       await page.evaluate("window.audioTest.snapshot().displayCalls"),
     ).toBe(1);
@@ -191,6 +198,7 @@ for (const mode of ["pending-display", "pending-mic"]) {
     );
     await expectReleased(page);
     await expect(panel).toContainText("Stopped — audio released");
+    expect(await page.evaluate("window.speechTest.loads()")).toBe(0);
   });
 }
 
@@ -214,6 +222,7 @@ test("leaving Interview releases streams arriving from a pending picker", async 
     .click();
   await page.evaluate("window.audioTest.resolveDisplay()");
   await expectReleased(page);
+  expect(await page.evaluate("window.speechTest.loads()")).toBe(0);
   expect(
     await page.evaluate("window.audioTest.snapshot().microphoneCalls"),
   ).toBe(0);
@@ -241,6 +250,7 @@ async function speechFixture(page: Page, mode = "success") {
   await page.addInitScript((mode) => {
     const OriginalWorker = window.Worker;
     const workers: FakeWorker[] = [];
+    let loads = 0;
     class FakeWorker {
       onmessage: ((event: { data: unknown }) => void) | null = null;
       onerror: (() => void) | null = null;
@@ -248,6 +258,8 @@ async function speechFixture(page: Page, mode = "success") {
       terminated = false;
       postMessage(message: { type: string; id: number; source: string }) {
         if (message.type === "load") {
+          loads++;
+          if (mode === "pending-load") return;
           setTimeout(
             () =>
               this.onmessage?.({
@@ -293,6 +305,8 @@ async function speechFixture(page: Page, mode = "success") {
     };
     Object.assign(window, {
       speechTest: {
+        loads: () => loads,
+        ready: () => workers[0]?.onmessage?.({ data: { type: "ready" } }),
         terminated: () => workers.every((worker) => worker.terminated),
         late: () =>
           workers[0]?.onmessage?.({
@@ -312,12 +326,12 @@ async function speechFixture(page: Page, mode = "success") {
 test("local speech shows separate transcripts, clears text and removes only its model cache", async ({
   page,
 }) => {
-  await speechFixture(page);
   const panel = await audioFixture(page);
   await page.evaluate(async () => {
     await caches.open("panky-speech-model-v1");
     await caches.open("unrelated-cache");
   });
+  await panel.getByText("Listening settings", { exact: true }).click();
   await panel
     .getByRole("button", { name: "Load speech model", exact: true })
     .click();
@@ -339,7 +353,7 @@ test("local speech shows separate transcripts, clears text and removes only its 
   await page.evaluate("window.speechTest.late()");
   await expect(transcript).not.toContainText("late forbidden result");
   await panel.getByRole("button", { name: "Clear transcript" }).click();
-  await expect(transcript).toContainText("No transcript yet");
+  await expect(transcript.locator("article")).toHaveCount(0);
   await panel.getByRole("button", { name: "Remove downloaded model" }).click();
   await expect(panel).toContainText("Downloaded speech model removed");
   expect(await page.evaluate(() => caches.keys())).toEqual(["unrelated-cache"]);
@@ -348,8 +362,8 @@ test("local speech shows separate transcripts, clears text and removes only its 
 test("speech download failure is explicit and does not start capture", async ({
   page,
 }) => {
-  await speechFixture(page, "load-error");
-  const panel = await audioFixture(page);
+  const panel = await audioFixture(page, "success", "load-error");
+  await panel.getByText("Listening settings", { exact: true }).click();
   await panel
     .getByRole("button", { name: "Load speech model", exact: true })
     .click();
@@ -365,8 +379,8 @@ test("speech download failure is explicit and does not start capture", async ({
 test("slow transcription stops capture when bounded queue fills", async ({
   page,
 }) => {
-  await speechFixture(page, "hold");
-  const panel = await audioFixture(page);
+  const panel = await audioFixture(page, "success", "hold");
+  await panel.getByText("Listening settings", { exact: true }).click();
   await panel
     .getByRole("button", { name: "Load speech model", exact: true })
     .click();
@@ -377,4 +391,79 @@ test("slow transcription stops capture when bounded queue fills", async ({
   });
   await expectReleased(page);
   expect(await page.evaluate("window.speechTest.terminated()")).toBe(true);
+});
+
+for (const viewport of [
+  { width: 1280, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`Interview starts with a focused listening action at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await login(page);
+    const chatHeading = await page
+      .getByRole("heading", { name: "Start a chat", exact: true })
+      .boundingBox();
+    if (viewport.width < 640)
+      await page
+        .getByRole("button", { name: "Conversations", exact: true })
+        .click();
+    await page.getByRole("button", { name: "Interview", exact: true }).click();
+    const heading = page.getByRole("heading", {
+      name: "Start listening",
+      exact: true,
+    });
+    await expect(heading).toBeVisible();
+    const listeningHeading = await heading.boundingBox();
+    expect(chatHeading).not.toBeNull();
+    expect(listeningHeading).not.toBeNull();
+    expect(Math.abs(listeningHeading!.y - chatHeading!.y)).toBeLessThan(150);
+    await expect(
+      page.getByRole("button", { name: "Start listening", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Load speech model", exact: true }),
+    ).toBeHidden();
+    await expect(
+      page.getByLabel("Interview question", { exact: true }),
+    ).toBeHidden();
+    await expect(
+      page.getByText("Conversation context", { exact: true }),
+    ).toBeHidden();
+    await expect(
+      page.getByText("Ask a question", { exact: true }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: `test-results/listening-empty-${viewport.width}.png`,
+    });
+  });
+}
+
+test("Start listening loads speech automatically and Stop cancels a pending model load", async ({
+  page,
+}) => {
+  const panel = await audioFixture(page, "success", "pending-load");
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  await expect.poll(() => page.evaluate("window.speechTest.loads()")).toBe(1);
+  await expect(
+    panel.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Load speech model", exact: true }),
+  ).toBeHidden();
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+  await expectReleased(page);
+  expect(await page.evaluate("window.speechTest.terminated()")).toBe(true);
+  await page.evaluate("window.speechTest.ready()");
+  await expect(panel).toContainText("Stopped — audio released");
+  expect(await page.evaluate("window.speechTest.loads()")).toBe(1);
 });

@@ -7,6 +7,7 @@ test("follow-ups carry questions and spoken notes, never generated suggestions",
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   const field = page.getByLabel("Interview question", { exact: true });
   const submit = async (question: string) => {
     await field.fill(question);
@@ -81,6 +82,7 @@ test("rejected follow-up keeps the spoken summary and draft without retrying", a
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   const field = page.getByLabel("Interview question", { exact: true });
   await field.fill("Explain database indexes.");
   await page.getByRole("button", { name: "Get talking points" }).click();
@@ -124,6 +126,7 @@ test("interview context keeps only four recent questions and clears when leaving
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   const field = page.getByLabel("Interview question", { exact: true });
   for (let index = 1; index <= 6; index++) {
     await field.fill(`Explain queue design choice ${index}.`);
@@ -150,6 +153,7 @@ test("interview context keeps only four recent questions and clears when leaving
     .getByRole("button", { name: "New conversation", exact: true })
     .click();
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await expect(
     page.getByText("No previous questions in context.", { exact: true }),
   ).toBeVisible();
@@ -161,6 +165,7 @@ test("accepted question remains in context when the trailing history refresh fai
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   const field = page.getByLabel("Interview question", { exact: true });
   await field.fill("Explain database indexes.");
   await page.getByRole("button", { name: "Get talking points" }).click();
@@ -221,6 +226,7 @@ test("accepted question remains in context after an interrupted response stream"
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await page.route("**/api/conversations/*/messages", async (route) => {
     const response = await route.fetch();
     const stream = await response.text();

@@ -7,6 +7,7 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await page.getByText("Notion experience", { exact: true }).click();
   const field = page.getByLabel("Notion page ID or link", { exact: true });
   await expect(field).toBeEnabled();
@@ -130,6 +131,7 @@ test("an inaccessible selected Notion page reports a failure without adding a so
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await page.getByText("Ask a question", { exact: true }).click();
   await page.getByText("Notion experience", { exact: true }).click();
   await page
     .getByLabel("Notion page ID or link", { exact: true })

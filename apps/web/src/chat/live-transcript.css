@@ -1,59 +1,94 @@
 .live-transcript {
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
-  padding: 16px;
+  display: grid;
+  gap: var(--spacing-pancake-16);
+  width: 100%;
+  min-width: 0;
 }
-.live-transcript h3 {
+.listening-welcome {
+  min-height: 0;
+  width: 100%;
+  gap: var(--spacing-pancake-16);
+  padding: var(--spacing-pancake-16) 0;
+}
+.listening-welcome p {
   margin: 0;
 }
-.live-transcript > p {
-  margin-block: 12px;
+.listening-status {
+  color: var(--color-pancake-muted);
+  font-size: 14px;
+}
+.listening-download {
+  max-width: 360px;
 }
 .browser-audio-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: var(--spacing-pancake-8);
+}
+.listening-controls {
+  justify-content: center;
+}
+.listening-settings {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+}
+.listening-settings > summary {
+  width: fit-content;
+  margin-inline: auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-pancake-muted);
+}
+.listening-settings[open] {
+  padding: var(--spacing-pancake-16);
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-12);
+}
+.listening-settings[open] > summary {
+  margin-inline: 0;
+}
+.listening-settings p {
+  margin-block: var(--spacing-pancake-12);
 }
 .browser-audio-meters {
   display: grid;
-  gap: 12px;
-  margin-block: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-pancake-16);
+  margin-block: var(--spacing-pancake-16);
 }
 .browser-audio-meters label {
   display: grid;
-  gap: 4px;
+  gap: var(--spacing-pancake-4);
+  font-size: 13px;
 }
 .browser-audio-meters meter {
   width: 100%;
-  height: 16px;
+  height: 12px;
 }
 .speech-model {
-  margin-block: 16px;
-  padding-block: 12px;
-  border-block: 1px solid var(--color-pancake-border);
-}
-.speech-model > p {
-  margin-block: 8px;
+  font-size: 13px;
 }
 .transcript-entries {
-  max-height: 320px;
-  overflow-y: auto;
   overflow-wrap: anywhere;
-  margin-block: 16px;
 }
-.transcript-entries h4 {
-  margin: 0;
-  align-self: center;
+.transcript-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+.transcript-entries > p {
+  text-align: center;
 }
 .transcript-entries article {
-  padding-block: 8px;
+  padding-block: var(--spacing-pancake-16);
   border-bottom: 1px solid var(--color-pancake-border);
 }
 .transcript-entries article p {
-  margin-block: 4px;
+  margin-block: var(--spacing-pancake-4);
   white-space: pre-wrap;
 }
 .transcript-source {
   color: var(--color-pancake-muted);
-  font-size: 0.85rem;
+  font-size: 13px;
 }
