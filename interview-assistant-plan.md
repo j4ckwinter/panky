@@ -1,6 +1,6 @@
 # Panky Interview Assistant — Milestone Plan
 
-Status: IA-1 through IA-3 implemented and locally verified; live Notion and real-model acceptance pending. IA-4 onward have not started.
+Status: IA-1 through IA-3 implemented; real-model acceptance pending. Native IA-4/IA-4a experiments have been removed. The active direction is browser-only capture feasibility (IA-4b), followed by browser-local transcription (IA-4c). IA-5 onward have not started.
 
 ## Outcome
 
@@ -16,7 +16,7 @@ The interface should offer a few useful cues at a glance, with supporting detail
 
 This is a proposed implementation track for the “One Useful Workflow” direction in [brief.md](brief.md). Its milestones use the prefix IA to avoid conflicting with the existing project milestones. It does not schedule the broader approvals, routines or automation roadmap.
 
-Milestone 3 remains the baseline. The user authorized IA-1, IA-2 and then IA-3 implementation and verification on 2 November 2026; [AGENTS.md](AGENTS.md) permits those slices while retaining the restriction on later work. IA-1 was committed as `88afede` before starting IA-2; IA-2 was committed as `bde60e6` before starting IA-3. The user authorized proceeding while the PC remains unavailable; outstanding real-model acceptance checks remain open. Other safeguards remain in force.
+Milestone 3 remains the baseline. The user previously authorized IA-1 through IA-4 and IA-4a implementation and verification on 2 November 2026, then replaced the native direction with IA-4b and requested removal of the Swift experiment. [AGENTS.md](AGENTS.md) now permits IA-1 through IA-3 and IA-4b while retaining the restriction on later work. IA-1 was committed as `88afede` before starting IA-2; IA-2 was committed as `bde60e6` before starting IA-3; IA-3 was committed as `2a1370d` before IA-4. The user authorized proceeding while the PC remains unavailable; outstanding real-model acceptance checks remain open. Other safeguards remain in force.
 
 Work through one IA milestone at a time. Review its outcome and evidence before starting the next. Creating this plan does not authorize deployment, model downloads, external provisioning or subsequent implementation.
 
@@ -36,7 +36,7 @@ Mac call audio + microphone → local transcription → authenticated Panky back
 
 Start with typed questions and a curated import. Add capture only after the answer panel is useful. Prefer local transcription on the Mac, subject to a measured feasibility check. Ollama stays on the Windows PC and loopback only.
 
-Keep the React UI and authenticated API client in `apps/web`, retrieval and orchestration in separate server feature modules, and runtime API contracts in `packages/shared`. Decide the Mac companion's packaging after the capture feasibility check; do not force native platform code into the TypeScript server.
+Keep the React UI and authenticated API client in `apps/web`, retrieval and orchestration in separate server feature modules, and runtime API contracts in `packages/shared`. Capture and future local speech inference belong in the browser; no native companion is required.
 
 ## IA-1 — Typed interview panel and evaluation baseline
 
@@ -149,35 +149,49 @@ Verification on 2 November 2026:
 - Desktop and mobile context controls were inspected. Browser evidence is generated in `test-results/interview-context-{desktop,mobile}.png` and overwritten by later test runs.
 - No real model, personal Notion corpus, model installation, live audio or external deployment was used. Human answer review, executable checks of generated examples and measured quality/latency targets remain open.
 
-## IA-4 — Mac audio capture and local transcription
+## IA-4 / IA-4a — Native capture experiment (removed)
 
-Status: not started. Depends on IA-3.
+The native Mac capture/transcription and browser-to-helper pairing experiments were superseded by the user's browser-only requirement. Their Swift code, pairing/control endpoints, credential storage implementation, shared schemas, scripts and setup documentation were removed before committing IA-4b. The installed development helper and local experiment assets were moved to Trash. No native helper is part of the product or required for browser capture.
 
-**Outcome:** A Mac companion produces readable interview transcripts from call audio and the user's microphone.
+The experiment established that native capture was possible, but it did not satisfy the intended installation-free browser experience. Its transcription measurements do not validate future browser-local inference. IA-4b and IA-4c replace these milestones.
 
-Scope:
+## IA-4b — Browser-only audio capture feasibility
 
-- First verify capture feasibility on the user's macOS version, hardware and chosen call application using controlled test audio.
-- Assess ScreenCaptureKit for call audio and a local speech-to-text runtime such as whisper.cpp. Recheck official documentation before choosing dependencies.
-- Measure transcription accuracy and speed before committing to companion packaging or model size. Model installation on the Mac requires reconciling the existing brief's restrictions for this purpose.
-- Keep call audio and microphone inputs distinguishable. Do not promise individual speaker identification within a mixed call stream.
-- Provide visible start, pause and stop controls, permission explanations and input status. Use controlled practice calls with participants aware of capture during validation.
-- Define an authenticated, revocable companion connection. Do not reuse the owner's bearer secret in browser storage, URLs or frontend configuration.
-- Discard raw audio by default. Choose transcript retention explicitly; disclose whether text travels through the current proxy/tunnel path.
-- Bound buffering and define behaviour for sleep, input-device changes, permission loss and backend disconnection.
+Status: implemented; browser-tab capture verified locally. Entire-screen/native-app capture acceptance remains pending. Supersedes the native-helper product direction in IA-4 and IA-4a. The Swift experiment and its integration code have been removed.
 
-Completion checks:
+**Outcome:** Open Interview in Panky, press **Start listening**, select a source in the browser's sharing picker, and see separate shared-audio and microphone levels without installing or launching a helper.
 
-- [ ] Capture works with the selected call app and headphones, including both sides of a controlled conversation.
-- [ ] Technical terms, pauses, interruptions and overlapping speech are represented in an accuracy evaluation.
-- [ ] Transcription meets agreed accuracy and delay targets on the actual Mac.
-- [ ] Pause and stop end capture; revoking the companion prevents further ingestion.
-- [ ] Disconnect and resume behaviour is visible, bounded and does not silently replay stale audio.
-- [ ] No raw recording is persisted by default, and transcript storage matches the selected policy.
+Browser permissions and a source picker are required; a website cannot silently acquire arbitrary Mac audio. Requesting shared audio does not guarantee that the chosen browser/source provides it. A browser-tab capture success does not establish native-call-app or full-system capture support.
+
+Implementation and checks:
+
+- Replace helper pairing UI with direct `getDisplayMedia` and separate `getUserMedia` capture. Require a returned shared-audio track; never silently substitute microphone-only capture.
+- Measure separate streams with Web Audio meters. Keep samples ephemeral; do not record, upload, play back, or persist audio or screen frames.
+- Show unsupported, denied, missing-audio, silent-source and active states honestly. The display API requires a video track, but Panky does not render or process its frames.
+- Stop/Pause, leaving Interview, browser share termination, and late permission resolutions must release streams and audio contexts. A fresh Start opens a new picker.
+- Test lifecycle and error handling with controlled media streams. Separately test the actual installed browser picker on this Mac; record browser/source, audio track availability and observed signal, without treating mocks as capture evidence.
+- Run checks/build and browser regressions; obtain independent lifecycle review.
+
+No model download or native app launch belongs to this milestone.
+
+Observed feasibility (2 November 2026): Chrome 156.0.8078.80 on this Mac offered **Share with tab audio**. The production capture component, mounted in an isolated temporary page without backend access, captured a controlled 440 Hz WAV from a second tab. The shared meter read about 22/100 while the separate microphone meter read about 0.35/100. Stop set both meters to zero and removed Chrome's sharing/microphone indicators. No captured samples were saved. The temporary source and harness were removed afterward. An earlier generated oscillator attempt stayed silent; the WAV test established actual tab signal rather than relying on track presence.
+
+The **Entire screen** picker required Chrome screen-recording permission in System Settings and a Chrome restart. Neither the user's browser restart nor full-system/native-call-app capture was performed. Tab success must not be presented as proof of full Mac audio support. Browser-local transcription remains IA-4c, not part of this capture test.
+
+Verification: nine focused browser tests pass with controlled media streams and real Web Audio, covering separate meters, missing shared audio, denied permissions, unsupported APIs, Stop/Pause/navigation, ended tracks and late permission cleanup. Independent read-only review reported no actionable findings. After removing the native experiment, `pnpm check` and `pnpm build` pass, all 53 browser tests pass, and independent cleanup review found no actionable code or security issues. No native runtime dependency remains. The existing bundle-size advisory remains non-blocking.
+
+## IA-4c — Browser-local transcription
+
+Status: planned; depends on IA-4b demonstrating usable shared audio on the intended browser/source.
+
+- Run a local speech model in a browser worker using a supported WASM/WebGPU runtime. Make model download size, progress and cache removal explicit.
+- Preserve separate microphone/shared streams, bounded queues, cancellation and no raw-audio upload. Do not use a speech API that silently sends audio to a cloud service.
+- Show source-labelled transcript text and measure warm/cold latency, memory, accuracy and chunk boundaries on this Mac.
+- Verify full browser capture-to-transcript behavior before accepting live interview use. Revisit call location if only browser-tab audio is supported; do not reintroduce a native helper without an explicit decision.
 
 ## IA-5 — Live question detection and suggestions
 
-Status: not started. Depends on IA-4.
+Status: not started. Depends on IA-4c.
 
 **Outcome:** Spoken interview questions become editable question cards and useful suggestions in the panel.
 
@@ -237,7 +251,7 @@ Fine-tuning, cloud inference, unrestricted tools, autonomous external actions, b
 
 ## Reference candidates
 
-These support the feasibility discussion, not a completed integration. Recheck platform compatibility during IA-4.
+These support the feasibility discussion, not a completed integration. Recheck runtime compatibility during IA-4c.
 
 - [Apple ScreenCaptureKit capture sample](https://developer.apple.com/documentation/screencapturekit/capturing-screen-content-in-macos)
 - [whisper.cpp](https://github.com/ggml-org/whisper.cpp)

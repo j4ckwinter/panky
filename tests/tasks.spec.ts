@@ -53,7 +53,9 @@ test("real clock tool result appears in the mock reply and survives refresh with
     (entry) => entry.kind === "tool_completed",
   );
   expect(result?.kind).toBe("tool_completed");
-  const serialized = JSON.stringify(result);
+  if (result?.kind !== "tool_completed")
+    throw new Error("Clock tool did not complete");
+  const serialized = JSON.stringify(result.result);
   const iso = serialized.match(
     /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/,
   )?.[0];

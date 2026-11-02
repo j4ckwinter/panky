@@ -5,6 +5,7 @@ import { Markdown } from "./Markdown";
 import type { useChat } from "./useChat";
 import type { Api } from "../api/chat";
 import { ExperienceSources } from "./ExperienceSources";
+import { LiveTranscript } from "./LiveTranscript";
 import { SourceEvidence } from "./SourceEvidence";
 
 export function Interview({
@@ -84,6 +85,7 @@ export function Interview({
             : " · Uses relevant imported passages and the experience you paste below. Check the evidence behind personal claims."}
         </p>
         <ExperienceSources api={api} disabled={chat.pending} />
+        <LiveTranscript />
         <form
           className="interview-form"
           autoComplete="off"
@@ -240,10 +242,10 @@ export function Interview({
           </div>
         )}
         <p className="interview-note">
-          Questions and replies are saved in your chat history. Audio is not
-          captured. No live research is available; technical knowledge may be
-          incomplete or outdated. Check personal facts and technical suggestions
-          before using them.
+          Questions and replies are saved in your chat history. Audio capture
+          starts only through the browser audio controls above. No live research
+          is available; technical knowledge may be incomplete or outdated. Check
+          personal facts and technical suggestions before using them.
         </p>
       </div>
     </div>
