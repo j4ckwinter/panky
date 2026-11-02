@@ -1,3 +1,4 @@
+import { ExperienceStore } from "./store.js";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { importNotionPage, normalizePageId } from "./notion.js";
@@ -191,6 +192,19 @@ test("long content is chunked without splitting surrogate pairs and reports trun
     60000,
   );
   assert.match(result.warnings.join(" "), /truncated/);
+  const store = new ExperienceStore(":memory:");
+  try {
+    const saved = store.replace("owner", result);
+    const detail = store.detail("owner", saved.id);
+    assert.equal(detail?.source.passageCount, result.passages.length);
+    assert.deepEqual(
+      detail?.passages.map((passage) => passage.excerpt),
+      result.passages.map((passage) => passage.text),
+    );
+    assert.deepEqual(detail?.source.warnings, result.warnings);
+  } finally {
+    store.close();
+  }
 });
 
 test("deep content is bounded and a repeated pagination cursor fails clearly", async () => {

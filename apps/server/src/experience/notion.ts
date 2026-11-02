@@ -1,13 +1,8 @@
+import { EXPERIENCE_LIMITS } from "@panky/shared";
+import type { ImportedPage } from "./imported-page.js";
 import { setTimeout } from "node:timers/promises";
 import { z } from "zod";
 import { HttpError } from "../http-utils.js";
-
-export type ImportedPage = {
-  pageId: string;
-  title: string;
-  passages: { blockId: string; text: string }[];
-  warnings: string[];
-};
 
 const identifier =
   /^(?:[a-f0-9]{32}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
@@ -162,12 +157,21 @@ export async function importNotionPage(
   const addText = (blockId: string, text: string) => {
     const clean = text.trim();
     for (let offset = 0; offset < clean.length; ) {
-      if (chars >= 60000 || passages.length >= 100) {
-        warnings.add("Import truncated at 100 passages or 60,000 characters.");
+      if (
+        chars >= EXPERIENCE_LIMITS.totalChars ||
+        passages.length >= EXPERIENCE_LIMITS.passages
+      ) {
+        warnings.add(
+          `Import truncated at ${EXPERIENCE_LIMITS.passages} passages or ${EXPERIENCE_LIMITS.totalChars.toLocaleString("en-US")} characters.`,
+        );
         limited = true;
         return;
       }
-      let end = Math.min(offset + 1200, clean.length, offset + 60000 - chars);
+      let end = Math.min(
+        offset + EXPERIENCE_LIMITS.passageChars,
+        clean.length,
+        offset + EXPERIENCE_LIMITS.totalChars - chars,
+      );
       if (end < clean.length && /[\uD800-\uDBFF]/.test(clean[end - 1] ?? ""))
         end--;
       if (end <= offset) {
@@ -272,17 +276,19 @@ export async function importNotionPage(
         break;
       }
     }
-    if (title.length > 300)
-      warnings.add("Page title was shortened to 300 characters.");
+    if (title.length > EXPERIENCE_LIMITS.titleChars)
+      warnings.add(
+        `Page title was shortened to ${EXPERIENCE_LIMITS.titleChars} characters.`,
+      );
     await children(id, 0);
     return {
       pageId: id,
-      title: title.slice(0, 300),
+      title: title.slice(0, EXPERIENCE_LIMITS.titleChars),
       passages,
       warnings:
-        warnings.size > 100
+        warnings.size > EXPERIENCE_LIMITS.warnings
           ? [...warnings]
-              .slice(0, 99)
+              .slice(0, EXPERIENCE_LIMITS.warnings - 1)
               .concat("Additional unsupported content warnings were omitted.")
           : [...warnings],
     };

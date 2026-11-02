@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import type { ImportedPage } from "./notion.js";
+import type { ImportedPage } from "./imported-page.js";
 import { ExperienceStore } from "./store.js";
 
 function page(title: string, ...text: string[]): ImportedPage {

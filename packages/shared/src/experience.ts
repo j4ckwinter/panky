@@ -1,21 +1,31 @@
 import { z } from "zod";
 
+export const EXPERIENCE_LIMITS = {
+  titleChars: 300,
+  passageChars: 1200,
+  passages: 100,
+  totalChars: 60000,
+  warningChars: 500,
+  warnings: 100,
+  sources: 50,
+} as const;
+
 export const evidenceSchema = z.object({
   sourceId: z.uuid(),
   pageId: z.uuid(),
   blockId: z.uuid(),
-  title: z.string().max(300),
+  title: z.string().max(EXPERIENCE_LIMITS.titleChars),
   url: z
     .string()
     .regex(/^https:\/\/www\.notion\.so\/[a-f0-9]{32}(?:#[a-f0-9]{32})?$/),
-  excerpt: z.string().max(1200),
+  excerpt: z.string().max(EXPERIENCE_LIMITS.passageChars),
   importedAt: z.string(),
 });
 export type Evidence = z.infer<typeof evidenceSchema>;
 export const experienceSourceSchema = z.object({
   id: z.uuid(),
   pageId: z.uuid(),
-  title: z.string().max(300),
+  title: z.string().max(EXPERIENCE_LIMITS.titleChars),
   url: z.string(),
   importedAt: z.string(),
   lastAttemptAt: z.string(),

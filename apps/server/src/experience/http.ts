@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { importExperienceSchema } from "@panky/shared";
+import { EXPERIENCE_LIMITS, importExperienceSchema } from "@panky/shared";
 import { z } from "zod";
 import { HttpError, json, readJson } from "../http-utils.js";
 import { importNotionPage, normalizePageId } from "./notion.js";
@@ -80,10 +80,13 @@ export class ExperienceApi {
     if (this.active.has(userId))
       throw new HttpError(409, "Wait for the current import to finish.");
     const existing = this.store.findByPage(userId, pageId);
-    if (!existing && this.store.list(userId).length >= 50)
+    if (
+      !existing &&
+      this.store.list(userId).length >= EXPERIENCE_LIMITS.sources
+    )
       throw new HttpError(
         400,
-        "Remove a source before importing more than 50 pages.",
+        `Remove a source before importing more than ${EXPERIENCE_LIMITS.sources} pages.`,
       );
     const controller = new AbortController();
     const disconnect = () => controller.abort();

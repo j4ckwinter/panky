@@ -12,7 +12,8 @@ import { createApp } from "../http.js";
 import { HttpError } from "../http-utils.js";
 import { type ModelProvider } from "../providers/provider.js";
 import { MockProvider } from "../providers/mock.js";
-import type { importNotionPage, ImportedPage } from "./notion.js";
+import type { importNotionPage } from "./notion.js";
+import type { ImportedPage } from "./imported-page.js";
 import { interviewContext } from "../interview/prompt.js";
 
 const token = "isolated-experience-test-token-never-production";

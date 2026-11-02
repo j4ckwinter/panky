@@ -3,37 +3,15 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import {
+  EXPERIENCE_LIMITS,
   type Evidence,
   evidenceSchema,
   type ExperienceSource,
   experienceSourceSchema,
 } from "@panky/shared";
-import { z } from "zod";
 import { HttpError } from "../http-utils.js";
-import type { ImportedPage } from "./notion.js";
+import { importedPageSchema, type ImportedPage } from "./imported-page.js";
 import { experienceQuery } from "./search.js";
-
-const importedPageSchema = z
-  .object({
-    pageId: z.uuid().transform((id) => id.toLowerCase()),
-    title: z.string().trim().min(1).max(300),
-    passages: z
-      .array(
-        z.object({
-          blockId: z.uuid().transform((id) => id.toLowerCase()),
-          text: z.string().trim().min(1).max(1200),
-        }),
-      )
-      .max(100),
-    warnings: z.array(z.string().max(500)).max(100),
-  })
-  .refine(
-    (page) =>
-      page.passages.reduce(
-        (total, passage) => total + passage.text.length,
-        0,
-      ) <= 60000,
-  );
 
 function source(row: Record<string, unknown>): ExperienceSource {
   return experienceSourceSchema.parse({
@@ -126,10 +104,10 @@ export class ExperienceStore {
           )
           .get(ownerId)?.count ?? 0,
       );
-      if (!previous && count >= 50)
+      if (!previous && count >= EXPERIENCE_LIMITS.sources)
         throw new HttpError(
           409,
-          "You can import up to 50 experience sources. Remove a source before adding another.",
+          `You can import up to ${EXPERIENCE_LIMITS.sources} experience sources. Remove a source before adding another.`,
         );
       const id = previous?.id ?? randomUUID();
       const now = new Date().toISOString();
