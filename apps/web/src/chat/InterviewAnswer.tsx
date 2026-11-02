@@ -1,6 +1,7 @@
 import { Button } from "@jack.winter/pancake-ui";
 import type { Message, TaskRun } from "@panky/shared";
 import type { RefObject } from "react";
+import { CopyButton } from "./CopyButton";
 import { Markdown } from "./Markdown";
 import { SourceEvidence } from "./SourceEvidence";
 
@@ -29,7 +30,16 @@ export function InterviewAnswer({
       aria-label="Interview answer"
     >
       <div className="interview-question">
-        <h2>{viewingEarlier ? "Earlier question" : "Current question"}</h2>
+        <div className="interview-answer-heading">
+          <h2>{viewingEarlier ? "Earlier question" : "Current question"}</h2>
+          {answer?.content.trim() && (
+            <CopyButton
+              key={question.id}
+              label="Copy answer"
+              text={() => answer.content}
+            />
+          )}
+        </div>
         <p>{question.content}</p>
         {viewingEarlier && (
           <>

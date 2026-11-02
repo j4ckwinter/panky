@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { toggleTypedQuestion } from "./interview-options.js";
 import { test } from "./auth-fixture.js";
 import { audioFixture, expectReleased } from "./browser-audio-fixture.js";
 
@@ -87,4 +88,80 @@ test("new questions highlight without taking focus or moving the answer", async 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(card).toHaveCSS("animation-name", "none");
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});
+
+test("answer copy preserves Markdown and reports clipboard failure on mobile", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await audioFixture(page);
+  const content =
+    "Two points:\n\n- First point\n- Second point\n\n```javascript\nconst example = '" +
+    "long ".repeat(40) +
+    "';\n```";
+  await page.route("**/api/conversations/*", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const response = await route.fetch();
+    const body = await response.json();
+    for (const message of body.messages ?? [])
+      if (message.role === "assistant") message.content = content;
+    await route.fulfill({ response, json: body });
+  });
+  await page.route("**/api/conversations/*/messages", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.text())
+      .split("\n")
+      .map((line) => {
+        if (!line.startsWith("data: ")) return line;
+        const event = JSON.parse(line.slice(6));
+        if (event.type === "delta") event.text = "";
+        if (event.type === "done") event.message.content = content;
+        return `data: ${JSON.stringify(event)}`;
+      })
+      .join("\n");
+    await route.fulfill({ response, body });
+  });
+  await toggleTypedQuestion(page);
+  await page
+    .getByLabel("Interview question", { exact: true })
+    .fill("Explain closures");
+  await page.getByRole("button", { name: "Get response", exact: true }).click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  const answer = page.getByRole("region", {
+    name: "Interview answer",
+    exact: true,
+  });
+  await answer
+    .getByRole("button", { name: "Copy answer", exact: true })
+    .click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    content,
+  );
+  await expect(answer.locator(".copy-status").first()).toHaveText("Copied");
+  await expect(answer.locator(".markdown li").first()).toHaveCSS(
+    "margin-top",
+    "4px",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await expect(answer.locator("pre")).toHaveCSS("overflow-x", "auto");
+  await page.screenshot({ path: "test-results/interview-copy-mobile.png" });
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = async () => {
+      throw new Error("Denied");
+    };
+  });
+  await answer
+    .getByRole("button", { name: "Copy answer", exact: true })
+    .click();
+  await expect(answer).toContainText(
+    "Could not copy. Select the text instead.",
+  );
 });
