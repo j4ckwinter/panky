@@ -11,7 +11,11 @@ import {
   type ModelProvider,
   type ToolDefinition,
 } from "../providers/provider.js";
-import { interviewContext, interviewInstructions } from "./prompt.js";
+import {
+  interviewContext,
+  interviewInstructions,
+  generalInterviewInstructions,
+} from "./prompt.js";
 
 const token = "isolated-interview-token-with-enough-characters";
 const cleanups: (() => Promise<void>)[] = [];
@@ -163,12 +167,37 @@ test("general questions exclude pasted and imported experience while existing cl
     8000,
     evidence,
   );
+  assert.equal(general.history[0]?.content, generalInterviewInstructions);
   assert.deepEqual(general.sources, []);
   assert.deepEqual(JSON.parse(general.history[1]?.content ?? ""), {
     question,
     experience: "",
     context,
   });
+  const sourced = interviewContext(
+    question,
+    { experience: "" },
+    8000,
+    evidence,
+  );
+  assert.equal(sourced.history[0]?.content, interviewInstructions);
+  assert.equal(sourced.sources.length, 1);
+  assert.equal(
+    sourced.historyChars,
+    sourced.history.reduce((sum, message) => sum + message.content.length, 0),
+  );
+  const tight = interviewContext(
+    question,
+    { experience: "" },
+    sourced.historyChars - 1,
+    evidence,
+  );
+  assert.deepEqual(tight.sources, []);
+  assert.equal(tight.history[0]?.content, generalInterviewInstructions);
+  assert.equal(
+    tight.historyChars,
+    tight.history.reduce((sum, message) => sum + message.content.length, 0),
+  );
   const search = t.mock.method(app.experience, "search");
   for (const useExperience of [false, undefined, true]) {
     const response = await app.submit({
@@ -386,4 +415,31 @@ test("an interview provider failure preserves partial answers and releases the r
   assert.match(last.message.content, /Partial/);
   assert(!JSON.stringify(last).includes("private connection details"));
   assert.equal(app.chat.busy, false);
+});
+
+test("questions without experience use a compact prompt with exact budget accounting", () => {
+  const question = "What is a closure in JavaScript?";
+  for (const input of [
+    { experience: "" },
+    { experience: "   " },
+    { experience: "ignored private sample", useExperience: false },
+  ]) {
+    const result = interviewContext(question, input, 8000);
+    assert.equal(result.history[0]?.content, generalInterviewInstructions);
+    assert.doesNotMatch(result.history[0]!.content, /Notion|\[S1\]|citations/);
+    assert(
+      result.history[0]!.content.length < interviewInstructions.length / 2,
+    );
+    assert.equal(
+      result.historyChars,
+      result.history.reduce((sum, message) => sum + message.content.length, 0),
+    );
+    assert.doesNotThrow(() =>
+      interviewContext(question, input, result.historyChars),
+    );
+    assert.throws(
+      () => interviewContext(question, input, result.historyChars - 1),
+      /context budget/,
+    );
+  }
 });
