@@ -2,7 +2,11 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  scroll-padding-top: 140px;
   padding: var(--spacing-pancake-24);
+}
+.interview-scroll:has(.live-transcript-active) {
+  padding-top: 0;
 }
 .interview-panel {
   max-width: 1100px;
