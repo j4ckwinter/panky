@@ -12,10 +12,10 @@ import {
 import { loadConfig } from "../config.js";
 import { createApp } from "../http.js";
 import {
-  MockProvider,
   type ModelProvider,
   type ProviderEvent,
 } from "../providers/provider.js";
+import { MockProvider } from "../providers/mock.js";
 import { dateTimeTool, type Tool } from "./tools.js";
 
 const token = "isolated-task-test-token-with-enough-characters";

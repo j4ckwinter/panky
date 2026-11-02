@@ -7,10 +7,10 @@ import { loadConfig } from "../config.js";
 import { createApp } from "../http.js";
 import {
   type ContextMessage,
-  MockProvider,
   type ModelProvider,
   type ToolDefinition,
 } from "../providers/provider.js";
+import { MockProvider } from "../providers/mock.js";
 import {
   interviewContext,
   interviewInstructions,
@@ -558,7 +558,7 @@ test("speech requests use one model call, preserve submitted text and reject inv
   );
 });
 
-test("demo replies recognize compact and full prompts with or without speech guidance", async () => {
+test("demo interview replies support compact and full prompts with or without speech guidance", async () => {
   for (const experience of ["", "I designed an API."]) {
     for (const inputSource of ["typed", "speech"] as const) {
       const context = interviewContext(
@@ -571,6 +571,7 @@ test("demo replies recognize compact and full prompts with or without speech gui
         context.history,
         [],
         new AbortController().signal,
+        "interview",
       )) {
         if (event.type === "delta") reply += event.text;
       }

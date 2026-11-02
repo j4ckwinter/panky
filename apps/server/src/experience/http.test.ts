@@ -10,7 +10,8 @@ import {
 import { loadConfig } from "../config.js";
 import { createApp } from "../http.js";
 import { HttpError } from "../http-utils.js";
-import { MockProvider, type ModelProvider } from "../providers/provider.js";
+import { type ModelProvider } from "../providers/provider.js";
+import { MockProvider } from "../providers/mock.js";
 import type { importNotionPage, ImportedPage } from "./notion.js";
 import { interviewContext } from "../interview/prompt.js";
 

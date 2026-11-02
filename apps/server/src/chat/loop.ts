@@ -3,12 +3,13 @@ import type { Config } from "../config.js";
 import {
   type ContextMessage,
   type ModelProvider,
+  type ProviderPurpose,
   providerEventSchema,
 } from "../providers/provider.js";
 import type { ActivityPayload } from "./store.js";
 import type { Tool } from "./tools.js";
 
-export class TaskError extends Error {}
+import { TaskError } from "../task-error.js";
 export function boundedHistory(messages: readonly Message[], budget: number) {
   const history: ContextMessage[] = [];
   let historyChars = 0;
@@ -31,6 +32,7 @@ export function boundedHistory(messages: readonly Message[], budget: number) {
 export async function runLoop(options: {
   history: ContextMessage[];
   provider: ModelProvider;
+  purpose?: ProviderPurpose;
   tools: readonly Tool[];
   config: Pick<Config, "MAX_TASK_STEPS" | "HISTORY_MAX_CHARS">;
   signal: AbortSignal;
@@ -51,6 +53,7 @@ export async function runLoop(options: {
       history,
       tools.map((tool) => tool.definition),
       signal,
+      options.purpose,
     )) {
       signal.throwIfAborted();
       const parsed = providerEventSchema.safeParse(raw);

@@ -1,0 +1,50 @@
+import { setTimeout } from "node:timers/promises";
+import { z } from "zod";
+import { mockInterviewReply } from "../interview/mock.js";
+import type {
+  ContextMessage,
+  ModelProvider,
+  ProviderEvent,
+  ProviderPurpose,
+  ToolDefinition,
+} from "./provider.js";
+
+export class MockProvider implements ModelProvider {
+  constructor(private readonly delayMs = 35) {}
+  async *stream(
+    history: readonly ContextMessage[],
+    _tools: readonly ToolDefinition[],
+    signal: AbortSignal,
+    purpose: ProviderPurpose = "chat",
+  ): AsyncIterable<ProviderEvent> {
+    signal.throwIfAborted();
+    const prompt =
+      history.findLast((message) => message.role === "user")?.content ?? "";
+    const toolResult = history.at(-1);
+    const interview = purpose === "interview";
+    const demo =
+      prompt.trim().toLowerCase().replace(/\s+/gu, " ") ===
+      "what is the current date and time?";
+    if (!interview && demo && toolResult?.role !== "tool") {
+      yield {
+        type: "tool_call",
+        callId: "current-datetime",
+        name: "get_current_datetime",
+        arguments: {},
+      };
+      return;
+    }
+    const response = interview
+      ? mockInterviewReply(
+          z.object({ question: z.string() }).parse(JSON.parse(prompt)).question,
+        )
+      : demo && toolResult?.role === "tool"
+        ? `The current date and time returned by get_current_datetime is ${toolResult.content}.`
+        : `This is a mock response from Panky. You said: “${prompt}”\n\nYour conversation is saved on your backend. I’m ready for a real model in a later milestone; for now, this reply is deterministic and no AI model or tools were used.`;
+    for (const text of response.match(/.{1,24}/gsu) ?? []) {
+      await setTimeout(this.delayMs, undefined, { signal });
+      yield { type: "delta", text };
+    }
+    yield { type: "complete" };
+  }
+}

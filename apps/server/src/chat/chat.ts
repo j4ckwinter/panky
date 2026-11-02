@@ -3,7 +3,8 @@ import type { Config } from "../config.js";
 import { HttpError } from "../http-utils.js";
 import type { ModelProvider } from "../providers/provider.js";
 import { interviewContext } from "../interview/prompt.js";
-import { boundedHistory, runLoop, TaskError } from "./loop.js";
+import { boundedHistory, runLoop } from "./loop.js";
+import { TaskError } from "../task-error.js";
 import type { Store } from "./store.js";
 import { dateTimeTool, type Tool } from "./tools.js";
 
@@ -131,6 +132,7 @@ export class Chat {
       await runLoop({
         history: context.history,
         provider: this.provider,
+        purpose: interview ? "interview" : "chat",
         tools: interview ? [] : this.tools,
         config: this.config,
         signal,

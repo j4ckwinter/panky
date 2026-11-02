@@ -14,7 +14,8 @@ import {
 import { Store } from "./chat/store.js";
 import { loadConfig } from "./config.js";
 import { createApp } from "./http.js";
-import { MockProvider, type ModelProvider } from "./providers/provider.js";
+import { type ModelProvider } from "./providers/provider.js";
+import { MockProvider } from "./providers/mock.js";
 
 const token = "test-token-with-at-least-thirty-two-characters";
 const origin = "http://localhost:5173";

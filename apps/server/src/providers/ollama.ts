@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { TaskError } from "../chat/loop.js";
+import { TaskError } from "../task-error.js";
 import type {
   ContextMessage,
   ModelProvider,
