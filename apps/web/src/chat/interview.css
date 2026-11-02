@@ -133,6 +133,7 @@
   gap: var(--spacing-pancake-12);
 }
 .spoken-question {
+  animation: question-arrival 2s ease-out;
   padding: var(--spacing-pancake-16);
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-12);
@@ -325,4 +326,20 @@
 }
 .interview-options .interview-tools > summary {
   text-align: left;
+}
+
+@keyframes question-arrival {
+  from {
+    border-color: var(--color-pancake-control-focus);
+    box-shadow: 0 0 0 2px var(--color-pancake-surface-accent);
+  }
+  to {
+    border-color: var(--color-pancake-border);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spoken-question {
+    animation: none;
+  }
 }
