@@ -1,5 +1,5 @@
 import { Button, LoadingIndicator, Textarea } from "@jack.winter/pancake-ui";
-import type { TaskRun } from "@panky/shared";
+import { MESSAGE_MAX_CHARS, type TaskRun } from "@panky/shared";
 import { useLayoutEffect, type RefObject } from "react";
 
 export function ChatComposer({
@@ -105,7 +105,7 @@ export function ChatComposer({
           label="Message"
           autoComplete="off"
           rows={1}
-          maxLength={8000}
+          maxLength={MESSAGE_MAX_CHARS}
           value={draft}
           placeholder="Message Panky"
           onChange={(event) => setDraft(event.currentTarget.value)}

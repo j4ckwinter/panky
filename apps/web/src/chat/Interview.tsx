@@ -1,5 +1,9 @@
 import { Button, Text, Textarea } from "@jack.winter/pancake-ui";
-import type { InterviewInput } from "@panky/shared";
+import {
+  INTERVIEW_LIMITS,
+  MESSAGE_MAX_CHARS,
+  type InterviewInput,
+} from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { InterviewOptions } from "./InterviewOptions";
@@ -198,7 +202,7 @@ export function Interview({
                                   [
                                     ...prior,
                                     { question: submitted, spokenAnswer: "" },
-                                  ].slice(-4),
+                                  ].slice(-INTERVIEW_LIMITS.contextTurns),
                                 );
                                 setSpokenAnswer("");
                                 setDraft("");
@@ -214,7 +218,7 @@ export function Interview({
                             label="Your experience sample"
                             value={experience}
                             rows={5}
-                            maxLength={4000}
+                            maxLength={INTERVIEW_LIMITS.experienceChars}
                             disabled={chat.pending}
                             onChange={(event) =>
                               setExperience(event.currentTarget.value)
@@ -270,7 +274,7 @@ export function Interview({
                                 label="What I actually said"
                                 value={spokenAnswer}
                                 rows={3}
-                                maxLength={2000}
+                                maxLength={INTERVIEW_LIMITS.spokenAnswerChars}
                                 disabled={chat.pending}
                                 onChange={(event) =>
                                   setSpokenAnswer(event.currentTarget.value)
@@ -288,7 +292,7 @@ export function Interview({
                           label="Interview question"
                           value={draft}
                           rows={3}
-                          maxLength={8000}
+                          maxLength={MESSAGE_MAX_CHARS}
                           disabled={chat.pending}
                           onChange={(event) =>
                             setDraft(event.currentTarget.value)

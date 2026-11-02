@@ -1,4 +1,8 @@
-import type { Evidence, InterviewInput } from "@panky/shared";
+import {
+  INTERVIEW_LIMITS,
+  type Evidence,
+  type InterviewInput,
+} from "@panky/shared";
 import { HttpError } from "../http-utils.js";
 import type { ContextMessage } from "../providers/provider.js";
 
@@ -62,7 +66,9 @@ export function interviewContext(
     8000,
     evidence.length ? Math.floor(remaining / 2) : remaining,
   );
-  for (const turn of [...(input.context ?? [])].slice(-4).reverse()) {
+  for (const turn of [...(input.context ?? [])]
+    .slice(-INTERVIEW_LIMITS.contextTurns)
+    .reverse()) {
     context.unshift(turn);
     const next = content();
     if (

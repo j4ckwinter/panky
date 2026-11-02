@@ -1,3 +1,4 @@
+import { MESSAGE_MAX_CHARS } from "@panky/shared";
 import { Button, Textarea } from "@jack.winter/pancake-ui";
 import type { useSpokenQuestions } from "./useSpokenQuestions";
 
@@ -43,7 +44,7 @@ export function SpokenQuestions({
               <Textarea
                 label="Question to ask"
                 rows={2}
-                maxLength={8000}
+                maxLength={MESSAGE_MAX_CHARS}
                 value={card.text}
                 disabled={card.status !== "draft"}
                 onChange={(event) =>

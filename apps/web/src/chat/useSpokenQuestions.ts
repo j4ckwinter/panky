@@ -1,3 +1,4 @@
+import { INTERVIEW_LIMITS, MESSAGE_MAX_CHARS } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
 import type { TranscriptEntry } from "./LiveTranscript";
 import { normalizeQuestion, QuestionDetector } from "./questionDetection";
@@ -59,7 +60,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     history.current = [...history.current, normalizeQuestion(text)].slice(-100);
   }
   function propose(text: string, timing?: DetectionTiming, automatic = false) {
-    const value = text.trim().slice(0, 8000);
+    const value = text.trim().slice(0, MESSAGE_MAX_CHARS);
     const key = normalizeQuestion(value);
     if (automatic) {
       if (key === lastAutomatic.current) return;
@@ -196,7 +197,9 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
         (messages) => {
           accepted = true;
           if (!mounted.current || generation.current !== current) return;
-          setTopicQuestions((previous) => [...previous, submitted].slice(-4));
+          setTopicQuestions((previous) =>
+            [...previous, submitted].slice(-INTERVIEW_LIMITS.contextTurns),
+          );
           history.current = [];
           remember(card.original);
           remember(submitted);

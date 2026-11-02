@@ -1,3 +1,4 @@
+import { MESSAGE_MAX_CHARS } from "@panky/shared";
 const questionCue =
   /(?:^|[.!?]\s+)(?:(?:okay|so|and|also)[,\s]+)?(?:what|why|how|when|where|who|which|can you|could you|would you|do you|does|is|are|have you|tell me|walk me through|explain|describe|compare|discuss|give me)\b/i;
 
@@ -25,7 +26,7 @@ export class QuestionDetector {
     if (!value) return null;
     if (!this.buffer && !questionCue.test(value)) return null;
     if (!this.buffer) this.startedAt = this.now();
-    this.buffer = `${this.buffer} ${value}`.trim().slice(0, 8000);
+    this.buffer = `${this.buffer} ${value}`.trim().slice(0, MESSAGE_MAX_CHARS);
     return /\?\s*$/.test(this.buffer) ? this.flush() : null;
   }
 

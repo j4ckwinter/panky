@@ -1,3 +1,5 @@
+import { MESSAGE_MAX_CHARS } from "./limits.js";
+export { MESSAGE_MAX_CHARS, INTERVIEW_LIMITS } from "./limits.js";
 import { z } from "zod";
 import { evidenceSchema } from "./experience.js";
 export * from "./experience.js";
@@ -27,7 +29,7 @@ export const messageSchema = z.object({
 });
 export const submissionSchema = z
   .object({
-    content: z.string().trim().min(1).max(8000),
+    content: z.string().trim().min(1).max(MESSAGE_MAX_CHARS),
     includeActivity: z.boolean().default(false),
     interview: interviewInputSchema.optional(),
   })

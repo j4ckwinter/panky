@@ -1,4 +1,4 @@
-import type { InterviewInput } from "@panky/shared";
+import { INTERVIEW_LIMITS, type InterviewInput } from "@panky/shared";
 
 export function interviewRetrievalQuery(
   question: string,
@@ -16,7 +16,9 @@ export function interviewRetrievalQuery(
   if (!followsUp) return question;
   const turns: string[] = [];
   let chars = 0;
-  for (const turn of [...(input.context ?? [])].slice(-4).reverse()) {
+  for (const turn of [...(input.context ?? [])]
+    .slice(-INTERVIEW_LIMITS.contextTurns)
+    .reverse()) {
     const text = `${turn.question}\n${turn.spokenAnswer}`;
     if (chars + text.length > 8000) break;
     turns.push(text);
