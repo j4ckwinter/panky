@@ -13,6 +13,7 @@ export type TranscriptEntry = {
   text: string;
   receivedAt: number;
   transcriptionMs: number;
+  endedAtPause: boolean;
 };
 
 export function LiveTranscript({
@@ -47,13 +48,14 @@ export function LiveTranscript({
         speechStatus.current = value.status;
         if (mounted) setSpeech(value);
       },
-      (source, text, transcriptionMs) => {
+      (source, text, transcriptionMs, endedAtPause) => {
         if (mounted && text.trim()) {
           const entry = {
             id: nextId.current++,
             source,
             text,
             transcriptionMs,
+            endedAtPause,
             receivedAt: performance.now(),
           };
           setEntries((items) => [...items, entry].slice(-50));
@@ -72,9 +74,9 @@ export function LiveTranscript({
           if (speechStatus.current !== "error") model.stop();
         }
       },
-      (source, samples) => {
+      (source, samples, endedAtPause) => {
         if (["ready", "transcribing"].includes(speechStatus.current))
-          model.submit(source, samples);
+          model.submit(source, samples, endedAtPause);
       },
     );
     capture.current = controller;

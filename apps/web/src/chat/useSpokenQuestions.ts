@@ -122,6 +122,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           };
     const candidate = detector.current.push(entry.text);
     if (candidate) propose(candidate, detectionTiming(), true);
+    if (entry.endedAtPause && detector.current.pending) settle();
     if (!detector.current.pending) {
       resetDetection();
       return;

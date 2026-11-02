@@ -15,7 +15,12 @@ export const initialTranscriptionState: TranscriptionState = {
   progress: "",
   error: "",
 };
-type Job = { id: number; source: AudioSource; samples: Float32Array };
+type Job = {
+  id: number;
+  source: AudioSource;
+  samples: Float32Array;
+  endedAtPause: boolean;
+};
 
 export class BrowserTranscription {
   private worker?: Worker;
@@ -34,6 +39,7 @@ export class BrowserTranscription {
       source: AudioSource,
       text: string,
       elapsedMs: number,
+      endedAtPause: boolean,
     ) => void,
     private readonly onFatal: () => void,
   ) {}
@@ -98,6 +104,7 @@ export class BrowserTranscription {
               message.source,
               message.text.slice(0, 4000),
               message.elapsedMs,
+              active.endedAtPause,
             );
           if (this.worker !== worker) return;
           this.drain();
@@ -130,7 +137,7 @@ export class BrowserTranscription {
     await finished;
   }
 
-  submit(source: AudioSource, samples: Float32Array) {
+  submit(source: AudioSource, samples: Float32Array, endedAtPause = false) {
     if (!this.ready || !this.worker || this.disposed) return;
     if (
       samples.length === 0 ||
@@ -151,7 +158,12 @@ export class BrowserTranscription {
       );
       return;
     }
-    this.queue.push({ id: ++this.nextId, source, samples: samples.slice() });
+    this.queue.push({
+      id: ++this.nextId,
+      source,
+      samples: samples.slice(),
+      endedAtPause,
+    });
     this.drain();
   }
 

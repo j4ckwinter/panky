@@ -661,3 +661,65 @@ test("the same follow-up can be asked after context changes without replaying co
   expect(submissions).toBe(4);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });
+
+test("a sustained audio pause settles an imperative question without a question mark", async ({
+  page,
+}) => {
+  const panel = await audioFixture(page);
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'Explain the JavaScript event loop.')",
+  );
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  await page.waitForTimeout(1500);
+  await page.evaluate("window.audioTest.levels(0, 0)");
+  const card = page.getByRole("article", {
+    name: "Detected question",
+    exact: true,
+  });
+  await expect(card.getByLabel("Question to ask")).toHaveValue(
+    "Explain the JavaScript event loop.",
+    { timeout: 4000 },
+  );
+  await card
+    .getByRole("button", { name: "Use this question", exact: true })
+    .click();
+  await expect(
+    page.getByText("Response ready.", { exact: true }),
+  ).toBeVisible();
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});
+
+test("a pause after an incomplete phrase retains it for the next audio chunk", async ({
+  page,
+}) => {
+  const panel = await audioFixture(page);
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'What is a closure in')",
+  );
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
+    .click();
+  await panel.locator(".transcript-details > summary").click();
+  await page.waitForTimeout(1500);
+  await page.evaluate("window.audioTest.levels(0, 0)");
+  await expect(
+    panel.getByRole("region", { name: "Live transcript", exact: true }),
+  ).toContainText("What is a closure in", { timeout: 4000 });
+  const card = page.getByRole("article", {
+    name: "Detected question",
+    exact: true,
+  });
+  await expect(card).toHaveCount(0);
+  await page.evaluate(
+    "window.speechTest.transcript('shared', 'JavaScript?'); window.audioTest.levels(0.1, 0)",
+  );
+  await page.waitForTimeout(1500);
+  await page.evaluate("window.audioTest.levels(0, 0)");
+  await expect(card.getByLabel("Question to ask")).toHaveValue(
+    "What is a closure in JavaScript?",
+    { timeout: 4000 },
+  );
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});

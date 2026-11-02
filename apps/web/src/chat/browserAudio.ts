@@ -41,6 +41,7 @@ export class BrowserAudio {
     private readonly onChunk?: (
       source: AudioSource,
       samples: Float32Array,
+      endedAtPause: boolean,
     ) => void,
   ) {}
 
@@ -162,8 +163,8 @@ export class BrowserAudio {
             attachPcmCapture(
               context,
               stream,
-              (samples) => {
-                if (current()) this.onChunk?.(source, samples);
+              (samples, endedAtPause) => {
+                if (current()) this.onChunk?.(source, samples, endedAtPause);
               },
               fail,
             ),

@@ -112,3 +112,60 @@ test("PCM worklet fails closed when its previous chunk is not acknowledged", asy
     .toEqual(["samples", "overflow"]);
   await page.evaluate("window.overflowTest.stop()");
 });
+
+test("PCM capture preserves brief pauses and emits early after sustained silence", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const path = "/src/chat/pcmCapture.ts";
+    const { attachPcmCapture } = await import(path);
+    const context = new AudioContext({ sampleRate: 48000 });
+    await context.audioWorklet.addModule("/src/chat/capture.worklet.js");
+    const source = context.createConstantSource();
+    const destination = context.createMediaStreamDestination();
+    source.connect(destination);
+    const chunks: { length: number; endedAtPause: boolean }[] = [];
+    const errors: string[] = [];
+    const release = attachPcmCapture(
+      context,
+      destination.stream,
+      (samples: Float32Array, endedAtPause: boolean) =>
+        chunks.push({ length: samples.length, endedAtPause }),
+      (error: string) => errors.push(error),
+    );
+    const start = context.currentTime;
+    source.offset.setValueAtTime(0.1, start);
+    source.offset.setValueAtTime(0, start + 1.2);
+    source.offset.setValueAtTime(0.1, start + 1.5);
+    source.offset.setValueAtTime(0, start + 2.7);
+    source.start();
+    await context.resume();
+    Object.assign(window, {
+      pauseTest: {
+        chunks,
+        errors,
+        stop: async () => {
+          release();
+          source.stop();
+          destination.stream.getTracks().forEach((track) => track.stop());
+          await context.close();
+        },
+      },
+    });
+  });
+  await expect
+    .poll(() => page.evaluate("window.pauseTest.chunks.length"), {
+      timeout: 4500,
+    })
+    .toBe(1);
+  const result = await page.evaluate<{
+    chunks: { length: number; endedAtPause: boolean }[];
+    errors: string[];
+  }>("({chunks:window.pauseTest.chunks, errors:window.pauseTest.errors})");
+  expect(result.errors).toEqual([]);
+  expect(result.chunks[0]?.endedAtPause).toBe(true);
+  expect(result.chunks[0]!.length).toBeGreaterThan(50000);
+  expect(result.chunks[0]!.length).toBeLessThan(57000);
+  await page.evaluate("window.pauseTest.stop()");
+});

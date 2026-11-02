@@ -3,7 +3,7 @@ export type AudioSource = "shared" | "microphone";
 export function attachPcmCapture(
   context: AudioContext,
   stream: MediaStream,
-  onChunk: (samples: Float32Array) => void,
+  onChunk: (samples: Float32Array, endedAtPause: boolean) => void,
   onError: (message: string) => void,
 ) {
   const source = context.createMediaStreamSource(
@@ -28,13 +28,16 @@ export function attachPcmCapture(
       message.type !== "samples" ||
       !("samples" in message) ||
       !(message.samples instanceof Float32Array) ||
-      message.samples.length !== 80000
+      message.samples.length < 16000 ||
+      message.samples.length > 80000 ||
+      !("endedAtPause" in message) ||
+      typeof message.endedAtPause !== "boolean"
     ) {
       onError("Audio processing fell behind. Listening has stopped.");
       return;
     }
     try {
-      onChunk(message.samples);
+      onChunk(message.samples, message.endedAtPause);
       if (active) processor.port.postMessage("received");
     } catch {
       onError("Audio processing failed. Listening has stopped.");

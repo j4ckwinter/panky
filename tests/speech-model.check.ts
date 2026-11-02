@@ -83,8 +83,21 @@ test("production speech reaches an editable question and the answer endpoint", a
     await expect(
       panel.getByRole("region", { name: "Local speech model" }),
     ).toContainText("Speech model ready", { timeout: 90_000 });
+    const captureStarted = Date.now();
     await panel.getByRole("button", { name: "Start listening" }).click();
     await panel.locator(".transcript-details > summary").click();
+    const card = page.getByRole("article", {
+      name: "Detected question",
+      exact: true,
+    });
+    await expect(card).toHaveCount(1, { timeout: 25000 });
+    await expect(card.getByLabel("Question to ask")).toHaveValue(/closure/i);
+    console.log(
+      JSON.stringify({
+        captureToQuestionMs: Date.now() - captureStarted,
+        question: await card.getByLabel("Question to ask").inputValue(),
+      }),
+    );
     const entries = panel
       .getByRole("region", { name: "Live transcript" })
       .locator("article");
@@ -95,12 +108,6 @@ test("production speech reaches an editable question and the answer endpoint", a
     await expect(entries.filter({ hasText: "Microphone" })).toContainText(
       /closure/i,
     );
-    const card = page.getByRole("article", {
-      name: "Detected question",
-      exact: true,
-    });
-    await expect(card).toHaveCount(1, { timeout: 10000 });
-    await expect(card.getByLabel("Question to ask")).toHaveValue(/closure/i);
     await card
       .getByRole("button", { name: "Use this question", exact: true })
       .click();
