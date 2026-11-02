@@ -10,6 +10,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Api } from "../api/chat";
 import { errorMessage } from "../api/chat";
 
+type History = Awaited<ReturnType<Api["history"]>>;
+
 function providerLabel(health: Awaited<ReturnType<Api["health"]>>) {
   return health.provider === "mock"
     ? "Demo mode"
@@ -41,6 +43,19 @@ export function useChat(api: Api) {
   const active = useRef<AbortController | null>(null);
   const mounted = useRef(true);
 
+  const replaceHistoryContent = useCallback((history: History | null) => {
+    setMessages(history?.messages ?? []);
+    setRuns(history?.runs ?? []);
+    setActivities(history?.activities ?? []);
+  }, []);
+  const applyHistory = useCallback(
+    (history: History | null) => {
+      setCurrent(history?.conversation ?? null);
+      replaceHistoryContent(history);
+    },
+    [replaceHistoryContent],
+  );
+
   const run = useCallback(async (operation: () => Promise<void>) => {
     if (lock.current || cancelLock.current) return false;
     lock.current = true;
@@ -70,15 +85,12 @@ export function useChat(api: Api) {
         const history = selected ? await api.history(selected) : null;
         if (!mounted.current) return;
         setConversations(list);
-        setCurrent(history?.conversation ?? null);
-        setMessages(history?.messages ?? []);
-        setRuns(history?.runs ?? []);
-        setActivities(history?.activities ?? []);
+        applyHistory(history);
         setServerBusy(health.busy);
         setProviderLabel(providerLabel(health));
         setConnected(true);
       }),
-    [api, run],
+    [api, run, applyHistory],
   );
 
   useEffect(() => {
@@ -116,19 +128,13 @@ export function useChat(api: Api) {
     return run(async () => {
       const history = await api.history(id);
       if (!mounted.current) return;
-      setCurrent(history.conversation);
-      setMessages(history.messages);
-      setRuns(history.runs);
-      setActivities(history.activities);
+      applyHistory(history);
     });
   }
 
   function create() {
     if (lock.current || cancelLock.current) return;
-    setCurrent(null);
-    setMessages([]);
-    setRuns([]);
-    setActivities([]);
+    applyHistory(null);
     setError("");
   }
 
@@ -154,10 +160,7 @@ export function useChat(api: Api) {
         return next;
       });
       if (current?.id === id) {
-        setCurrent(null);
-        setMessages([]);
-        setRuns([]);
-        setActivities([]);
+        applyHistory(null);
       }
     });
   }
@@ -308,9 +311,7 @@ export function useChat(api: Api) {
       if (!active.current && current) {
         const history = await api.history(current.id);
         if (!mounted.current) return;
-        setMessages(history.messages);
-        setRuns(history.runs);
-        setActivities(history.activities);
+        replaceHistoryContent(history);
       }
     } catch (cause) {
       if (mounted.current) setError(errorMessage(cause));
