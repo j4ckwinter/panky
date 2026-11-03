@@ -1,6 +1,11 @@
 import { BannerToast, Button, Stack } from "@jack.winter/pancake-ui";
 import { useEffect, useRef, useState } from "react";
-import { googleOptions, signInError, verifyGoogle } from "./api";
+import {
+  googleOptions,
+  signInError,
+  signInErrorTitle,
+  verifyGoogle,
+} from "./api";
 
 type GoogleIdentity = {
   initialize(options: {
@@ -152,7 +157,7 @@ export function GoogleSignIn({
       <div ref={container} className="google-sign-in" />
       {error && (
         <>
-          <BannerToast tone="error" title="Could not sign in">
+          <BannerToast tone="error" title={signInErrorTitle(error)}>
             {error}
           </BannerToast>
           <Button

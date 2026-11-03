@@ -14,6 +14,15 @@ export type {
   DeviceSession,
 } from "@panky/shared";
 
+const offlineMessage =
+  "Can’t reach Panky’s PC. It might be switched off. Try again in a bit.";
+
+export function signInErrorTitle(message: string) {
+  return message === offlineMessage
+    ? "Panky’s having a nap"
+    : "Could not sign in";
+}
+
 async function request(path: string, body?: unknown): Promise<unknown> {
   const response = await fetch(`/api/auth${path}`, {
     method: body === undefined ? "GET" : "POST",
@@ -26,13 +35,25 @@ async function request(path: string, body?: unknown): Promise<unknown> {
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   }).catch(() => {
-    throw new Error(
-      "Could not reach Panky. Check your connection and try again.",
-    );
+    throw new Error(offlineMessage);
   });
-  const data: unknown = await response.json().catch(() => null);
+  const bodyText = await response.text().catch(() => {
+    throw new Error(offlineMessage);
+  });
+  let data: unknown;
+  try {
+    data = JSON.parse(bodyText);
+  } catch {
+    data = null;
+  }
   if (!response.ok) {
     const result = errorSchema.safeParse(data);
+    if (
+      !result.success &&
+      ([502, 503, 504].includes(response.status) ||
+        bodyText.includes("ERR_NGROK_3200"))
+    )
+      throw new ApiError(offlineMessage, response.status);
     throw new ApiError(
       result.success
         ? result.data.error
