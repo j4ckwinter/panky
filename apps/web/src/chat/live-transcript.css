@@ -4,10 +4,12 @@
   width: 100%;
   min-width: 0;
 }
-.live-transcript:not(.live-transcript-active) > .model-notice {
-  max-width: 560px;
-  justify-self: center;
-  text-align: center;
+.live-transcript > .model-notice {
+  margin-top: 0;
+}
+.live-transcript:not(.live-transcript-active)
+  .listening-welcome:has(+ .model-notice:not(:empty)) {
+  padding-bottom: 0;
 }
 .listening-welcome {
   min-height: 0;
@@ -96,10 +98,6 @@
 }
 .live-transcript-active .listening-status {
   font-size: 12px;
-}
-
-.live-transcript-active > .model-notice p {
-  margin: 0;
 }
 
 .live-transcript-active .listening-title {
