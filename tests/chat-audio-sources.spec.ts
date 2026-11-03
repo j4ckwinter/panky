@@ -85,8 +85,7 @@ test("normal chat automatically uses sources and disconnect stops new retrieval"
     .getByRole("article", { name: "Panky response", exact: true })
     .last();
   await expect(answer).not.toContainText('"sources":');
-  await answer.getByText("Retrieved evidence (1)", { exact: true }).click();
-  await expect(answer).toContainText("Owner evidence: I planned the migration");
+  await expect(answer.locator(".source-evidence")).toHaveCount(0);
   const sources = await savedSources(page, second.url());
   expect(sources).toHaveLength(1);
   expect(sources[0].title).toBe("Owner migration");
@@ -125,7 +124,7 @@ test("normal chat automatically uses sources and disconnect stops new retrieval"
   ).toHaveCount(3);
   await expect(
     page.getByText("Retrieved evidence (1)", { exact: true }),
-  ).toHaveCount(2);
+  ).toHaveCount(0);
   await page.screenshot({ path: "test-results/chat-sources-desktop.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(toggle).toHaveCount(0);
@@ -184,8 +183,7 @@ test("audio questions automatically retrieve personal sources only after explici
     exact: true,
   });
   await expect(answer).not.toContainText('"sources":');
-  await answer.getByText("Retrieved evidence (1)", { exact: true }).click();
-  await expect(answer).toContainText("Owner evidence: I planned the migration");
+  await expect(answer.locator(".source-evidence")).toHaveCount(0);
   expect(await savedSources(page, first.url())).toHaveLength(1);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });

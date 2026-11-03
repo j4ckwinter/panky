@@ -1,19 +1,15 @@
-import type { Activity, Message, TaskRun } from "@panky/shared";
+import type { Message, TaskRun } from "@panky/shared";
 import { PankyMark } from "../components/PankyMark";
 import { CopyButton } from "./CopyButton";
 import { Markdown } from "./Markdown";
-import { TaskActivity } from "./TaskActivity";
-import { SourceEvidence } from "./SourceEvidence";
 
 export function MessageList({
   messages,
   runs,
-  activities,
   streaming,
 }: {
   messages: Message[];
   runs: TaskRun[];
-  activities: Activity[];
   streaming: boolean;
 }) {
   return messages.length === 0 ? (
@@ -48,15 +44,12 @@ export function MessageList({
                   ? "Preparing reply…"
                   : "No reply text was saved.")}
             </div>
-            {message.role === "assistant" && (
-              <SourceEvidence sources={message.sources ?? []} />
-            )}
             {message.status === "interrupted" && (
               <p className="interrupted">
                 {task?.status === "cancelled"
                   ? "Task cancelled. Any partial reply was saved."
                   : task?.status === "failed"
-                    ? "Task failed. See task activity for details."
+                    ? "Task failed. Any partial reply was saved."
                     : "Reply interrupted. This partial reply was saved; nothing was retried."}
               </p>
             )}
@@ -65,6 +58,11 @@ export function MessageList({
                 {streaming
                   ? "Replying…"
                   : "Reply in progress. Refresh history to check for updates."}
+              </p>
+            )}
+            {task?.error && task.status !== "cancelled" && (
+              <p className="response-error" role="alert">
+                {task.error}
               </p>
             )}
             <div className="response-footer">
@@ -78,7 +76,6 @@ export function MessageList({
                     />
                   </div>
                 )}
-              {task && <TaskActivity task={task} activities={activities} />}
             </div>
           </article>
         );

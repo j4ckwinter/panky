@@ -72,17 +72,11 @@
 .response-footer .reply-actions {
   margin: 0;
 }
-.response-footer .task-activity {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  padding-top: 3px;
-}
 .message-meta .panky-mark {
   --mark-size: 20px;
 }
-@media (max-width: 640px) {
-  .response-footer .task-activity {
-    padding-top: 7px;
-  }
+
+.response-error {
+  font-size: var(--text-pancake-label);
+  color: var(--color-pancake-error-strong);
 }

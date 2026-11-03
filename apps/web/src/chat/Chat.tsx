@@ -1,4 +1,4 @@
-import { ModelPicker } from "./ModelPicker";
+import { ModelNotice, ModelPicker } from "./ModelPicker";
 import { useChatGPT } from "./useChatGPT";
 import { connectionCatalogue, type ConnectionId } from "./connection-catalogue";
 import { BannerToast } from "@jack.winter/pancake-ui";
@@ -51,6 +51,20 @@ export function Chat({
         chatGPT.connection.kind !== "unavailable") ||
         Boolean(chatGPT.error)),
   );
+  const showModels =
+    Boolean(onAccess) && (chatGPT.models.length > 0 || Boolean(modelSelection));
+  const modelPicker = showModels ? (
+    <ModelPicker
+      state={chatGPT}
+      value={modelSelection}
+      onChange={setModelSelection}
+      pending={chat.pending}
+      localLabel={chat.localProviderLabel}
+    />
+  ) : null;
+  const modelNotice = showModels ? (
+    <ModelNotice state={chatGPT} value={modelSelection} />
+  ) : null;
   const [interviewSession, setInterviewSession] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const menu = useRef<HTMLButtonElement>(null);
@@ -193,17 +207,6 @@ export function Chat({
             input.current?.focus();
           }}
         />
-        {view !== "connections" &&
-          onAccess &&
-          (chatGPT.models.length > 0 || modelSelection) && (
-            <ModelPicker
-              state={chatGPT}
-              value={modelSelection}
-              onChange={setModelSelection}
-              pending={chat.pending}
-              localLabel={chat.localProviderLabel}
-            />
-          )}
         {chat.error && (
           <div className="chat-alert">
             <BannerToast tone="error" title="Could not complete request">
@@ -223,7 +226,11 @@ export function Chat({
             pending={chat.pending}
           />
         ) : interview ? (
-          <Interview chat={chat} />
+          <Interview
+            chat={chat}
+            modelPicker={modelPicker}
+            modelNotice={modelNotice}
+          />
         ) : (
           <div className={`chat-body${hasMessages ? "" : " chat-body-empty"}`}>
             <div className="chat-scroll" ref={scrollArea} onScroll={onScroll}>
@@ -231,12 +238,13 @@ export function Chat({
                 <MessageList
                   messages={chat.messages}
                   runs={chat.runs}
-                  activities={chat.activities}
                   streaming={chat.streaming}
                 />
               </div>
             </div>
             <ChatComposer
+              modelPicker={modelPicker}
+              modelNotice={modelNotice}
               input={input}
               draft={chat.draft}
               setDraft={chat.setDraft}

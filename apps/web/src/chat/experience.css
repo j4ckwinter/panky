@@ -20,8 +20,7 @@
   padding: var(--spacing-pancake-12) 0;
   border-top: 1px solid var(--color-pancake-border);
 }
-.experience-source a,
-.source-passage a {
+.experience-source a {
   color: var(--color-pancake-deep);
   font-weight: 600;
   text-underline-offset: 3px;
@@ -51,31 +50,15 @@
 .experience-preview h3 {
   margin: 0;
 }
-.experience-preview,
-.source-evidence {
+.experience-preview {
   padding: var(--spacing-pancake-16);
   border-top: 1px solid var(--color-pancake-border);
   overflow-wrap: anywhere;
 }
-.source-evidence summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--color-pancake-deep);
-  padding: var(--spacing-pancake-8) 0;
-}
-.source-evidence summary:focus-visible,
-.experience-source a:focus-visible,
-.source-passage a:focus-visible {
+.experience-source a:focus-visible {
   outline: 2px solid var(--color-pancake-control-focus);
   outline-offset: 3px;
 }
-.source-evidence .muted {
-  font-size: 13px;
-}
-.source-passage {
-  margin-top: var(--spacing-pancake-16);
-}
-.source-passage blockquote,
 .experience-preview blockquote {
   white-space: pre-wrap;
   margin: var(--spacing-pancake-12) 0;

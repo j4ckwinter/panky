@@ -36,8 +36,9 @@ test("real clock tool result appears in the mock reply and survives refresh with
     exact: true,
   });
   await expect(
-    activity.getByText("Completed", { exact: true }).first(),
+    page.getByRole("button", { name: "Copy response", exact: true }),
   ).toBeVisible();
+  await expect(activity).toHaveCount(0);
   const saved = historySchema.parse(
     await (
       await request.get(historyUrl, {
@@ -64,21 +65,6 @@ test("real clock tool result appears in the mock reply and survives refresh with
   await expect(
     page.getByRole("article", { name: "Panky response", exact: true }),
   ).toContainText(iso);
-  await activity.locator("summary").first().click();
-  await expect(
-    activity.getByLabel("Tool result", { exact: true }),
-  ).toBeHidden();
-  await activity.getByText("View tool result", { exact: true }).click();
-  await expect(
-    activity.getByLabel("Tool result", { exact: true }),
-  ).toBeVisible();
-  await expect(activity).toContainText("get_current_datetime");
-  await expect(activity).toContainText(iso);
-  await page.screenshot({
-    path: "test-results/task-expanded.png",
-    fullPage: true,
-  });
-  await activity.locator("summary").first().click();
   await page.screenshot({
     path: "test-results/task-desktop.png",
     fullPage: true,
@@ -96,7 +82,9 @@ test("real clock tool result appears in the mock reply and survives refresh with
     })
     .first()
     .click();
-  await expect(activity).toContainText(iso);
+  await expect(
+    page.getByRole("article", { name: "Panky response", exact: true }),
+  ).toContainText(iso);
   const restored = historySchema.parse(
     await (
       await request.get(historyUrl, {
@@ -144,8 +132,11 @@ test("Stop response stops a live reply and persists cancellation across refresh"
     exact: true,
   });
   await expect(
-    activity.getByText("Cancelled", { exact: true }).first(),
+    page.getByText("Task cancelled. Any partial reply was saved.", {
+      exact: true,
+    }),
   ).toBeVisible();
+  await expect(activity).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Stop response", exact: true }),
   ).toHaveCount(0);
@@ -167,8 +158,11 @@ test("Stop response stops a live reply and persists cancellation across refresh"
   await login(page);
   await page.getByRole("button", { name: /^Cancellation check/ }).click();
   await expect(
-    activity.getByText("Cancelled", { exact: true }).first(),
+    page.getByText("Task cancelled. Any partial reply was saved.", {
+      exact: true,
+    }),
   ).toBeVisible();
+  await expect(activity).toHaveCount(0);
   const restored = historySchema.parse(
     await (
       await request.get(historyUrl, {

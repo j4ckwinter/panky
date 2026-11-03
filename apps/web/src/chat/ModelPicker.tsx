@@ -1,3 +1,4 @@
+import "./model-picker.css";
 import { Select } from "@jack.winter/pancake-ui";
 import type { ModelSelection } from "@panky/shared";
 import type { ChatGPTState } from "./useChatGPT";
@@ -43,6 +44,22 @@ export function ModelPicker({
           </option>
         ))}
       </Select>
+    </div>
+  );
+}
+
+export function ModelNotice({
+  state,
+  value,
+}: {
+  state: ChatGPTState;
+  value: ModelSelection | undefined;
+}) {
+  const available = state.connection?.kind === "connected" && !state.error;
+  const missing =
+    value && !state.models.some((model) => model.id === value.model);
+  return (
+    <div className="model-notice">
       {value && (
         <p>
           {available && !missing

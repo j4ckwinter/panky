@@ -18,12 +18,28 @@ for (const width of [1280, 390]) {
     await panel
       .getByRole("button", { name: "Start listening", exact: true })
       .click();
+    await expect(
+      page.getByRole("button", { name: "Send question", exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await page.setViewportSize({ width, height: 844 });
+    await page.screenshot({
+      path: `test-results/listening-question-${width}.png`,
+    });
+    await page.setViewportSize({ width, height: 500 });
     await page
       .getByRole("button", { name: "Send question", exact: true })
       .click({ timeout: 15000 });
     await expect(
       page.getByText("Response ready.", { exact: true }),
     ).toBeVisible();
+    await page.setViewportSize({ width, height: 844 });
+    await page.locator(".interview-scroll").evaluate((element) => {
+      element.scrollTop = 0;
+    });
+    await page.screenshot({
+      path: `test-results/listening-workspace-${width}.png`,
+    });
+    await page.setViewportSize({ width, height: 500 });
     const scroll = page.locator(".interview-scroll");
     await scroll.evaluate((element) => {
       element.scrollTop = element.scrollHeight;

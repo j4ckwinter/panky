@@ -1,5 +1,5 @@
 import { Button } from "@jack.winter/pancake-ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LiveTranscript } from "./LiveTranscript";
 import { InterviewAnswer } from "./InterviewAnswer";
 import { SentQuestions } from "./SentQuestions";
@@ -7,7 +7,15 @@ import { SpokenQuestions } from "./SpokenQuestions";
 import type { useChat } from "./useChat";
 import { useSpokenQuestions } from "./useSpokenQuestions";
 
-export function Interview({ chat }: { chat: ReturnType<typeof useChat> }) {
+export function Interview({
+  chat,
+  modelPicker,
+  modelNotice,
+}: {
+  chat: ReturnType<typeof useChat>;
+  modelPicker?: ReactNode;
+  modelNotice?: ReactNode;
+}) {
   const questions = useSpokenQuestions(chat);
   const latestQuestion = chat.messages.findLast((item) => item.role === "user");
   const latestAnswer = chat.messages.findLast(
@@ -63,6 +71,8 @@ export function Interview({ chat }: { chat: ReturnType<typeof useChat> }) {
     <div className="interview-scroll">
       <div className="interview-panel">
         <LiveTranscript
+          modelPicker={modelPicker}
+          modelNotice={modelNotice}
           onTranscript={questions.onTranscript}
           onResetDetection={questions.resetDetection}
           onUseAsQuestion={questions.propose}

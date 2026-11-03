@@ -9,7 +9,7 @@
   padding-top: 0;
 }
 .interview-panel {
-  max-width: 1100px;
+  max-width: 1040px;
   width: 100%;
   min-height: 100%;
   align-content: center;
@@ -21,14 +21,14 @@
 }
 .interview-panel:has(.live-transcript-active) {
   align-content: start;
-  padding-bottom: 24px;
+  padding-bottom: var(--spacing-pancake-24);
 }
 .interview-panel h2 {
   margin: 0;
 }
 .interview-note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
   color: var(--color-pancake-muted);
 }
 .interview-panel summary {
@@ -48,31 +48,32 @@
   gap: var(--spacing-pancake-12);
 }
 .interview-actions [role="status"] {
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
   color: var(--color-pancake-muted);
 }
 .interview-result {
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
   max-height: 65vh;
   overflow-y: auto;
   scroll-margin-block: var(--spacing-pancake-16);
 }
 .interview-question {
-  padding: var(--spacing-pancake-24);
-  border-bottom: 1px solid var(--color-pancake-border);
+  padding: var(--spacing-pancake-12) var(--spacing-pancake-20);
+  background: var(--color-pancake-canvas);
+  border-radius: var(--radius-pancake-20);
 }
 .interview-question h2 {
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
   color: var(--color-pancake-muted);
 }
 .interview-question p {
   margin: var(--spacing-pancake-8) 0 0;
-  font-weight: 600;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.65;
   white-space: pre-wrap;
 }
 .interview-response {
-  padding: var(--spacing-pancake-24);
+  padding: var(--spacing-pancake-20) 0;
 }
 .interview-answer-heading {
   display: flex;
@@ -80,16 +81,10 @@
   justify-content: space-between;
   gap: 12px;
 }
-.interview-answer-heading .copy-control button {
-  border: 1px solid var(--color-pancake-control-border);
-  background: var(--color-pancake-surface);
-  color: var(--color-pancake-ink);
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-}
 .interview-response .markdown {
-  line-height: 1.6;
+  padding-top: var(--spacing-pancake-8);
+  font-size: 15px;
+  line-height: 1.65;
 }
 .interview-response pre {
   line-height: 1.5;
@@ -99,11 +94,10 @@
     padding: var(--spacing-pancake-16);
   }
   .interview-panel {
-    padding-bottom: 24px;
+    padding-bottom: var(--spacing-pancake-24);
   }
-  .interview-question,
-  .interview-response {
-    padding: var(--spacing-pancake-16);
+  .interview-question {
+    padding: var(--spacing-pancake-12) var(--spacing-pancake-16);
   }
 }
 .spoken-questions {
@@ -114,7 +108,7 @@
   animation: question-arrival 2s ease-out;
   padding: var(--spacing-pancake-16);
   border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
+  border-radius: var(--radius-pancake-20);
   background: var(--color-pancake-canvas);
 }
 .spoken-question form {
@@ -123,14 +117,23 @@
 }
 .spoken-question textarea {
   resize: vertical;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  line-height: 1.65;
+  padding: var(--spacing-pancake-8) 0;
 }
 
 .interview-workspace {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
   display: grid;
   gap: var(--spacing-pancake-16);
   min-width: 0;
 }
-.interview-workspace.has-answer {
+.interview-workspace.has-answer:has(.spoken-question) {
+  max-width: none;
   grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.6fr);
   align-items: start;
 }
@@ -153,9 +156,8 @@
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-pancake-16);
-  padding: 12px;
-  border: 1px solid var(--color-pancake-border);
-  border-radius: 12px;
+  padding: var(--spacing-pancake-8) 0;
+  border-top: 1px solid var(--color-pancake-border);
 }
 .accepted-questions {
   flex: 1;
@@ -198,7 +200,7 @@
   font-size: 14px;
   font-weight: 400;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-pancake-8);
   background: transparent;
   color: var(--color-pancake-ink);
 }
@@ -226,10 +228,10 @@
 .question-tools .new-topic-button {
   min-width: 0;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
   border: 1px solid var(--color-pancake-control-border);
   background: var(--color-pancake-surface);
-  border-radius: 8px;
+  border-radius: 999px;
   flex-shrink: 0;
 }
 .question-tools {
@@ -247,20 +249,17 @@
   padding-inline: 12px;
   font-size: 14px;
   order: 1;
-  border-radius: 10px;
+  border-radius: 999px;
   gap: 8px;
 }
 .spoken-question .question-dismiss {
   min-width: 40px;
-  border-radius: 10px;
+  border-radius: 999px;
   padding-inline: 8px;
   font-size: 14px;
 }
-.spoken-question textarea {
-  background: var(--color-pancake-surface);
-}
 @media (max-width: 760px) {
-  .interview-workspace.has-answer {
+  .interview-workspace.has-answer:has(.spoken-question) {
     grid-template-columns: minmax(0, 1fr);
   }
   .has-answer .spoken-question-list {

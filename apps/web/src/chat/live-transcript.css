@@ -4,11 +4,21 @@
   width: 100%;
   min-width: 0;
 }
+.live-transcript:not(.live-transcript-active) > .model-notice {
+  max-width: 560px;
+  justify-self: center;
+  text-align: center;
+}
 .listening-welcome {
   min-height: 0;
   width: 100%;
   gap: var(--spacing-pancake-16);
   padding: var(--spacing-pancake-16) 0;
+}
+.listening-summary {
+  display: grid;
+  gap: var(--spacing-pancake-4);
+  min-width: 0;
 }
 .listening-title {
   display: flex;
@@ -74,33 +84,38 @@
   justify-content: flex-start;
   align-items: center;
   gap: var(--spacing-pancake-8);
-  padding: 12px 16px;
+  padding: var(--spacing-pancake-16) 0;
   max-width: none;
-  background: var(--color-pancake-canvas);
-  border: 1px solid var(--color-pancake-border);
-  border-radius: 12px;
+  background: var(--color-pancake-surface);
+  border-bottom: 1px solid var(--color-pancake-border);
   text-align: left;
 }
 .live-transcript-active .listening-welcome h2 {
-  font-size: 18px;
+  font-size: var(--text-pancake-body-strong);
 }
 .live-transcript-active .listening-status {
   font-size: 12px;
 }
 
+.live-transcript-active .listening-title {
+  justify-content: flex-start;
+}
+.transcript-details {
+  border-top: 1px solid var(--color-pancake-border);
+}
 .live-transcript-active .listening-controls {
   margin-left: auto;
 }
 .listening-controls .capture-action {
-  min-width: 84px;
-  padding: 0 12px;
+  min-width: 0;
+  padding: 0 var(--spacing-pancake-12);
   border: 1px solid var(--color-pancake-control-border);
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--color-pancake-surface);
   color: var(--color-pancake-ink);
-  font-size: 14px;
-  font-weight: 600;
-  gap: 8px;
+  font-size: var(--text-pancake-label);
+  font-weight: 500;
+  gap: var(--spacing-pancake-8);
 }
 .listening-controls .capture-action:hover:not(:disabled) {
   background: var(--color-pancake-surface-muted);
@@ -118,13 +133,17 @@
 }
 @media (max-width: 640px) {
   .live-transcript-active .listening-welcome {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: 12px;
+    gap: var(--spacing-pancake-12);
   }
-  .audio-source-status {
-    flex-basis: 100%;
-    order: 2;
+  .live-transcript-active .listening-controls {
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+  .live-transcript-active .model-picker {
+    flex: 1;
+    max-width: none;
+  }
+  .listening-controls .capture-action {
+    flex-shrink: 0;
   }
 }

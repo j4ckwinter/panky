@@ -8,11 +8,15 @@ import {
 
 export function LiveTranscript({
   children,
+  modelPicker,
+  modelNotice,
   onTranscript,
   onUseAsQuestion,
   onResetDetection,
 }: {
   children?: ReactNode;
+  modelPicker?: ReactNode;
+  modelNotice?: ReactNode;
   onTranscript?: (entry: TranscriptEntry) => void;
   onUseAsQuestion?: (text: string) => void;
   onResetDetection?: () => void;
@@ -29,36 +33,39 @@ export function LiveTranscript({
       aria-label="Browser audio capture"
     >
       <div className="welcome listening-welcome">
-        <div className="listening-title">
-          <h2>
-            {active
-              ? "Listening"
-              : entries.length
-                ? "Your transcript"
-                : "Start listening"}
-          </h2>
-          {!hasSession && (
-            <StatusChip tone="neutral" className="mac-only-chip">
-              Mac only
-            </StatusChip>
+        <div className="listening-summary">
+          <div className="listening-title">
+            <h2>
+              {active
+                ? "Listening"
+                : entries.length
+                  ? "Your transcript"
+                  : "Start listening"}
+            </h2>
+            {!hasSession && (
+              <StatusChip tone="neutral" className="mac-only-chip">
+                Mac only
+              </StatusChip>
+            )}
+          </div>
+          {((state.status !== "idle" && !active) || loading) && (
+            <p role="status" className="listening-status">
+              {loading
+                ? speech.progress || "Preparing local transcription…"
+                : {
+                    idle: "Ready to listen",
+                    starting: "Waiting for sharing and microphone permission",
+                    listening: "Listening in this browser",
+                    paused: "Paused — audio released",
+                    stopped: "Stopped — audio released",
+                    error: "Not listening",
+                  }[state.status]}
+            </p>
           )}
+          <AudioSourceStatus state={state} />
         </div>
-        {((state.status !== "idle" && !active) || loading) && (
-          <p role="status" className="listening-status">
-            {loading
-              ? speech.progress || "Preparing local transcription…"
-              : {
-                  idle: "Ready to listen",
-                  starting: "Waiting for sharing and microphone permission",
-                  listening: "Listening in this browser",
-                  paused: "Paused — audio released",
-                  stopped: "Stopped — audio released",
-                  error: "Not listening",
-                }[state.status]}
-          </p>
-        )}
-        <AudioSourceStatus state={state} />
         <div className="browser-audio-actions listening-controls">
+          {modelPicker}
           {!active && !pending && !loading && (
             <Button onClick={() => void start()}>Start listening</Button>
           )}
@@ -103,6 +110,7 @@ export function LiveTranscript({
           )}
         </div>
       </div>
+      {modelNotice}
       {speech.error && (
         <BannerToast tone="error" title="Transcription unavailable">
           {speech.error}

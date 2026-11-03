@@ -1,9 +1,9 @@
+import { PankyMark } from "../components/PankyMark";
 import { Button } from "@jack.winter/pancake-ui";
 import type { Message, TaskRun } from "@panky/shared";
 import type { RefObject } from "react";
 import { CopyButton } from "./CopyButton";
 import { Markdown } from "./Markdown";
-import { SourceEvidence } from "./SourceEvidence";
 
 export function InterviewAnswer({
   question,
@@ -56,6 +56,10 @@ export function InterviewAnswer({
         )}
       </div>
       <div className="interview-response">
+        <div className="message-meta">
+          <PankyMark small />
+          <strong>Panky</strong>
+        </div>
         <Markdown>
           {answer?.content ||
             (run?.status === "running"
@@ -63,7 +67,11 @@ export function InterviewAnswer({
               : "No response text was saved.")}
         </Markdown>
       </div>
-      <SourceEvidence sources={answer?.sources ?? []} />
+      {run?.error && run.status !== "cancelled" && (
+        <p className="response-error" role="alert">
+          {run.error}
+        </p>
+      )}
     </section>
   );
 }

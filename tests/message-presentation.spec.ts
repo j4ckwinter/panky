@@ -75,7 +75,7 @@ test("assistant Markdown renders safely and fits mobile while user input stays l
   }
 });
 
-test("activity remains compact during streaming and cancellation stays reachable", async ({
+test("response details are hidden while streaming and cancellation stays reachable", async ({
   page,
 }) => {
   await page.goto("/");
@@ -88,15 +88,17 @@ test("activity remains compact during streaming and cancellation stays reachable
     name: "Task activity",
     exact: true,
   });
-  await expect(activity.getByText("Running", { exact: true })).toBeVisible();
-  await expect(activity.locator("details").first()).not.toHaveAttribute("open");
+  await expect(activity).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Stop response" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Stop response" }).click();
-  await expect(activity.getByText("Cancelled", { exact: true })).toBeVisible();
-  await activity.locator("summary").first().click();
-  await expect(activity.getByLabel("Task timeline")).toBeVisible();
+  await expect(
+    page.getByText("Task cancelled. Any partial reply was saved.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(activity).toHaveCount(0);
 });
 
 test("next draft survives cancellation and sends only on request", async ({

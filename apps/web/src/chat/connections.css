@@ -329,24 +329,3 @@
   outline-offset: 4px;
   border-radius: var(--radius-pancake-8);
 }
-
-.model-picker {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-pancake-8) var(--spacing-pancake-16);
-  padding: var(--spacing-pancake-8) var(--spacing-pancake-24);
-  border-bottom: 1px solid var(--color-pancake-border);
-}
-.model-picker select {
-  min-height: 36px;
-  max-width: min(320px, 100%);
-  font-size: var(--text-pancake-label);
-}
-.model-picker p {
-  flex: 1;
-  min-width: 200px;
-  margin: 0;
-  font-size: var(--text-pancake-label);
-  color: var(--color-pancake-muted);
-}

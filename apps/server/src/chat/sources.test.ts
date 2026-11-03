@@ -124,9 +124,39 @@ test("normal chat source selection scopes model evidence to the account and pres
   assert.deepEqual(unmatched.messages.at(-1)?.sources, []);
   assert.match(
     calls.at(-1)!.history[0]!.content,
-    /do not answer the question, say so/,
+    /Answer general knowledge and technical questions from your own knowledge/,
   );
   assert.deepEqual(calls.at(-1)!.tools, []);
+  const challenge = app.experience().replace("owner", {
+    pageId: randomUUID(),
+    title: "Loveholidays JavaScript challenge",
+    warnings: [],
+    passages: [
+      {
+        blockId: randomUUID(),
+        text: "The event processor challenge uses JavaScript and npm commands. It processes events in order.",
+      },
+    ],
+  });
+  await submit(
+    ownerChat,
+    app.owner.cookie,
+    true,
+    "Whats a closure in javascript",
+  );
+  const technicalCall = calls.at(-1)!;
+  const technicalPayload = JSON.parse(technicalCall.history.at(-1)!.content);
+  assert.equal(technicalPayload.question, "Whats a closure in javascript");
+  assert.deepEqual(
+    technicalPayload.sources.map((source: Evidence) => source.sourceId),
+    [challenge.id],
+  );
+  assert.match(
+    technicalCall.history[0]!.content,
+    /Do not report missing source evidence for a general knowledge question/,
+  );
+  assert.deepEqual(technicalCall.tools, []);
+  app.experience().remove("owner", challenge.id);
   app.experience().remove("owner", ownerSource.id);
   const noSources = await submit(ownerChat, app.owner.cookie, true);
   assert.deepEqual(noSources.messages.at(-1)?.sources, []);

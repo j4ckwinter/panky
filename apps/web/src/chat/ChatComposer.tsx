@@ -1,8 +1,10 @@
 import { Button, LoadingIndicator, Textarea } from "@jack.winter/pancake-ui";
 import { MESSAGE_MAX_CHARS, type TaskRun } from "@panky/shared";
-import { useLayoutEffect, type RefObject } from "react";
+import { useLayoutEffect, type ReactNode, type RefObject } from "react";
 
 export function ChatComposer({
+  modelPicker,
+  modelNotice,
   input,
   draft,
   setDraft,
@@ -19,6 +21,8 @@ export function ChatComposer({
   onSend,
   onCancel,
 }: {
+  modelPicker?: ReactNode;
+  modelNotice?: ReactNode;
   input: RefObject<HTMLTextAreaElement | null>;
   draft: string;
   setDraft: (value: string) => void;
@@ -93,7 +97,7 @@ export function ChatComposer({
         </div>
       )}
       <form
-        className="composer"
+        className={`composer${modelPicker ? " composer-with-model" : ""}`}
         autoComplete="off"
         onSubmit={(event) => {
           event.preventDefault();
@@ -123,51 +127,55 @@ export function ChatComposer({
           aria-describedby={composerStatus ? "composer-help" : undefined}
           disabled={pending && !submissionAccepted}
         />
-        {runningTask ? (
-          <Button
-            className="send-button"
-            size={40}
-            type="button"
-            aria-label="Stop response"
-            title="Stop response"
-            disabled={cancelling}
-            onClick={() => onCancel(runningTask.id)}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
+        <div className="composer-actions">
+          {modelPicker}
+          {runningTask ? (
+            <Button
+              className="send-button"
+              size={40}
+              type="button"
+              aria-label="Stop response"
+              title="Stop response"
+              disabled={cancelling}
+              onClick={() => onCancel(runningTask.id)}
             >
-              <rect x="5" y="5" width="14" height="14" rx="2" />
-            </svg>
-          </Button>
-        ) : (
-          <Button
-            className="send-button"
-            size={40}
-            type="submit"
-            disabled={unavailable || !draft.trim()}
-            aria-label="Send message"
-            title="Send message"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <rect x="5" y="5" width="14" height="14" rx="2" />
+              </svg>
+            </Button>
+          ) : (
+            <Button
+              className="send-button"
+              size={40}
+              type="submit"
+              disabled={unavailable || !draft.trim()}
+              aria-label="Send message"
+              title="Send message"
             >
-              <path d="M12 19V5M5 12l7-7 7 7" />
-            </svg>
-          </Button>
-        )}
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
+            </Button>
+          )}
+        </div>
       </form>
+      {modelNotice}
       {composerStatus && (
         <p id="composer-help" className="composer-status" role="status">
           {composerStatus}

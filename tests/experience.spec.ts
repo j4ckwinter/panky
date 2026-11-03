@@ -32,22 +32,26 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   await page
     .getByLabel("Message", { exact: true })
     .fill("Describe a database migration rollout and rollback rehearsal.");
+  const submitted = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" && request.url().endsWith("/messages"),
+  );
   await page.getByRole("button", { name: "Send message" }).click();
+  const historyUrl = (await submitted).url().replace(/\/messages$/, "");
   await expect(
     page.getByRole("button", { name: "Copy response", exact: true }).last(),
   ).toBeVisible();
   const answer = page
     .getByRole("article", { name: "Panky response", exact: true })
     .last();
-  await answer.getByText("Retrieved evidence (1)", { exact: true }).click();
-  await expect(answer).toContainText("I proposed a staged database migration");
-  await expect(
-    answer.getByRole("link", {
-      name: "[S1] Synthetic migration project",
-      exact: true,
-    }),
-  ).toHaveAttribute(
-    "href",
+  await expect(answer.locator(".source-evidence")).toHaveCount(0);
+  const history = await (await page.request.get(historyUrl)).json();
+  const evidence = history.messages.at(-1).sources;
+  expect(evidence).toHaveLength(1);
+  expect(evidence[0].excerpt).toContain(
+    "I proposed a staged database migration",
+  );
+  expect(evidence[0].url).toBe(
     "https://www.notion.so/11111111111141118111111111111111#22222222222242228222222222222222",
   );
   await expect(answer).toContainText("mock response");
@@ -142,8 +146,9 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   const saved = page
     .getByRole("article", { name: "Panky response", exact: true })
     .first();
-  await saved.getByText("Retrieved evidence (1)", { exact: true }).click();
-  await expect(saved).toContainText("I proposed a staged database migration");
+  await expect(saved.locator(".source-evidence")).toHaveCount(0);
+  const restored = await (await page.request.get(historyUrl)).json();
+  expect(restored.messages[1].sources).toEqual(evidence);
 });
 
 test("an inaccessible selected Notion page reports a failure without adding a source", async ({

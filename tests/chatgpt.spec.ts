@@ -28,7 +28,10 @@ for (const width of [1280, 390]) {
         .getByRole("button", { name: "Connections navigation", exact: true })
         .click();
     await page.getByRole("button", { name: "Chats", exact: true }).click();
-    const picker = page.getByRole("combobox", { name: "Answer model" });
+    const picker = page
+      .locator("form")
+      .filter({ has: page.getByLabel("Message", { exact: true }) })
+      .getByRole("combobox", { name: "Answer model" });
     await expect(picker).toHaveValue("");
     await picker.selectOption("synthetic-chatgpt");
     await expect(
@@ -70,9 +73,17 @@ test("Interview uses the selected subscription only after accepting an audio que
   page,
 }) => {
   const panel = await audioFixture(page);
-  const picker = page.getByRole("combobox", { name: "Answer model" });
+  const picker = panel.getByRole("combobox", { name: "Answer model" });
   await expect(picker).toBeVisible();
   await picker.selectOption("synthetic-chatgpt");
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.screenshot({
+      path: `test-results/interview-model-${width}.png`,
+      fullPage: true,
+    });
+  }
+  await page.setViewportSize({ width: 1280, height: 844 });
   const sent: unknown[] = [];
   page.on("request", (request) => {
     if (request.method() === "POST" && /\/messages$/.test(request.url()))
