@@ -184,7 +184,7 @@ test("answer copy preserves Markdown and reports clipboard failure on mobile", a
   );
 });
 
-test("New topic belongs to question controls and resets context without removing history", async ({
+test("New topic belongs to listening controls and resets context without removing history", async ({
   page,
 }) => {
   const panel = await audioFixture(page);
@@ -214,11 +214,12 @@ test("New topic belongs to question controls and resets context without removing
       .locator(".sent-questions")
       .getByRole("button", { name: "New topic", exact: true }),
   ).toHaveCount(0);
-  await controls
+  await panel
+    .locator(".listening-controls")
     .getByRole("button", { name: "New topic", exact: true })
     .click();
   await expect(
-    controls.getByRole("button", { name: "New topic", exact: true }),
+    panel.getByRole("button", { name: "New topic", exact: true }),
   ).toHaveCount(0);
   await expect(
     page.getByText("Sent questions (1)", { exact: true }),

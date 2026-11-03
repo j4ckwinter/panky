@@ -225,22 +225,6 @@
   flex-shrink: 0;
   color: var(--color-pancake-muted);
 }
-.question-tools .new-topic-button {
-  min-width: 0;
-  padding: 0 12px;
-  font-size: var(--text-pancake-label);
-  border: 1px solid var(--color-pancake-control-border);
-  background: var(--color-pancake-surface);
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-.question-tools {
-  display: flex;
-  justify-content: flex-end;
-}
-.question-tools:empty {
-  display: none;
-}
 .spoken-question .interview-actions {
   justify-content: space-between;
 }

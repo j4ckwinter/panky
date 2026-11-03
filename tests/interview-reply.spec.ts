@@ -2,6 +2,48 @@ import { expect, type Request } from "@playwright/test";
 import { test } from "./auth-fixture.js";
 import { audioFixture, submitAudioQuestion } from "./browser-audio-fixture.js";
 
+test("clarification of the second spoken question is accepted", async ({
+  page,
+}) => {
+  const panel = await audioFixture(page);
+  await page
+    .getByRole("combobox", { name: "Answer model" })
+    .selectOption("synthetic-chatgpt");
+  const answer = page.getByRole("region", {
+    name: "Interview answer",
+    exact: true,
+  });
+  await submitAudioQuestion(page, "What is a JavaScript closure?");
+  await expect(answer).toContainText("Subscription response:");
+  await submitAudioQuestion(page, "What is a direct agreement?");
+  await expect(answer).toContainText("Do you mean a direct agreement");
+  const reply = page.getByLabel("Reply or clarify", { exact: true });
+  await reply.fill("legal");
+  const response = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.url().endsWith("/messages"),
+  );
+  await page.getByRole("button", { name: "Send reply", exact: true }).click();
+  const result = await response;
+  expect(result.status()).toBe(200);
+  expect(result.request().postDataJSON().interview.context).toEqual([
+    { question: "What is a JavaScript closure?", spokenAnswer: "" },
+    {
+      question: "What is a direct agreement?",
+      spokenAnswer: "",
+      assistantResponse:
+        "Do you mean a direct agreement in project finance, or another context?",
+    },
+  ]);
+  await expect(answer).toContainText(
+    'Subscription response: {"question":"legal"',
+  );
+  await expect(reply).toHaveValue("");
+  await expect(page.getByText("Could not complete request")).toBeHidden();
+  await panel.getByRole("button", { name: "Stop", exact: true }).click();
+});
+
 for (const width of [1280, 390]) {
   test(`Interview clarification keeps its context and listening at ${width}px`, async ({
     page,

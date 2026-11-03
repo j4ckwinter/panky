@@ -74,6 +74,20 @@ export function Interview({
         <LiveTranscript
           modelPicker={modelPicker}
           modelNotice={modelNotice}
+          topicAction={
+            questions.topicCount > 0 && (
+              <Button
+                variant="ghost"
+                size={40}
+                className="capture-action"
+                title="Clear follow-up context"
+                disabled={questions.unavailable}
+                onClick={questions.newTopic}
+              >
+                New topic
+              </Button>
+            )
+          }
           onTranscript={questions.onTranscript}
           onResetDetection={questions.resetDetection}
           onUseAsQuestion={questions.propose}
@@ -82,7 +96,9 @@ export function Interview({
             <div
               className={`interview-workspace${question ? " has-answer" : ""}`}
             >
-              <SpokenQuestions questions={questions} />
+              {(questions.cards.length > 0 || questions.notice) && (
+                <SpokenQuestions questions={questions} />
+              )}
               <div className="interview-answer-column">
                 {(question || questions.cards.length > 0) && (
                   <div className="interview-actions">

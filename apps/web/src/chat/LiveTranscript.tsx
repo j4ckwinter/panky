@@ -10,6 +10,7 @@ export function LiveTranscript({
   children,
   modelPicker,
   modelNotice,
+  topicAction,
   onTranscript,
   onUseAsQuestion,
   onResetDetection,
@@ -17,6 +18,7 @@ export function LiveTranscript({
   children?: ReactNode;
   modelPicker?: ReactNode;
   modelNotice?: ReactNode;
+  topicAction?: ReactNode;
   onTranscript?: (entry: TranscriptEntry) => void;
   onUseAsQuestion?: (text: string) => void;
   onResetDetection?: () => void;
@@ -65,13 +67,14 @@ export function LiveTranscript({
           <AudioSourceStatus state={state} />
         </div>
         <div className="browser-audio-actions listening-controls">
+          {topicAction}
           {modelPicker}
           {!active && !pending && !loading && (
             <Button onClick={() => void start()}>Start listening</Button>
           )}
           {active && !loading && (
             <Button
-              variant="secondary"
+              variant="ghost"
               size={40}
               className="capture-action"
               onClick={pause}
@@ -91,7 +94,7 @@ export function LiveTranscript({
           )}
           {(active || pending) && (
             <Button
-              variant="secondary"
+              variant="ghost"
               size={40}
               className="capture-action"
               onClick={stop}
