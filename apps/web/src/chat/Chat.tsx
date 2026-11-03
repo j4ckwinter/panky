@@ -1,5 +1,8 @@
+import { ModelPicker } from "./ModelPicker";
+import { useChatGPT } from "./useChatGPT";
+import { connectionCatalogue, type ConnectionId } from "./connection-catalogue";
 import { BannerToast } from "@jack.winter/pancake-ui";
-import type { Conversation } from "@panky/shared";
+import type { Conversation, ModelSelection } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api/chat";
 import { ManageChat } from "./ManageChat";
@@ -39,7 +42,15 @@ export function Chat({
   onAccess?: () => void;
   email: string;
 }) {
-  const chat = useChat(api);
+  const [modelSelection, setModelSelection] = useState<ModelSelection>();
+  const chat = useChat(api, modelSelection);
+  const chatGPT = useChatGPT(api, Boolean(onAccess));
+  const catalogue = connectionCatalogue(
+    Boolean(onAccess) &&
+      ((chatGPT.connection !== null &&
+        chatGPT.connection.kind !== "unavailable") ||
+        Boolean(chatGPT.error)),
+  );
   const [interviewSession, setInterviewSession] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const menu = useRef<HTMLButtonElement>(null);
@@ -50,14 +61,14 @@ export function Chat({
   const [connectionReturn, setConnectionReturn] = useState(
     initialConnectionReturn,
   );
-  const [selectedConnection, setSelectedConnection] = useState<"notion" | null>(
-    () => {
+  const [selectedConnection, setSelectedConnection] =
+    useState<ConnectionId | null>(() => {
       const params = new URLSearchParams(window.location.search);
+      if (params.get("connection") === "chatgpt" && onAccess) return "chatgpt";
       return params.get("connection") === "notion" || initialConnectionReturn()
         ? "notion"
         : null;
-    },
-  );
+    });
   const interview = view === "interview";
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -122,8 +133,9 @@ export function Chat({
         onChat={openChat}
         onInterview={openInterview}
         selectedConnection={selectedConnection}
-        onSelectConnection={() => {
-          setSelectedConnection("notion");
+        connectionItems={catalogue}
+        onSelectConnection={(id) => {
+          setSelectedConnection(id);
           setView("connections");
         }}
         onConnections={() => {
@@ -181,6 +193,17 @@ export function Chat({
             input.current?.focus();
           }}
         />
+        {view !== "connections" &&
+          onAccess &&
+          (chatGPT.models.length > 0 || modelSelection) && (
+            <ModelPicker
+              state={chatGPT}
+              value={modelSelection}
+              onChange={setModelSelection}
+              pending={chat.pending}
+              localLabel={chat.localProviderLabel}
+            />
+          )}
         {chat.error && (
           <div className="chat-alert">
             <BannerToast tone="error" title="Could not complete request">
@@ -192,6 +215,8 @@ export function Chat({
           <Connections
             api={api}
             selectedConnection={selectedConnection}
+            catalogue={catalogue}
+            chatGPT={chatGPT}
             onSelectConnection={setSelectedConnection}
             returnResult={connectionReturn}
             clearReturn={() => setConnectionReturn(null)}

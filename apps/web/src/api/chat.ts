@@ -1,3 +1,4 @@
+import { chatGPTApi } from "./chatgpt";
 import { connectionApi } from "./connections";
 import { ApiError } from "./ApiError";
 export { ApiError } from "./ApiError";
@@ -13,6 +14,7 @@ import {
   healthSchema,
   historySchema,
   type InterviewInput,
+  type ModelSelection,
   type StreamEvent,
   streamEventSchema,
 } from "@panky/shared";
@@ -82,6 +84,7 @@ export function createApi(token?: string) {
   }
   return {
     ...connectionApi(request),
+    ...chatGPTApi(request),
     async experienceStatus() {
       return experienceStatusSchema.parse(
         await (await request("/experience/status")).json(),
@@ -176,6 +179,7 @@ export function createApi(token?: string) {
       onEvent: (event: StreamEvent) => void,
       interview?: InterviewInput,
       useSources = false,
+      modelSelection?: ModelSelection,
     ) {
       const response = await request(
         `/conversations/${encodeURIComponent(id)}/messages`,
@@ -190,6 +194,7 @@ export function createApi(token?: string) {
             includeActivity: true,
             interview,
             useSources,
+            modelSelection,
           }),
           signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]),
         },

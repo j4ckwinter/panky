@@ -11,6 +11,7 @@ import {
   submissionSchema,
 } from "@panky/shared";
 import { z } from "zod";
+import { ChatGPTService } from "./chatgpt/service.js";
 import { Auth } from "./auth/auth.js";
 import type { GoogleVerifier } from "./auth/google.js";
 import { Chat } from "./chat/chat.js";
@@ -53,6 +54,14 @@ export function createApp(
   notionImporter: typeof importNotionPage = importNotionPage,
   notionOAuth?: NotionOAuth,
   notionSearcher: typeof searchNotionPages = searchNotionPages,
+  chatGPT: Pick<
+    ChatGPTService,
+    "status" | "models" | "disconnect" | "provider"
+  > &
+    Partial<Pick<ChatGPTService, "close">> = new ChatGPTService({
+    enabled: config.CHATGPT_ENABLED,
+    credentialPath: config.CHATGPT_CREDENTIAL_PATH,
+  }),
 ) {
   const store = new Store(config.DATABASE_PATH);
   const auth = new Auth(config, googleVerifier);
@@ -79,6 +88,18 @@ export function createApp(
   const expectedToken = createHash("sha256")
     .update(`Bearer ${config.AUTH_TOKEN}`)
     .digest();
+
+  async function chatGPTModels(response: ServerResponse) {
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    response.once("close", abort);
+    if (response.destroyed) controller.abort();
+    try {
+      return await chatGPT.models(controller.signal);
+    } finally {
+      response.off("close", abort);
+    }
+  }
 
   async function route(request: IncomingMessage, response: ServerResponse) {
     response.setHeader("Cache-Control", "no-store, no-transform");
@@ -147,6 +168,42 @@ export function createApp(
       )
     )
       return;
+    if (
+      url.pathname === "/api/connections/chatgpt" ||
+      url.pathname === "/api/connections/chatgpt/models"
+    ) {
+      if (!bearer && user?.role !== "owner")
+        throw new HttpError(
+          403,
+          "ChatGPT subscriptions are available only to the owner in this prototype.",
+        );
+      if (request.method === "GET") {
+        const result = url.pathname.endsWith("/models")
+          ? {
+              models: config.CHATGPT_ENABLED
+                ? await chatGPTModels(response)
+                : [],
+            }
+          : config.CHATGPT_ENABLED
+            ? await chatGPT.status()
+            : { kind: "unavailable" };
+        assertAccess();
+        json(response, 200, result);
+      } else if (
+        request.method === "DELETE" &&
+        !url.pathname.endsWith("/models")
+      ) {
+        if (chat.busy)
+          throw new HttpError(
+            409,
+            "Stop the active response before disconnecting ChatGPT.",
+          );
+        if (config.CHATGPT_ENABLED) await chatGPT.disconnect();
+        response.writeHead(204);
+        response.end();
+      } else throw new HttpError(405, "Method not allowed.");
+      return;
+    }
     if (url.pathname === "/api/health" && request.method === "GET") {
       json(response, 200, {
         provider: config.MODEL_PROVIDER,
@@ -225,11 +282,39 @@ export function createApp(
       return;
     }
     if (match[2] && request.method === "POST") {
-      const { content, includeActivity, interview, useSources } =
-        await readSubmission(request);
+      const {
+        content,
+        includeActivity,
+        interview,
+        useSources,
+        modelSelection,
+      } = await readSubmission(request);
       assertAccess();
       if (!store.ownsConversation(id.data, userId))
         throw new HttpError(404, "Conversation not found.");
+      let modelProvider: ModelProvider | undefined;
+      if (modelSelection) {
+        if (!bearer && user?.role !== "owner")
+          throw new HttpError(
+            403,
+            "Only the owner can use the ChatGPT subscription prototype.",
+          );
+        if (!config.CHATGPT_ENABLED)
+          throw new HttpError(
+            409,
+            "ChatGPT subscription access is not enabled on this server.",
+          );
+        const models = await chatGPTModels(response);
+        assertAccess();
+        if (!store.ownsConversation(id.data, userId))
+          throw new HttpError(404, "Conversation not found.");
+        if (!models.some((model) => model.id === modelSelection.model))
+          throw new HttpError(
+            400,
+            "This ChatGPT model is no longer available. Refresh the model list.",
+          );
+        modelProvider = chatGPT.provider(modelSelection.model);
+      }
       const useChatSources =
         !interview && useSources && experience.status(userId).usableCount > 0;
       const controller = new AbortController();
@@ -267,6 +352,7 @@ export function createApp(
               )
             : [],
           useChatSources,
+          modelProvider,
         );
         response.end();
       } finally {
@@ -304,6 +390,7 @@ export function createApp(
       await connections.close();
       await experienceApi.stop();
       await chat.stop();
+      chatGPT.close?.();
       await new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),
       );

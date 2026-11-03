@@ -3,6 +3,7 @@ import type {
   Conversation,
   InterviewInput,
   Message,
+  ModelSelection,
   StreamEvent,
   TaskRun,
 } from "@panky/shared";
@@ -18,7 +19,7 @@ function providerLabel(health: Awaited<ReturnType<Api["health"]>>) {
     : `Local AI · ${health.model}`;
 }
 
-export function useChat(api: Api) {
+export function useChat(api: Api, modelSelection?: ModelSelection) {
   const [label, setProviderLabel] = useState("Connecting");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [current, setCurrent] = useState<Conversation | null>(null);
@@ -260,6 +261,7 @@ export function useChat(api: Api) {
           receive,
           interview,
           useSources,
+          modelSelection,
         );
         const list = await api.conversations();
         if (mounted.current) {
@@ -323,7 +325,8 @@ export function useChat(api: Api) {
     }
   }
   return {
-    providerLabel: label,
+    providerLabel: modelSelection ? `ChatGPT · ${modelSelection.model}` : label,
+    localProviderLabel: label,
     draft,
     setDraft,
     conversations,

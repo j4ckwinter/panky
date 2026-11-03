@@ -11,6 +11,14 @@ const originSchema = z
   }, "Origins must be exact HTTP(S) origins without paths or credentials.");
 
 const configSchema = z.object({
+  CHATGPT_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+  CHATGPT_CREDENTIAL_PATH: z
+    .string()
+    .min(1)
+    .default("./data/chatgpt/credentials.json"),
   NOTION_CLIENT_ID: z.preprocess(
     (value) => (value === "" ? undefined : value),
     z.uuid().optional(),

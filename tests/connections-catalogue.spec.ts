@@ -67,7 +67,7 @@ for (const width of [1280, 390]) {
       name: "Notion",
       exact: true,
     });
-    await expect(available.getByRole("button")).toHaveCount(1);
+    await expect(available.getByRole("button")).toHaveCount(2);
     const search = page.getByRole("textbox", {
       name: "Search connections",
       exact: true,

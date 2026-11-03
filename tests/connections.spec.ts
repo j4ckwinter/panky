@@ -33,7 +33,9 @@ test("Notion connects across sites with strict cookies, persists and disconnects
       completions.push(request);
   });
   await openConnections(page);
-  await expect(page.getByText(/stored and processed/i)).toBeVisible();
+  await expect(
+    page.getByText(/Imported content is stored on the Windows PC/i),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Collapse sidebar", exact: true })
     .click();

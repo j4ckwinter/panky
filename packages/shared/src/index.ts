@@ -4,6 +4,8 @@ import { z } from "zod";
 import { evidenceSchema } from "./experience.js";
 export * from "./experience.js";
 export * from "./connections.js";
+import { modelSelectionSchema } from "./models.js";
+export * from "./models.js";
 import { interviewInputSchema } from "./interview.js";
 
 export { type InterviewInput, interviewInputSchema } from "./interview.js";
@@ -34,6 +36,7 @@ export const submissionSchema = z
     includeActivity: z.boolean().default(false),
     useSources: z.boolean().default(false),
     interview: interviewInputSchema.optional(),
+    modelSelection: modelSelectionSchema.optional(),
   })
   .strict();
 export const conversationsSchema = z.array(conversationSchema);

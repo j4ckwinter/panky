@@ -10,6 +10,7 @@ import {
 } from "react";
 import { ActionMenu } from "../components/ActionMenu";
 import { Brand } from "../components/Brand";
+import type { ConnectionId, ConnectionItem } from "./connection-catalogue";
 import { SidebarList } from "./SidebarList";
 
 export type ChatView = "chat" | "interview" | "connections";
@@ -35,6 +36,7 @@ export function ChatSidebar({
   onInterview,
   onConnections,
   selectedConnection,
+  connectionItems,
   onSelectConnection,
   onChat,
 }: {
@@ -57,8 +59,9 @@ export function ChatSidebar({
   view: ChatView;
   onInterview: () => void;
   onConnections: () => void;
-  selectedConnection: "notion" | null;
-  onSelectConnection: () => void;
+  selectedConnection: ConnectionId | null;
+  connectionItems: ConnectionItem[];
+  onSelectConnection: (id: ConnectionId) => void;
   onChat: () => void;
 }) {
   const [search, setSearch] = useState("");
@@ -377,17 +380,15 @@ export function ChatSidebar({
             }
             items={
               view === "connections"
-                ? [
-                    {
-                      id: "notion",
-                      title: "Notion",
-                      selected: selectedConnection === "notion",
-                      onSelect: () => {
-                        setSidebarOpen(false);
-                        onSelectConnection();
-                      },
+                ? connectionItems.map((connection) => ({
+                    id: connection.id,
+                    title: connection.name,
+                    selected: selectedConnection === connection.id,
+                    onSelect: () => {
+                      setSidebarOpen(false);
+                      onSelectConnection(connection.id);
                     },
-                  ]
+                  }))
                 : conversations.map((conversation) => ({
                     id: conversation.id,
                     title: conversation.title,

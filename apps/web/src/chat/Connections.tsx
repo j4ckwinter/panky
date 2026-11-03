@@ -5,39 +5,48 @@ import {
   type ConnectionReturn,
   NotionConnectionDetails,
 } from "./NotionConnectionDetails";
-
+import { ChatGPTConnectionDetails } from "./ChatGPTConnectionDetails";
+import type { ConnectionId, ConnectionItem } from "./connection-catalogue";
+import type { ChatGPTState } from "./useChatGPT";
 export type { ConnectionReturn } from "./NotionConnectionDetails";
 
 export function Connections({
   selectedConnection,
   onSelectConnection,
+  catalogue,
+  chatGPT,
   ...details
 }: {
   api: Api;
-  selectedConnection: "notion" | null;
-  onSelectConnection: (connection: "notion" | null) => void;
+  selectedConnection: ConnectionId | null;
+  onSelectConnection: (connection: ConnectionId | null) => void;
+  catalogue: ConnectionItem[];
+  chatGPT: ChatGPTState;
   returnResult: ConnectionReturn;
   clearReturn: () => void;
   pending?: boolean;
 }) {
-  const tile = useRef<HTMLButtonElement>(null);
+  const tiles = useRef(new Map<ConnectionId, HTMLButtonElement>());
   const previousSelection = useRef(selectedConnection);
   useEffect(() => {
-    if (previousSelection.current && !selectedConnection) tile.current?.focus();
+    if (previousSelection.current && !selectedConnection)
+      tiles.current.get(previousSelection.current)?.focus();
     previousSelection.current = selectedConnection;
   }, [selectedConnection]);
-
+  const back = () => {
+    details.clearReturn();
+    onSelectConnection(null);
+  };
   if (selectedConnection === "notion")
+    return <NotionConnectionDetails {...details} onBack={back} />;
+  if (selectedConnection === "chatgpt")
     return (
-      <NotionConnectionDetails
-        {...details}
-        onBack={() => {
-          details.clearReturn();
-          onSelectConnection(null);
-        }}
+      <ChatGPTConnectionDetails
+        state={chatGPT}
+        pending={details.pending ?? false}
+        onBack={back}
       />
     );
-
   return (
     <div className="connections-scroll">
       <section className="connections-panel" aria-label="Your connections">
@@ -45,35 +54,41 @@ export function Connections({
           <Text as="h2" variant="heading">
             Your apps
           </Text>
-          <p>Connect tools to bring your notes into Panky.</p>
+          <p>Connect tools and models to Panky.</p>
         </div>
         <div className="connections-catalogue">
-          <button
-            type="button"
-            ref={tile}
-            className="connection-tile"
-            aria-label="View Notion connection"
-            onClick={() => onSelectConnection("notion")}
-          >
-            <span className="notion-connection-icon" aria-hidden="true">
-              N
-            </span>
-            <span className="connection-tile-copy">
-              <strong>Notion</strong>
-              <span>Your notes, projects and experience.</span>
-            </span>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              aria-hidden="true"
+          {catalogue.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              ref={(node) => {
+                if (node) tiles.current.set(item.id, node);
+                else tiles.current.delete(item.id);
+              }}
+              className="connection-tile"
+              aria-label={`View ${item.name} connection`}
+              onClick={() => onSelectConnection(item.id)}
             >
-              <path d="m9 6 6 6-6 6" />
-            </svg>
-          </button>
+              <span className="connection-icon" aria-hidden="true">
+                {item.mark}
+              </span>
+              <span className="connection-tile-copy">
+                <strong>{item.name}</strong>
+                <span>{item.description}</span>
+              </span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                aria-hidden="true"
+              >
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            </button>
+          ))}
         </div>
       </section>
     </div>

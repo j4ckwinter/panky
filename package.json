@@ -18,7 +18,8 @@
     "evaluate:ollama": "tsx scripts/evaluate-ollama.ts",
     "evaluate:interview": "tsx scripts/interview-evaluation.ts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
-    "test:speech": "pnpm build && playwright test --config playwright.speech.config.ts"
+    "test:speech": "pnpm build && playwright test --config playwright.speech.config.ts",
+    "connect:chatgpt": "pnpm --filter @panky/server connect:chatgpt"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",

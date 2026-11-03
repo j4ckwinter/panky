@@ -35,6 +35,7 @@ export class Chat {
     interview?: InterviewInput,
     sources: Evidence[] = [],
     useSources = false,
+    modelProvider?: ModelProvider,
   ): Promise<void> {
     if (this.active)
       throw new HttpError(
@@ -76,6 +77,7 @@ export class Chat {
       includeActivity,
       context,
       Boolean(interview),
+      modelProvider,
     ).finally(() => {
       clearTimeout(timeout);
       signal.removeEventListener("abort", abort);
@@ -107,6 +109,7 @@ export class Chat {
       omittedMessages?: number;
     },
     isInterview = false,
+    modelProvider?: ModelProvider,
   ) {
     const signal = active.controller.signal;
     signal.throwIfAborted();
@@ -145,13 +148,13 @@ export class Chat {
       });
       await runLoop({
         history: context.history,
-        provider: this.provider,
+        provider: modelProvider ?? this.provider,
         purpose: isInterview
           ? "interview"
           : suppliedContext
             ? "sourced-chat"
             : "chat",
-        tools: suppliedContext ? [] : this.tools,
+        tools: suppliedContext || modelProvider ? [] : this.tools,
         config: this.config,
         signal,
         activity,

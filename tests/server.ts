@@ -18,6 +18,7 @@ const config = loadConfig({
   OWNER_EMAIL: "owner@gmail.com",
   GOOGLE_CLIENT_ID: "123456789-browser-tests.apps.googleusercontent.com",
   MODEL_PROVIDER: "mock",
+  CHATGPT_ENABLED: "true",
   NOTION_TOKEN: "synthetic-notion-token-for-browser-tests",
   NOTION_CLIENT_ID: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
   NOTION_CLIENT_SECRET: "synthetic-notion-oauth-secret",
@@ -75,6 +76,28 @@ const app = createApp(
   },
   notionFixture,
   personalSearcher,
+  {
+    async status() {
+      return { kind: "connected", email: "owner@example.com" };
+    },
+    async models() {
+      return [{ id: "synthetic-chatgpt", name: "Synthetic ChatGPT" }];
+    },
+    async disconnect() {},
+    provider() {
+      return {
+        async *stream(history, tools) {
+          if (tools.length)
+            throw new Error("Subscription prototype must not receive tools");
+          yield {
+            type: "delta",
+            text: `Subscription response: ${history.at(-1)?.content ?? ""}`,
+          };
+          yield { type: "complete" };
+        },
+      };
+    },
+  },
 );
 app.server.listen(3101, "127.0.0.1");
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
