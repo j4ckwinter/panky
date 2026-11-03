@@ -6,9 +6,10 @@ test("clarification of the second spoken question is accepted", async ({
   page,
 }) => {
   const panel = await audioFixture(page);
+  await page.getByRole("button", { name: "Answer model", exact: true }).click();
   await page
-    .getByRole("combobox", { name: "Answer model" })
-    .selectOption("synthetic-chatgpt");
+    .getByRole("radio", { name: "Synthetic ChatGPT", exact: true })
+    .check();
   const answer = page.getByRole("region", {
     name: "Interview answer",
     exact: true,
@@ -51,8 +52,11 @@ for (const width of [1280, 390]) {
     const panel = await audioFixture(page);
     await page.setViewportSize({ width, height: 844 });
     await page
-      .getByRole("combobox", { name: "Answer model" })
-      .selectOption("synthetic-chatgpt");
+      .getByRole("button", { name: "Answer model", exact: true })
+      .click();
+    await page
+      .getByRole("radio", { name: "Synthetic ChatGPT", exact: true })
+      .check();
     const requests: Request[] = [];
     page.on("request", (request) => {
       if (request.method() === "POST" && request.url().endsWith("/messages"))
@@ -153,9 +157,10 @@ test("saved answers recover reply drafts after another spoken question", async (
   page,
 }) => {
   const panel = await audioFixture(page);
+  await page.getByRole("button", { name: "Answer model", exact: true }).click();
   await page
-    .getByRole("combobox", { name: "Answer model" })
-    .selectOption("synthetic-chatgpt");
+    .getByRole("radio", { name: "Synthetic ChatGPT", exact: true })
+    .check();
   await submitAudioQuestion(page, "What is a direct agreement?");
   const reply = page.getByLabel("Reply or clarify", { exact: true });
   await expect(reply).toBeVisible();

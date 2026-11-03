@@ -16,7 +16,7 @@
 .composer > div {
   min-width: 0;
 }
-.composer label {
+.composer > div > label {
   position: absolute;
   width: 1px;
   height: 1px;

@@ -28,19 +28,37 @@ for (const width of [1280, 390]) {
         .getByRole("button", { name: "Connections navigation", exact: true })
         .click();
     await page.getByRole("button", { name: "Chats", exact: true }).click();
+    const sent: unknown[] = [];
+    page.on("request", (request) => {
+      if (request.method() === "POST" && /\/messages$/.test(request.url()))
+        sent.push(request.postDataJSON());
+    });
     const picker = page
       .locator("form")
       .filter({ has: page.getByLabel("Message", { exact: true }) })
-      .getByRole("combobox", { name: "Answer model" });
-    await expect(picker).toHaveValue("");
-    await picker.selectOption("synthetic-chatgpt");
+      .getByRole("button", { name: "Answer model", exact: true });
+    await expect(picker).toHaveAttribute("title", /Local AI|Demo mode/);
+    await picker.focus();
+    await picker.press("Enter");
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("radio").first()).toBeFocused();
+    await page.keyboard.press("ArrowDown");
     await expect(picker).toHaveAttribute(
       "title",
       "Answer model: ChatGPT · Synthetic ChatGPT",
     );
+    await picker.click();
+    const choices = page.getByRole("region", { name: "Choose answer model" });
     await expect(
-      page.locator(".model-picker .pancake-select-chevron"),
-    ).toBeHidden();
+      page.getByRole("radio", { name: "Synthetic ChatGPT", exact: true }),
+    ).toBeChecked();
+    await page.screenshot({ path: `test-results/model-picker-${width}.png` });
+    const bounds = await choices.boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+    await page.keyboard.press("Escape");
+    await expect(choices).toBeHidden();
+    await expect(picker).toBeFocused();
     const modelBox = await picker.boundingBox();
     expect(modelBox!.width).toBe(40);
     const message = page.getByLabel("Message", { exact: true });
@@ -49,6 +67,16 @@ for (const width of [1280, 390]) {
       (element) => getComputedStyle(element).borderColor,
     );
     await message.fill("A long draft that stays on one line. ".repeat(20));
+    await picker.click();
+    await page
+      .getByRole("radio", { name: "Synthetic ChatGPT", exact: true })
+      .focus();
+    await page.keyboard.press("Enter");
+    await expect(choices).toBeHidden();
+    await expect(message).toHaveValue(
+      "A long draft that stays on one line. ".repeat(20),
+    );
+    expect(sent).toHaveLength(0);
     await message.focus();
     expect((await message.boundingBox())!.height).toBeLessThanOrEqual(40);
     expect((await composer.boundingBox())!.height).toBeLessThanOrEqual(56);
@@ -65,11 +93,6 @@ for (const width of [1280, 390]) {
         /Questions, chat context and relevant source passages are sent to OpenAI/,
       ),
     ).toBeVisible();
-    const sent: unknown[] = [];
-    page.on("request", (request) => {
-      if (request.method() === "POST" && /\/messages$/.test(request.url()))
-        sent.push(request.postDataJSON());
-    });
     await page
       .getByLabel("Message", { exact: true })
       .fill("Explain event processing");
@@ -89,8 +112,9 @@ for (const width of [1280, 390]) {
       path: `test-results/chatgpt-answer-${width}.png`,
       fullPage: true,
     });
-    await picker.selectOption("");
-    await expect(picker).toHaveValue("");
+    await picker.click();
+    await page.getByRole("radio").first().check();
+    await expect(picker).toHaveAttribute("title", /Local AI|Demo mode/);
     await expect(page.getByText(/Using ChatGPT plan/)).toHaveCount(0);
   });
 }
@@ -99,9 +123,15 @@ test("Interview uses the selected subscription only after accepting an audio que
   page,
 }) => {
   const panel = await audioFixture(page);
-  const picker = panel.getByRole("combobox", { name: "Answer model" });
+  const picker = panel.getByRole("button", {
+    name: "Answer model",
+    exact: true,
+  });
   await expect(picker).toBeVisible();
-  await picker.selectOption("synthetic-chatgpt");
+  await picker.click();
+  await page
+    .getByRole("radio", { name: "Synthetic ChatGPT", exact: true })
+    .check();
   for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await page.screenshot({
@@ -145,9 +175,15 @@ test("failed remote revocation shows local disconnection without changing the se
   page,
 }) => {
   await page.goto("/");
-  const picker = page.getByRole("combobox", { name: "Answer model" });
+  const picker = page.getByRole("button", {
+    name: "Answer model",
+    exact: true,
+  });
   await expect(picker).toBeVisible();
-  await picker.selectOption("synthetic-chatgpt");
+  await picker.click();
+  await page
+    .getByRole("radio", { name: "Synthetic ChatGPT", exact: true })
+    .check();
   let disconnected = false;
   await page.route("**/api/connections/chatgpt", (route) => {
     if (route.request().method() === "DELETE") {
@@ -179,7 +215,20 @@ test("failed remote revocation shows local disconnection without changing the se
     page.getByText("pnpm connect:chatgpt", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Chats", exact: true }).click();
-  await expect(picker).toHaveValue("synthetic-chatgpt");
+  await expect(picker).toHaveAttribute(
+    "title",
+    /synthetic-chatgpt|Synthetic ChatGPT/,
+  );
+  await picker.click();
+  const unavailable = page.getByRole("radio", {
+    name: /synthetic-chatgpt|Synthetic ChatGPT/,
+  });
+  await expect(unavailable).toBeChecked();
+  await expect(unavailable).toBeDisabled();
+  await page.getByLabel("Message", { exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Choose answer model" }),
+  ).toBeHidden();
   await expect(
     page.getByText(/Messages are not switched automatically/),
   ).toBeVisible();

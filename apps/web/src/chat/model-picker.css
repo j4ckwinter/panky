@@ -1,51 +1,17 @@
 .model-picker {
-  position: relative;
-  display: grid;
-  place-items: center;
   width: 40px;
   height: 40px;
   flex: 0 0 40px;
-  border-radius: 50%;
   color: var(--color-pancake-deep);
 }
-.model-picker-icon {
-  pointer-events: none;
+.model-picker-panel {
+  width: 300px;
+  max-height: min(320px, calc(100% - var(--spacing-pancake-32)));
 }
-.model-picker > div {
-  position: absolute;
-  inset: 0;
+.model-picker-panel fieldset {
+  min-width: 0;
 }
-.model-picker label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-.model-picker select {
-  position: absolute;
-  inset: 0;
-  width: 40px;
-  height: 40px;
-  min-height: 40px;
-  padding: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-.model-picker .pancake-select-chevron {
-  display: none;
-}
-.model-picker:hover {
-  background: var(--color-pancake-surface-muted);
-}
-.model-picker:has(select:focus-visible) {
-  outline: 2px solid var(--color-pancake-ink);
-  outline-offset: 2px;
-}
-.model-picker:has(select:disabled) {
-  opacity: 0.5;
-}
+
 .model-notice:empty {
   display: none;
 }
