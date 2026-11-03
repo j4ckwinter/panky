@@ -14,6 +14,10 @@ import {
   type NotionOAuth,
 } from "./notion.js";
 import { ConnectionStore } from "./store.js";
+import { ConnectionSources, type ContentAccess } from "./sources.js";
+import type { ExperienceStore } from "../experience/store.js";
+import { importNotionPage } from "../experience/notion.js";
+import { searchNotionPages } from "./pages.js";
 
 const root = "/api/connections/notion";
 const completionSchema = z.union([
@@ -35,6 +39,7 @@ type Pending = Session & { revision: number; expiresAt: number };
 
 export class ConnectionsApi {
   private readonly store: ConnectionStore;
+  private readonly sources: ConnectionSources;
   private readonly provider: NotionOAuth | undefined;
   private readonly pending = new Map<string, Pending>();
   private readonly active = new Map<
@@ -44,12 +49,17 @@ export class ConnectionsApi {
   constructor(
     private readonly config: Config,
     private readonly auth: Auth,
+    private readonly experience: ExperienceStore,
     provider?: NotionOAuth,
+    importer: typeof importNotionPage = importNotionPage,
+    searcher: typeof searchNotionPages = searchNotionPages,
+    private readonly legacyBusy: (userId: string) => boolean = () => false,
   ) {
     this.store = new ConnectionStore(
       config.DATABASE_PATH,
       config.NOTION_TOKEN_KEY,
     );
+    this.sources = new ConnectionSources(experience, importer, searcher);
     if (
       config.NOTION_CLIENT_ID &&
       config.NOTION_CLIENT_SECRET &&
@@ -62,6 +72,63 @@ export class ConnectionsApi {
           config.NOTION_CLIENT_SECRET,
         );
     }
+  }
+  busy(userId: string) {
+    return this.active.has(userId);
+  }
+  eligibleConnection(userId: string) {
+    return this.store.status(userId, Boolean(this.provider)).kind ===
+      "connected"
+      ? this.store.connectionId(userId)
+      : null;
+  }
+  private requireReconnect(userId: string, revision: number) {
+    const connectionId = this.store.connectionId(userId);
+    if (connectionId) this.experience.failConnection(userId, connectionId);
+    this.store.requireReconnect(userId, revision);
+  }
+  private async content<T>(
+    request: IncomingMessage,
+    session: Session,
+    revision: number,
+    operation: (access: ContentAccess) => Promise<T>,
+  ) {
+    return this.run(session.userId, async (signal) => {
+      const assertCurrent = () =>
+        this.assertSession(request, session, revision, signal);
+      assertCurrent();
+      const connectionId = this.eligibleConnection(session.userId);
+      if (!connectionId)
+        throw new HttpError(
+          409,
+          "Connect or reconnect Notion before importing pages.",
+        );
+      let tokens;
+      try {
+        tokens = this.store.tokens(session.userId);
+      } catch {
+        tokens = null;
+      }
+      if (!tokens) {
+        this.requireReconnect(session.userId, revision);
+        throw new HttpError(409, "Reconnect Notion before importing pages.");
+      }
+      try {
+        const result = await operation({
+          connectionId,
+          token: tokens.access_token,
+          signal,
+          assertCurrent,
+        });
+        assertCurrent();
+        return result;
+      } catch (error) {
+        assertCurrent();
+        if (error instanceof NotionAuthorizationError)
+          this.requireReconnect(session.userId, revision);
+        throw error;
+      }
+    });
   }
   async close() {
     this.pending.clear();
@@ -99,7 +166,7 @@ export class ConnectionsApi {
     userId: string,
     operation: (signal: AbortSignal) => Promise<T>,
   ) {
-    if (this.active.has(userId))
+    if (this.active.has(userId) || this.legacyBusy(userId))
       throw new HttpError(
         409,
         "Wait for the current connection request to finish.",
@@ -133,10 +200,32 @@ export class ConnectionsApi {
     }
     if (url.pathname === root && request.method === "DELETE") {
       this.invalidate(userId);
+      const connectionId = this.store.connectionId(userId);
+      if (connectionId) this.experience.removeConnection(userId, connectionId);
       this.store.disconnect(userId);
       response.writeHead(204).end();
       return true;
     }
+    const revision = this.store.revision(userId);
+    if (
+      await this.sources.route(
+        request,
+        response,
+        url.pathname,
+        userId,
+        this.store.connectionId(userId),
+        (operation) => this.content(request, session, revision, operation),
+        () =>
+          this.assertSession(
+            request,
+            session,
+            revision,
+            new AbortController().signal,
+          ),
+        () => this.active.has(userId),
+      )
+    )
+      return true;
     if (request.method !== "POST")
       throw new HttpError(405, "Method not allowed.");
     const provider = this.provider;
@@ -238,11 +327,11 @@ export class ConnectionsApi {
         try {
           tokens = this.store.tokens(userId);
         } catch {
-          this.store.requireReconnect(userId, revision);
+          this.requireReconnect(userId, revision);
           return;
         }
         if (!tokens) {
-          this.store.requireReconnect(userId, revision);
+          this.requireReconnect(userId, revision);
           return;
         }
         try {
@@ -254,8 +343,11 @@ export class ConnectionsApi {
               502,
               "Notion could not be reached. Try again later.",
             );
+          const connectionId = this.store.connectionId(userId);
+          if (connectionId)
+            this.experience.failConnection(userId, connectionId);
           if (!tokens.refresh_token) {
-            this.store.requireReconnect(userId, revision);
+            this.requireReconnect(userId, revision);
             return;
           }
           try {
@@ -274,7 +366,7 @@ export class ConnectionsApi {
           } catch (error) {
             this.assertSession(request, session, revision, signal);
             if (error instanceof NotionTemporaryError) throw error;
-            this.store.requireReconnect(userId, revision);
+            this.requireReconnect(userId, revision);
           }
         }
         this.assertSession(request, session, revision, signal);

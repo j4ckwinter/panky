@@ -10,7 +10,13 @@ export const notionTokensSchema = z.object({
   bot_id: z.uuid(),
 });
 export type NotionTokens = z.infer<typeof notionTokensSchema>;
-export class NotionAuthorizationError extends Error {}
+export class NotionAuthorizationError extends HttpError {
+  constructor(
+    message = "Notion access is no longer valid. Reconnect from Connections.",
+  ) {
+    super(409, message);
+  }
+}
 export class NotionTemporaryError extends HttpError {
   constructor() {
     super(502, "Notion could not be reached. Try again later.");

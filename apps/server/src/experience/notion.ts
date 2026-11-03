@@ -3,6 +3,7 @@ import type { ImportedPage } from "./imported-page.js";
 import { setTimeout } from "node:timers/promises";
 import { z } from "zod";
 import { HttpError } from "../http-utils.js";
+import { NotionAuthorizationError } from "../connections/notion.js";
 
 const identifier =
   /^(?:[a-f0-9]{32}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i;
@@ -117,6 +118,10 @@ export async function importNotionPage(
     });
     if (!response.ok) {
       await response.body?.cancel();
+      if (response.status === 401 || response.status === 403)
+        throw new NotionAuthorizationError(
+          "Notion denied access. Reconnect or check page permissions.",
+        );
       throw new HttpError(
         response.status === 429 ? 429 : 502,
         response.status === 429
@@ -124,7 +129,7 @@ export async function importNotionPage(
           : response.status === 401 || response.status === 403
             ? "Notion denied access. Check the server integration and page permissions."
             : response.status === 404
-              ? "Notion page content is unavailable. Share the page with the server integration."
+              ? "Notion page content is unavailable. Share the page with the connected Notion integration."
               : "Notion could not provide this page. Try refreshing later.",
       );
     }

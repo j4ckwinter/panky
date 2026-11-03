@@ -135,3 +135,9 @@ export {
   deviceSessionsSchema,
   googleOptionsSchema,
 } from "./auth.js";
+
+export {
+  notionPageSearchSchema,
+  notionPagesSchema,
+  notionSourcesSchema,
+} from "./connections.js";

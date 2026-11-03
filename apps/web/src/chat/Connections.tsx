@@ -1,7 +1,9 @@
 import { BannerToast, Button, Stack, Text } from "@jack.winter/pancake-ui";
 import type { NotionConnection } from "@panky/shared";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type Api, errorMessage } from "../api/chat";
+
+import { NotionSources } from "./NotionSources";
 
 export type ConnectionReturn = "connected" | "denied" | "error" | null;
 
@@ -24,6 +26,11 @@ export function Connections({
   const [operation, setOperation] = useState<
     "authorizing" | "checking" | "disconnecting" | null
   >(null);
+  const [sourcesBusy, setSourcesBusy] = useState(false);
+  const [sourceRevision, setSourceRevision] = useState(0);
+  const updateConnection = useCallback((connection: NotionConnection) => {
+    setState({ kind: "loaded", connection });
+  }, []);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const active = useRef(false);
@@ -87,7 +94,10 @@ export function Connections({
       if (mounted.current) setError(errorMessage(cause));
     } finally {
       active.current = false;
-      if (mounted.current) setOperation(null);
+      if (mounted.current) {
+        setOperation(null);
+        if (action === "checking") setSourceRevision((value) => value + 1);
+      }
     }
   }
 
@@ -162,8 +172,8 @@ export function Connections({
             <Stack gap="space16">
               <p>
                 Connect Notion to grant Panky read access to pages you choose.
-                Connecting does not import pages or change your interview
-                answers yet.
+                Connecting grants access; choose pages separately to create
+                local copies for interview answers.
               </p>
               <div className="notion-connection-actions">
                 <Button
@@ -195,8 +205,8 @@ export function Connections({
               </div>
               <p>
                 {connection.kind === "reconnect_required"
-                  ? "Panky could not confirm access to this workspace. Reconnect to grant access again."
-                  : "Your workspace is connected. No pages have been imported through this connection."}
+                  ? "Panky could not confirm access to this workspace. Reconnect, then refresh each page to revalidate its content before using it in new answers."
+                  : "Your workspace is connected. Choose the pages you want to import below."}
               </p>
               {confirmDisconnect ? (
                 <div
@@ -206,8 +216,11 @@ export function Connections({
                 >
                   <strong>Disconnect Notion?</strong>
                   <p>
-                    This removes this connection from Panky. Existing imported
-                    pages and saved conversations stay unchanged.
+                    This cancels imports and refreshes, removes this connection
+                    and deletes its imported pages and search index. Saved
+                    conversations and their evidence excerpts remain. Separate
+                    owner imports through the internal connection stay
+                    unchanged.
                   </p>
                   <div className="notion-connection-actions">
                     <Button
@@ -234,7 +247,7 @@ export function Connections({
                 <div className="notion-connection-actions">
                   {connection.kind === "reconnect_required" ? (
                     <Button
-                      disabled={busy}
+                      disabled={busy || sourcesBusy}
                       onClick={() => {
                         void run("authorizing");
                       }}
@@ -246,7 +259,7 @@ export function Connections({
                   ) : (
                     <Button
                       variant="secondary"
-                      disabled={busy}
+                      disabled={busy || sourcesBusy}
                       onClick={() => {
                         void run("checking");
                       }}
@@ -270,6 +283,17 @@ export function Connections({
                 </div>
               )}
             </Stack>
+          )}
+          {linked && (
+            <NotionSources
+              key={`${connection.workspace.id}-${connection.connectedAt}`}
+              api={api}
+              connected={connection.kind === "connected"}
+              revision={sourceRevision}
+              disabled={busy}
+              onBusy={setSourcesBusy}
+              onConnectionChange={updateConnection}
+            />
           )}
         </section>
         <p className="connections-privacy">

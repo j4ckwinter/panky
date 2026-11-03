@@ -1,58 +1,13 @@
-import { expect, type Page, type Request } from "@playwright/test";
-import { login, mockGoogle, test } from "./auth-fixture.js";
+import { expect, type Request } from "@playwright/test";
+import { mockGoogle, test } from "./auth-fixture.js";
 
-const origin = "http://localhost:5174";
-const endpoint = "/api/connections/notion";
-
-async function mockNotion(page: Page, code = "owner", denied = false) {
-  await page.route("https://api.notion.com/v1/oauth/authorize?**", (route) => {
-    const authorization = new URL(route.request().url());
-    const callback = new URL(
-      authorization.searchParams.get("redirect_uri") ?? "",
-    );
-    callback.searchParams.set(
-      "state",
-      authorization.searchParams.get("state") ?? "",
-    );
-    callback.searchParams.set(
-      denied ? "error" : "code",
-      denied ? "access_denied" : code,
-    );
-    return route.fulfill({
-      contentType: "text/html",
-      body: `<html><body><h1>Synthetic Notion authorization</h1><a href="${callback.href.replaceAll("&", "&amp;")}">${denied ? "Deny access" : "Allow access"}</a></body></html>`,
-    });
-  });
-}
-
-async function openConnections(page: Page) {
-  await page.goto("/");
-  await login(page);
-  if ((page.viewportSize()?.width ?? 1280) <= 640)
-    await page
-      .getByRole("button", { name: "Conversations", exact: true })
-      .click();
-  await page.getByRole("button", { name: "Connections", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Connections", exact: true }),
-  ).toBeVisible();
-}
-
-async function authorize(page: Page, denied = false) {
-  await page
-    .getByRole("button", { name: /^(Connect|Reconnect) Notion$/ })
-    .click();
-  await page
-    .getByRole("link", {
-      name: denied ? "Deny access" : "Allow access",
-      exact: true,
-    })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Connections", exact: true }),
-  ).toBeVisible();
-  await expect(page).toHaveURL(`${origin}/?view=connections`);
-}
+import {
+  origin,
+  endpoint,
+  mockNotion,
+  openConnections,
+  authorize,
+} from "./connections-fixture.js";
 
 test.beforeEach(async ({ page }) => {
   const result = await page.request.delete(endpoint, {
@@ -101,9 +56,9 @@ test("Notion connects across sites with strict cookies, persists and disconnects
   await expect(
     page.getByText("Owner workspace", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Choose pages" })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByRole("button", { name: "Choose pages", exact: true }),
+  ).toBeVisible();
   await page.reload();
   await expect(
     page.getByText("Owner workspace", { exact: true }),

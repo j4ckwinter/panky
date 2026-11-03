@@ -23,7 +23,12 @@ function source(row: Record<string, unknown>): ExperienceSource {
 export class ExperienceStore {
   private readonly db: DatabaseSync;
 
-  constructor(path: string) {
+  constructor(
+    path: string,
+    private readonly eligibleConnection: (
+      ownerId: string,
+    ) => string | null = () => null,
+  ) {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path);
     this.db.exec(`
@@ -42,6 +47,13 @@ export class ExperienceStore {
       CREATE INDEX IF NOT EXISTS experience_passages_source ON experience_passages(sourceId);
       CREATE VIRTUAL TABLE IF NOT EXISTS experience_search USING fts5(title, text, tokenize='porter unicode61');
     `);
+    const columns = this.db
+      .prepare("PRAGMA table_info(experience_sources)")
+      .all();
+    if (!columns.some((column) => column.name === "connectionId"))
+      this.db.exec(
+        "ALTER TABLE experience_sources ADD COLUMN connectionId TEXT",
+      );
   }
 
   close() {
@@ -86,7 +98,11 @@ export class ExperienceStore {
     };
   }
 
-  replace(ownerId: string, imported: ImportedPage): ExperienceSource {
+  replace(
+    ownerId: string,
+    imported: ImportedPage,
+    connectionId: string | null = null,
+  ): ExperienceSource {
     const parsed = importedPageSchema.safeParse(imported);
     if (!parsed.success)
       throw new HttpError(
@@ -113,9 +129,9 @@ export class ExperienceStore {
       const now = new Date().toISOString();
       const url = `https://www.notion.so/${page.pageId.replaceAll("-", "")}`;
       this.db
-        .prepare(`INSERT INTO experience_sources (id,ownerId,pageId,title,url,importedAt,lastAttemptAt,error,warnings,passageCount)
-        VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)
-        ON CONFLICT(ownerId,pageId) DO UPDATE SET title=excluded.title,url=excluded.url,importedAt=excluded.importedAt,lastAttemptAt=excluded.lastAttemptAt,error=NULL,warnings=excluded.warnings,passageCount=excluded.passageCount`)
+        .prepare(`INSERT INTO experience_sources (id,ownerId,pageId,title,url,importedAt,lastAttemptAt,error,warnings,passageCount,connectionId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)
+        ON CONFLICT(ownerId,pageId) DO UPDATE SET title=excluded.title,url=excluded.url,importedAt=excluded.importedAt,lastAttemptAt=excluded.lastAttemptAt,error=NULL,warnings=excluded.warnings,passageCount=excluded.passageCount,connectionId=excluded.connectionId`)
         .run(
           id,
           ownerId,
@@ -126,6 +142,7 @@ export class ExperienceStore {
           now,
           JSON.stringify(page.warnings),
           page.passages.length,
+          connectionId,
         );
       this.deletePassages(id);
       const insert = this.db.prepare(
@@ -185,6 +202,24 @@ export class ExperienceStore {
     }
   }
 
+  removeConnection(ownerId: string, connectionId: string) {
+    for (const saved of this.list(ownerId))
+      if (saved.connectionId === connectionId) this.remove(ownerId, saved.id);
+  }
+
+  failConnection(ownerId: string, connectionId: string) {
+    this.db
+      .prepare(
+        "UPDATE experience_sources SET error=?, lastAttemptAt=? WHERE ownerId=? AND connectionId=?",
+      )
+      .run(
+        "Workspace access must be revalidated. Reconnect, then refresh this page.",
+        new Date().toISOString(),
+        ownerId,
+        connectionId,
+      );
+  }
+
   search(ownerId: string, question: string): Evidence[] {
     const query = experienceQuery(question);
     if (!query) return [];
@@ -192,9 +227,9 @@ export class ExperienceStore {
       .prepare(`SELECT s.*, p.blockId, p.text FROM experience_search
       JOIN experience_passages p ON p.id = experience_search.rowid
       JOIN experience_sources s ON s.id = p.sourceId
-      WHERE experience_search MATCH ? AND s.ownerId = ? AND s.error IS NULL
+      WHERE experience_search MATCH ? AND s.ownerId = ? AND s.error IS NULL AND (s.connectionId IS NULL OR s.connectionId = ?)
       ORDER BY bm25(experience_search, 2.0, 1.0), s.id, p.ordinal LIMIT 3`)
-      .all(query, ownerId);
+      .all(query, ownerId, this.eligibleConnection(ownerId));
     return rows.map((row) => this.evidence(source(row), row));
   }
 

@@ -1,4 +1,9 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  randomUUID,
+} from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import type { NotionConnection } from "@panky/shared";
 import { z } from "zod";
@@ -12,6 +17,7 @@ const rowSchema = z.object({
   connectedAt: z.string().nullable(),
   encryptedTokens: z.string().nullable(),
   reconnect: z.number().int(),
+  connectionId: z.uuid().nullable(),
 });
 export class ConnectionStore {
   private readonly db: DatabaseSync;
@@ -25,6 +31,21 @@ export class ConnectionStore {
       workspaceId TEXT, workspaceName TEXT, connectedAt TEXT, encryptedTokens TEXT,
       reconnect INTEGER NOT NULL DEFAULT 0
     )`);
+    const columns = this.db
+      .prepare("PRAGMA table_info(notion_connections)")
+      .all();
+    if (!columns.some((column) => column.name === "connectionId"))
+      this.db.exec(
+        "ALTER TABLE notion_connections ADD COLUMN connectionId TEXT",
+      );
+    for (const row of this.db
+      .prepare(
+        "SELECT userId FROM notion_connections WHERE workspaceId IS NOT NULL AND connectionId IS NULL",
+      )
+      .all())
+      this.db
+        .prepare("UPDATE notion_connections SET connectionId=? WHERE userId=?")
+        .run(randomUUID(), String(row.userId));
   }
   close() {
     this.db.close();
@@ -37,6 +58,9 @@ export class ConnectionStore {
   }
   revision(userId: string) {
     return this.row(userId)?.revision ?? 0;
+  }
+  connectionId(userId: string) {
+    return this.row(userId)?.connectionId ?? null;
   }
   advance(userId: string) {
     this.db
@@ -100,12 +124,13 @@ export class ConnectionStore {
     return (
       this.db
         .prepare(`UPDATE notion_connections SET workspaceId=?, workspaceName=?,
-      connectedAt=COALESCE(connectedAt,?), encryptedTokens=?, reconnect=0 WHERE userId=? AND revision=?`)
+      connectedAt=COALESCE(connectedAt,?), encryptedTokens=?, reconnect=0, connectionId=COALESCE(connectionId,?) WHERE userId=? AND revision=?`)
         .run(
           tokens.workspace_id,
           tokens.workspace_name,
           new Date().toISOString(),
           encrypted,
+          randomUUID(),
           userId,
           revision,
         ).changes === 1
@@ -122,7 +147,7 @@ export class ConnectionStore {
     this.advance(userId);
     this.db
       .prepare(
-        "UPDATE notion_connections SET workspaceId=NULL, workspaceName=NULL, connectedAt=NULL, encryptedTokens=NULL, reconnect=0 WHERE userId=?",
+        "UPDATE notion_connections SET connectionId=NULL, workspaceId=NULL, workspaceName=NULL, connectedAt=NULL, encryptedTokens=NULL, reconnect=0 WHERE userId=?",
       )
       .run(userId);
   }

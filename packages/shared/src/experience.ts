@@ -24,6 +24,7 @@ export const evidenceSchema = z.object({
 export type Evidence = z.infer<typeof evidenceSchema>;
 export const experienceSourceSchema = z.object({
   id: z.uuid(),
+  connectionId: z.uuid().nullable().optional(),
   pageId: z.uuid(),
   title: z.string().max(EXPERIENCE_LIMITS.titleChars),
   url: z.string(),

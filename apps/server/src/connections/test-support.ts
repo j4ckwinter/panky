@@ -14,6 +14,8 @@ import { AuthStore } from "../auth/store.js";
 import { loadConfig } from "../config.js";
 import { createApp } from "../http.js";
 import type { NotionOAuth, NotionTokens } from "./notion.js";
+import type { importNotionPage } from "../experience/notion.js";
+import type { searchNotionPages } from "./pages.js";
 
 export const origin = "http://localhost:5173";
 export const bearer = "isolated-notion-test-token-long-enough-for-validation";
@@ -36,6 +38,11 @@ export async function fixture(
   t: TestContext,
   provider: Partial<NotionOAuth> = {},
   configured = true,
+  content: {
+    importer?: typeof importNotionPage;
+    searcher?: typeof searchNotionPages;
+    legacyToken?: string;
+  } = {},
 ) {
   const dir = mkdtempSync(join(tmpdir(), "panky-notion-oauth-"));
   const path = join(dir, "test.sqlite");
@@ -44,6 +51,7 @@ export async function fixture(
     AUTH_ORIGIN: origin,
     DATABASE_PATH: path,
     OWNER_EMAIL: "owner@gmail.com",
+    NOTION_TOKEN: content.legacyToken,
     GOOGLE_CLIENT_ID: "123-test.apps.googleusercontent.com",
     ...(configured
       ? {
@@ -68,8 +76,9 @@ export async function fixture(
     undefined,
     undefined,
     undefined,
-    undefined,
+    content.importer,
     client,
+    content.searcher,
   );
   const auth = new AuthStore(path, config.OWNER_EMAIL);
   const db = new DatabaseSync(path);
@@ -146,6 +155,12 @@ export async function fixture(
   };
   return {
     request,
+    raw: (path: string, init: RequestInit = {}) =>
+      fetch(`${base}${path}`, {
+        ...init,
+        headers: { Origin: origin, Cookie: owner.cookie, ...init.headers },
+      }),
+    experience: () => app.experience,
     post,
     start,
     complete,
@@ -163,8 +178,9 @@ export async function fixture(
         undefined,
         undefined,
         undefined,
-        undefined,
+        content.importer,
         client,
+        content.searcher,
       );
       await listen();
     },

@@ -9,7 +9,7 @@ IA-2 adds selected page imports and local text retrieval to Interview. Importing
 3. Sign in as the Panky owner. Open **Interview → Notion experience**, enter a page link or ID, and choose **Import page**.
 4. Inspect the title, timestamp, passage count and warnings. **Inspect passages** shows the local copy.
 
-The configured connection belongs only to the Panky owner. Invited accounts cannot use it, view the owner's sources or retrieve them in answers. Storage remains scoped per authenticated user. [Personal Notion OAuth connections](notion-connections.md) are available separately in Connections; importing through those connections belongs to C-2 and is not implemented yet.
+The configured connection belongs only to the Panky owner. Invited accounts cannot use it, view the owner's sources or retrieve them in answers. Storage remains scoped per authenticated user. [Personal Notion OAuth connections](notion-connections.md) support selected imports in Connections for both owner and invited accounts. The controls described here manage legacy owner sources. Re-import a page through Connections to migrate it after validating access with the OAuth credential.
 
 The importer makes only GET requests to `https://api.notion.com/v1`, using API version `2026-03-11`. It reads page metadata and child blocks, never arbitrary URLs. See the official [versioning](https://developers.notion.com/reference/versioning), [page](https://developers.notion.com/reference/retrieve-a-page) and [block children](https://developers.notion.com/reference/get-block-children) references.
 

@@ -27,6 +27,7 @@ import { interviewRetrievalQuery } from "./interview/retrieval.js";
 import { importNotionPage } from "./experience/notion.js";
 import { ConnectionsApi } from "./connections/http.js";
 import type { NotionOAuth } from "./connections/notion.js";
+import { searchNotionPages } from "./connections/pages.js";
 
 async function readSubmission(request: IncomingMessage) {
   const result = submissionSchema.safeParse(await readJson(request));
@@ -51,16 +52,29 @@ export function createApp(
   googleVerifier?: GoogleVerifier,
   notionImporter: typeof importNotionPage = importNotionPage,
   notionOAuth?: NotionOAuth,
+  notionSearcher: typeof searchNotionPages = searchNotionPages,
 ) {
   const store = new Store(config.DATABASE_PATH);
   const auth = new Auth(config, googleVerifier);
-  const connections = new ConnectionsApi(config, auth, notionOAuth);
+  const experience = new ExperienceStore(
+    config.DATABASE_PATH,
+    (userId): string | null => connections.eligibleConnection(userId),
+  );
+  const connections = new ConnectionsApi(
+    config,
+    auth,
+    experience,
+    notionOAuth,
+    notionImporter,
+    notionSearcher,
+    (userId): boolean => experienceApi.busy(userId),
+  );
   const chat = new Chat(store, provider, config, tools);
-  const experience = new ExperienceStore(config.DATABASE_PATH);
   const experienceApi = new ExperienceApi(
     experience,
     config.NOTION_TOKEN,
     notionImporter,
+    (userId): boolean => connections.busy(userId),
   );
   const expectedToken = createHash("sha256")
     .update(`Bearer ${config.AUTH_TOKEN}`)

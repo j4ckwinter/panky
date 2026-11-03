@@ -14,7 +14,12 @@ export class ExperienceApi {
     readonly store: ExperienceStore,
     private readonly token: string | undefined,
     private readonly importer: typeof importNotionPage = importNotionPage,
+    private readonly connectionBusy: (userId: string) => boolean = () => false,
   ) {}
+
+  busy(userId: string) {
+    return this.active.has(userId);
+  }
 
   async stop() {
     for (const job of this.active.values()) job.controller.abort();
@@ -32,7 +37,12 @@ export class ExperienceApi {
       return false;
     const configured = userId === "owner" && Boolean(this.token);
     if (path === "/api/experience" && request.method === "GET") {
-      json(response, 200, { configured, sources: this.store.list(userId) });
+      json(response, 200, {
+        configured,
+        sources: this.store
+          .list(userId)
+          .filter((source) => !source.connectionId),
+      });
       return true;
     }
     const match = /^\/api\/experience\/([^/]+)(\/refresh)?$/.exec(path);
@@ -42,13 +52,14 @@ export class ExperienceApi {
       if (!id.success) throw new HttpError(400, "Invalid source ID.");
       sourceId = id.data;
       const detail = this.store.detail(userId, sourceId);
-      if (!detail) throw new HttpError(404, "Source not found.");
+      if (!detail || detail.source.connectionId)
+        throw new HttpError(404, "Source not found.");
       if (!match[2] && request.method === "GET") {
         json(response, 200, detail);
         return true;
       }
       if (!match[2] && request.method === "DELETE") {
-        if (this.active.has(userId))
+        if (this.active.has(userId) || this.connectionBusy(userId))
           throw new HttpError(409, "Wait for the current import to finish.");
         this.store.remove(userId, sourceId);
         response.writeHead(204);
@@ -68,7 +79,8 @@ export class ExperienceApi {
     let pageId: string;
     if (sourceId) {
       const detail = this.store.detail(userId, sourceId);
-      if (!detail) throw new HttpError(404, "Source not found.");
+      if (!detail || detail.source.connectionId)
+        throw new HttpError(404, "Source not found.");
       pageId = detail.source.pageId;
     } else {
       const parsed = importExperienceSchema.safeParse(await readJson(request));
@@ -77,9 +89,14 @@ export class ExperienceApi {
       pageId = normalizePageId(parsed.data.page);
     }
     assertAccess();
-    if (this.active.has(userId))
+    if (this.active.has(userId) || this.connectionBusy(userId))
       throw new HttpError(409, "Wait for the current import to finish.");
     const existing = this.store.findByPage(userId, pageId);
+    if (existing?.connectionId)
+      throw new HttpError(
+        409,
+        "Manage this page through its personal connection.",
+      );
     if (
       !existing &&
       this.store.list(userId).length >= EXPERIENCE_LIMITS.sources
@@ -104,6 +121,11 @@ export class ExperienceApi {
         assertAccess();
         if (imported.pageId !== pageId)
           throw new HttpError(502, "Notion returned a different page.");
+        if (this.store.findByPage(userId, pageId)?.connectionId)
+          throw new HttpError(
+            409,
+            "This page moved to a personal connection. Manage it in Connections.",
+          );
         const source = this.store.replace(userId, imported);
         json(response, existing ? 200 : 201, source);
       } catch (error) {
@@ -113,7 +135,11 @@ export class ExperienceApi {
           : error instanceof HttpError
             ? error.message
             : "The Notion import could not be completed.";
-        if (existing) this.store.fail(userId, existing.id, message);
+        if (
+          existing &&
+          !this.store.detail(userId, existing.id)?.source.connectionId
+        )
+          this.store.fail(userId, existing.id, message);
         throw new HttpError(
           error instanceof HttpError ? error.status : 502,
           message,

@@ -1,6 +1,6 @@
 # Panky connections
 
-Status: C-1 implemented and locally verified, 3 November 2026. C-2 through C-4 remain proposed.
+Status: C-1 and C-2 implemented and locally verified, 3 November 2026. C-3 and C-4 remain proposed.
 
 ## Outcome
 
@@ -8,7 +8,7 @@ Each signed-in user can connect their own Notion workspace, import selected page
 
 The owner and an invited friend should complete the same flow independently. Imported copies are stored and processed on the Windows PC hosting Panky. Explain this before connecting: account isolation does not make content inaccessible to the machine's operator.
 
-The user authorized C-1 implementation and verification on 3 November 2026, including improvements consistent with existing processes and styling. Work through later milestones only when requested, record evidence and review the outcome before continuing. This does not authorize external provisioning, deployment, model training or later audio features. Existing authentication, user isolation and local-model safeguards remain in force.
+The user authorized C-1 and subsequently C-2 implementation and verification on 3 November 2026, including improvements consistent with existing processes and styling. Work through later milestones only when requested, record evidence and review the outcome before continuing. This does not authorize external provisioning, deployment, model training or later audio features. Existing authentication, user isolation and local-model safeguards remain in force.
 
 ## Current baseline
 
@@ -77,11 +77,11 @@ Verification on 3 November 2026:
 - Browser tests exercise a synthetic external Notion authorization page followed by the real callback and completion endpoints. Full request headers verify that the strict session cookie is absent on the external return and present on same-origin completion. Tests also cover two independent accounts, reconnect, status failure recovery and keyboard-accessible disconnect confirmation.
 - Desktop, collapsed-rail and mobile screenshots were inspected. Current previews are in `test-results/connections-{disconnected,connected,mobile}.png`; subsequent browser runs may overwrite them.
 - Independent review found that temporary refresh failures could discard valid credentials. The fix preserves them on definite temporary HTTP failures; provider/service tests cover 401 followed by 429/503 and a successful manual retry. The final production and test review had no remaining findings.
-- No live Notion authorization, personal imports, deployment or external provisioning was performed. Host configuration is documented in [Notion connections](docs/notion-connections.md). C-2 has not started.
+- No live Notion authorization, personal imports, deployment or external provisioning was performed. Host configuration is documented in [Notion connections](docs/notion-connections.md). C-2 had not started at that checkpoint.
 
 ## C-2 — Choose and manage personal pages
 
-Status: not started. Depends on C-1.
+Status: implemented and locally verified. Live Notion authorization and personal imports remain unverified.
 
 **Outcome:** each account imports and manages pages through its own connection in Connections.
 
@@ -96,12 +96,25 @@ Scope:
 
 Completion checks:
 
-- [ ] Two isolated accounts import different pages, including separate copies of the same page ID, without sharing sources or credentials.
-- [ ] Forged identifiers cannot inspect, refresh, remove or import through another user's access.
-- [ ] Partial content, inaccessible pages, rate limits, timeouts and interrupted imports have actionable states and retain existing bounds.
-- [ ] Disconnect during import or refresh prevents sources from reappearing, including after restart.
-- [ ] Refresh-all reports mixed results; source removal updates counts and the search index.
-- [ ] Existing conversations and evidence snapshots survive removal, disconnect and owner migration as disclosed in the UI.
+- [x] Two isolated accounts import different pages, including separate copies of the same page ID, without sharing sources or credentials.
+- [x] Forged identifiers cannot inspect, refresh, remove or import through another user's access.
+- [x] Partial content, inaccessible pages, rate limits, timeouts and interrupted imports have actionable states and retain existing bounds.
+- [x] Disconnect during import or refresh prevents sources from reappearing, including after restart.
+- [x] Refresh-all reports mixed results; source removal updates counts and the search index.
+- [x] Existing conversations and evidence snapshots survive removal, disconnect and owner migration as disclosed in the UI.
+
+Implementation decisions and verification on 3 November 2026:
+
+- Added title search with 20 results per request, explicit selection and page-link entry. Search is not a complete inventory; the picker explains permission/indexing limits and separate child-page imports.
+- Imports and refresh-all process a bounded list sequentially in the browser, with per-page progress and results. Each server operation retains the existing traversal, size and timeout bounds; work is never retried automatically. Leaving Connections cancels remaining browser batch work.
+- Added a stable connection identifier independently of OAuth attempt revisions. Sources carry that identifier. Disconnect cancels operations and removes only attached sources/index entries; late writes are rejected. Known authorization failures exclude the attached corpus until individual pages are refreshed successfully, including across reconnect/restart.
+- Legacy sources remain unassigned. Successful explicit OAuth re-import validates access before migrating a page, preserving its source ID and saved evidence. Legacy and OAuth work share exclusion gates so concurrent migration cannot restore a removed source. The old importer remains for existing callers; its removal and the Interview management transition are deferred to C-3.
+- Inspected the configured local database read-only: its experience table contained zero sources. No live data was changed, and this observation does not establish the Windows host's corpus. A synthetic pre-C-2 database migration test preserves encrypted C-1 tokens, legacy passages, timestamps and search results across reopening.
+- `pnpm install --frozen-lockfile`, `pnpm check` (131 backend tests) and `pnpm build` passed. The existing non-blocking bundle-size warning remains.
+- All five new page-management browser tests passed on the focused run. They exercise account-specific credentials/copies, forged source IDs, search/pagination/manual entry, mixed refresh results, disconnect during import and source-status updates after a failed connection check. Desktop and mobile screenshots were inspected.
+- Independent read-only review of the final production changes and migration test found no actionable findings. Backend tests also verify exact saved conversation/evidence retention through migration, removal, disconnect and restart.
+- The full `pnpm test:e2e` regression run passed all 106 tests in 7.6 minutes, including existing chat, legacy imports, audio and authentication flows. Screenshots are in `test-results/connection-pages-{desktop,mobile}.png` and may be overwritten by subsequent runs.
+- No external provisioning, deployment, real Notion import or live model evaluation was performed. C-3 and C-4 have not started.
 
 ## C-3 — Use sources in typed interviews
 
@@ -154,6 +167,6 @@ For code milestones, use Node 24+, install with `pnpm install --frozen-lockfile`
 
 For C-1, the one-workspace default and staged disconnect behavior were adopted using the user's authorization to resolve inconsistencies. The callback is derived from `AUTH_ORIGIN`; current official Notion OAuth/token requirements were checked during implementation. Creating the integration or changing deployed settings still requires separate authorization. Keep secrets out of this document. Before C-2 owner migration, inspect actual stored sources; the report of no imports does not replace safe migration checks.
 
-Repository instructions now record C-1 authorization without linking to the removed interview plan. This brief does not expand the permitted IA-5 scope or mark earlier live acceptance checks complete.
+Repository instructions now record C-1 and C-2 authorization without linking to the removed interview plan. This brief does not expand the permitted IA-5 scope or mark earlier live acceptance checks complete.
 
 Reference: [Notion authorization](https://developers.notion.com/guides/authorization/overview).

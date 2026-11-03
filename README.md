@@ -96,9 +96,9 @@ logs appear in the same terminal. wait for any reply to finish, then press **Ctr
 
 ## connect Notion
 
-open **Connections** in the sidebar to link your own Notion workspace. each account has its own connection. this first step connects the workspace; page imports through it are coming next.
+open **Connections** in the sidebar to link your own Notion workspace. each account has its own connection. choose pages to import, inspect their passages and refresh or remove the local copies.
 
-the host needs to [configure Notion OAuth](docs/notion-connections.md) first. the existing owner-only imports in Interview keep working separately.
+the host needs to [configure Notion OAuth](docs/notion-connections.md) first. the existing owner-only imports in Interview keep working separately until explicitly re-imported through Connections. disconnecting removes that connection’s copies; saved conversations and evidence stay.
 
 ## development
 

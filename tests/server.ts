@@ -2,7 +2,11 @@ import type { GoogleIdentity } from "../apps/server/src/auth/google.js";
 import { loadConfig } from "../apps/server/src/config.js";
 import { createApp } from "../apps/server/src/http.js";
 import { HttpError } from "../apps/server/src/http-utils.js";
-import { notionFixture } from "./notion-fixture.js";
+import {
+  notionFixture,
+  personalImporter,
+  personalSearcher,
+} from "./notion-fixture.js";
 
 const config = loadConfig({
   AUTH_TOKEN: "panky-browser-test-token-never-use-in-production",
@@ -24,7 +28,9 @@ const app = createApp(
   undefined,
   undefined,
   async (credential) => JSON.parse(credential) as GoogleIdentity,
-  async (pageId) => {
+  async (pageId, token, signal) => {
+    if (token.startsWith("synthetic-notion-access-"))
+      return personalImporter(pageId, token, signal);
     if (pageId !== "11111111-1111-4111-8111-111111111111")
       throw new HttpError(
         403,
@@ -55,6 +61,7 @@ const app = createApp(
     };
   },
   notionFixture,
+  personalSearcher,
 );
 app.server.listen(3101, "127.0.0.1");
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
