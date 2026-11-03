@@ -172,6 +172,7 @@ export function useChat(api: Api) {
       assistantMessageId: string;
     }) => void,
     onFirstText?: () => void,
+    useSources = false,
   ) {
     return run(async () => {
       const conversation = current ?? (await api.create());
@@ -258,6 +259,7 @@ export function useChat(api: Api) {
           controller.signal,
           receive,
           interview,
+          useSources,
         );
         const list = await api.conversations();
         if (mounted.current) {

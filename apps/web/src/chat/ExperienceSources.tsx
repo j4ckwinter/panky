@@ -118,7 +118,11 @@ export function ExperienceSources({
             disabled={unavailable}
             helperText="Share the selected page with the server's Notion connection first. Child pages must be imported separately."
           />
-          <Button type="submit" disabled={unavailable || !page.trim()}>
+          <Button
+            size={40}
+            type="submit"
+            disabled={unavailable || !page.trim()}
+          >
             Import page
           </Button>
         </form>
@@ -158,6 +162,7 @@ export function ExperienceSources({
             )}
             <div className="experience-source-actions">
               <Button
+                size={40}
                 variant="ghost"
                 disabled={unavailable}
                 onClick={() => {
@@ -170,6 +175,7 @@ export function ExperienceSources({
                 Inspect passages
               </Button>
               <Button
+                size={40}
                 variant="ghost"
                 disabled={unavailable || !configured}
                 onClick={() => {
@@ -186,6 +192,7 @@ export function ExperienceSources({
                 Refresh page
               </Button>
               <Button
+                size={40}
                 variant="ghost"
                 disabled={unavailable}
                 onClick={() => {
@@ -206,7 +213,7 @@ export function ExperienceSources({
         <section className="experience-preview" aria-label="Imported passages">
           <div className="experience-preview-heading">
             <h3>{detail.source.title}</h3>
-            <Button variant="ghost" onClick={() => setDetail(null)}>
+            <Button size={40} variant="ghost" onClick={() => setDetail(null)}>
               Close passages
             </Button>
           </div>
@@ -223,6 +230,7 @@ export function ExperienceSources({
       )}
       <div className="experience-source-actions">
         <Button
+          size={40}
           variant="ghost"
           disabled={unavailable}
           onClick={() => {

@@ -13,19 +13,26 @@ export class MockProvider implements ModelProvider {
   constructor(private readonly delayMs = 35) {}
   async *stream(
     history: readonly ContextMessage[],
-    _tools: readonly ToolDefinition[],
+    tools: readonly ToolDefinition[],
     signal: AbortSignal,
     purpose: ProviderPurpose = "chat",
   ): AsyncIterable<ProviderEvent> {
     signal.throwIfAborted();
-    const prompt =
+    const rawPrompt =
       history.findLast((message) => message.role === "user")?.content ?? "";
+    const sourcedChat = purpose === "sourced-chat";
+    const prompt = sourcedChat
+      ? z.object({ question: z.string() }).parse(JSON.parse(rawPrompt)).question
+      : rawPrompt;
     const toolResult = history.at(-1);
     const interview = purpose === "interview";
     const demo =
       prompt.trim().toLowerCase().replace(/\s+/gu, " ") ===
       "what is the current date and time?";
-    if (!interview && demo && toolResult?.role !== "tool") {
+    const canUseDateTime = tools.some(
+      (tool) => tool.name === "get_current_datetime",
+    );
+    if (!interview && demo && canUseDateTime && toolResult?.role !== "tool") {
       yield {
         type: "tool_call",
         callId: "current-datetime",

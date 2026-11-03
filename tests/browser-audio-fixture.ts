@@ -189,3 +189,23 @@ async function speechFixture(page: Page, mode = "success") {
     });
   }, mode);
 }
+
+export async function submitAudioQuestion(page: Page, question: string) {
+  await page.evaluate((text) => {
+    (
+      window as unknown as {
+        speechTest: { transcript(source: string, text: string): void };
+      }
+    ).speechTest.transcript("shared", text);
+  }, question);
+  const start = page.getByRole("button", {
+    name: "Start listening",
+    exact: true,
+  });
+  if (await start.isVisible()) await start.click();
+  const field = page.getByLabel("Question to ask", { exact: true });
+  await expect(field).toHaveValue(question, { timeout: 15000 });
+  await page
+    .getByRole("button", { name: "Send question", exact: true })
+    .click();
+}

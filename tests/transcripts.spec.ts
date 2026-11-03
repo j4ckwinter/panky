@@ -1,42 +1,18 @@
-import {
-  openInterviewOptions,
-  closeInterviewOptions,
-} from "./interview-options.js";
 import { expect } from "@playwright/test";
-import { test, login } from "./auth-fixture.js";
+import { login, test } from "./auth-fixture.js";
 import { audioFixture, expectReleased } from "./browser-audio-fixture.js";
 
-test("browser audio measures separate sources and releases them on pause, stop and navigation", async ({
+test("browser audio releases sources on pause, stop and navigation", async ({
   page,
 }) => {
   const panel = await audioFixture(page);
   await expect(
     panel.getByRole("link", { name: "Open Mac helper" }),
   ).toHaveCount(0);
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await expect(
     panel.getByRole("heading", { name: "Listening", exact: true }),
   ).toBeVisible();
-  await openInterviewOptions(page);
-  await page.getByText("Listening settings", { exact: true }).click();
-  await expect
-    .poll(() =>
-      page
-        .getByRole("meter", { name: "Shared audio level" })
-        .getAttribute("value"),
-    )
-    .not.toBe("0");
-  await expect
-    .poll(() =>
-      page
-        .getByRole("meter", { name: "Microphone level" })
-        .getAttribute("value"),
-    )
-    .not.toBe("0");
-  await expect(
-    page.getByLabel("Interview question", { exact: true }),
-  ).toHaveValue("");
   await panel.screenshot({ path: "test-results/browser-audio-desktop.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   await panel.scrollIntoViewIfNeeded();
@@ -46,11 +22,9 @@ test("browser audio measures separate sources and releases them on pause, stop a
     ),
   ).toBe(true);
   await panel.screenshot({ path: "test-results/browser-audio-mobile.png" });
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Pause", exact: true }).click();
   await expect(panel).toContainText("Paused — audio released");
   await expectReleased(page);
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await expect(
     panel.getByRole("heading", { name: "Listening", exact: true }),
@@ -60,7 +34,6 @@ test("browser audio measures separate sources and releases them on pause, stop a
   );
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
   await expectReleased(page);
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await expect(
     panel.getByRole("heading", { name: "Listening", exact: true }),
@@ -75,7 +48,6 @@ for (const mode of ["no-audio", "denied", "denied-mic"]) {
     page,
   }) => {
     const panel = await audioFixture(page, mode);
-    await closeInterviewOptions(page);
     await panel.getByRole("button", { name: "Start listening" }).click();
     await expect(panel.getByRole("alert")).toContainText(
       mode === "no-audio"
@@ -97,7 +69,6 @@ for (const mode of ["no-audio", "denied", "denied-mic"]) {
 for (const mode of ["pending-display", "pending-mic"]) {
   test(`Stop rejects late permissions for ${mode}`, async ({ page }) => {
     const panel = await audioFixture(page, mode);
-    await closeInterviewOptions(page);
     await panel.getByRole("button", { name: "Start listening" }).click();
     await expect(panel).toContainText("Waiting for sharing");
     if (mode === "pending-mic")
@@ -120,7 +91,6 @@ for (const mode of ["pending-display", "pending-mic"]) {
 
 test("browser sharing ended releases the microphone too", async ({ page }) => {
   const panel = await audioFixture(page);
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await expect(
     panel.getByRole("heading", { name: "Listening", exact: true }),
@@ -134,7 +104,6 @@ test("leaving Interview releases streams arriving from a pending picker", async 
   page,
 }) => {
   const panel = await audioFixture(page, "pending-display");
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await expect(panel).toContainText("Waiting for sharing");
   await page.getByLabel("New conversation", { exact: true }).click();
@@ -155,7 +124,6 @@ test("unsupported browser reports capture unavailable without opening a picker",
       value: undefined,
     }),
   );
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await expect(panel.getByRole("alert")).toContainText(
     "Audio sharing is unavailable here",
@@ -165,23 +133,10 @@ test("unsupported browser reports capture unavailable without opening a picker",
   );
 });
 
-test("local speech shows separate transcripts, clears text and removes only its model cache", async ({
+test("local speech shows separate transcripts and clears text", async ({
   page,
 }) => {
   const panel = await audioFixture(page);
-  await page.evaluate(async () => {
-    await caches.open("panky-speech-model-v1");
-    await caches.open("unrelated-cache");
-  });
-  await openInterviewOptions(page);
-  await page.getByText("Listening settings", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Load speech model", exact: true })
-    .click();
-  await expect(
-    page.getByRole("region", { name: "Local speech model" }),
-  ).toContainText("Speech model ready");
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await panel.locator(".transcript-details > summary").click();
   const transcript = panel.getByRole("region", { name: "Live transcript" });
@@ -189,9 +144,6 @@ test("local speech shows separate transcripts, clears text and removes only its 
     timeout: 15000,
   });
   await expect(transcript).toContainText("microphone controlled transcript");
-  await expect(
-    page.getByLabel("Interview question", { exact: true }),
-  ).toHaveValue("");
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
   await expectReleased(page);
   expect(await page.evaluate("window.speechTest.terminated()")).toBe(true);
@@ -199,45 +151,29 @@ test("local speech shows separate transcripts, clears text and removes only its 
   await expect(transcript).not.toContainText("late forbidden result");
   await panel.getByRole("button", { name: "Clear transcript" }).click();
   await expect(transcript.locator("article")).toHaveCount(0);
-  await openInterviewOptions(page);
-  await page.getByRole("button", { name: "Remove downloaded model" }).click();
-  await expect(page.locator(".interview-options")).toContainText(
-    "Downloaded speech model removed",
-  );
-  expect(await page.evaluate(() => caches.keys())).toEqual(["unrelated-cache"]);
 });
 
-test("speech download failure is explicit and does not start capture", async ({
+test("speech download failure is explicit and releases capture", async ({
   page,
 }) => {
   const panel = await audioFixture(page, "success", "load-error");
-  await openInterviewOptions(page);
-  await page.getByText("Listening settings", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Load speech model", exact: true })
+  await panel
+    .getByRole("button", { name: "Start listening", exact: true })
     .click();
   await expect(panel.getByRole("alert")).toContainText(
     "Controlled model download failure",
   );
   expect(await page.evaluate("window.audioTest.snapshot().displayCalls")).toBe(
-    0,
+    1,
   );
   expect(await page.evaluate("window.speechTest.terminated()")).toBe(true);
+  await expectReleased(page);
 });
 
 test("slow transcription stops capture when bounded queue fills", async ({
   page,
 }) => {
   const panel = await audioFixture(page, "success", "hold");
-  await openInterviewOptions(page);
-  await page.getByText("Listening settings", { exact: true }).click();
-  await page
-    .getByRole("button", { name: "Load speech model", exact: true })
-    .click();
-  await expect(page.locator(".interview-options")).toContainText(
-    "Speech model ready",
-  );
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Start listening" }).click();
   await expect(panel.getByRole("alert")).toContainText("cannot keep up", {
     timeout: 20000,
@@ -292,8 +228,23 @@ for (const viewport of [
         };
       }),
     ).toEqual(chatStyle);
-    await expect(page.locator(".listening-welcome p")).toHaveCount(0);
+    await expect(page.getByText("Mac only", { exact: true })).toBeVisible();
     const listeningHeading = await heading.boundingBox();
+    const badge = await page
+      .getByText("Mac only", { exact: true })
+      .boundingBox();
+    expect(badge).not.toBeNull();
+    expect(
+      Math.abs(
+        badge!.y +
+          badge!.height / 2 -
+          (listeningHeading!.y + listeningHeading!.height / 2),
+      ),
+    ).toBeLessThan(2);
+    expect(badge!.x).toBeGreaterThan(
+      listeningHeading!.x + listeningHeading!.width,
+    );
+
     expect(chatHeading).not.toBeNull();
     expect(listeningHeading).not.toBeNull();
     expect(Math.abs(listeningHeading!.y - chatHeading!.y)).toBeLessThan(150);
@@ -319,7 +270,7 @@ for (const viewport of [
       page
         .locator(".chat-header")
         .getByRole("button", { name: "Interview options", exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -393,42 +344,4 @@ test("source status distinguishes microphone-only activity, shared audio and sil
   });
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
   await expect(status).toHaveCount(0);
-});
-
-test("Interview options preserve capture and return focus when closed", async ({
-  page,
-}) => {
-  const panel = await audioFixture(page);
-  await panel
-    .getByRole("button", { name: "Start listening", exact: true })
-    .click();
-  await expect(
-    panel.getByRole("heading", { name: "Listening", exact: true }),
-  ).toBeVisible();
-  const before = await page.evaluate(
-    "window.audioTest.snapshot().displayCalls",
-  );
-  await openInterviewOptions(page);
-  await page.getByText("Listening settings", { exact: true }).click();
-  await expect(
-    page.getByRole("region", { name: "Local speech model" }),
-  ).toBeVisible();
-  await page.keyboard.press("Escape");
-  const trigger = page.getByRole("button", {
-    name: "Interview options",
-    exact: true,
-  });
-  await expect(trigger).toBeFocused();
-  await expect(trigger).toHaveAttribute("aria-expanded", "false");
-  await expect(
-    panel.getByRole("heading", { name: "Listening", exact: true }),
-  ).toBeVisible();
-  expect(await page.evaluate("window.audioTest.snapshot().displayCalls")).toBe(
-    before,
-  );
-  await openInterviewOptions(page);
-  await page.getByRole("button", { name: "Close", exact: true }).click();
-  await expect(trigger).toBeFocused();
-  await panel.getByRole("button", { name: "Stop", exact: true }).click();
-  await expectReleased(page);
 });

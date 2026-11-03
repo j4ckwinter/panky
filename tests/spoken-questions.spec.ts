@@ -1,22 +1,11 @@
-import {
-  toggleTypedQuestion,
-  openInterviewOptions,
-  closeInterviewOptions,
-} from "./interview-options.js";
 import { expect } from "@playwright/test";
 import { test } from "./auth-fixture.js";
-import { audioFixture } from "./browser-audio-fixture.js";
+import { audioFixture, submitAudioQuestion } from "./browser-audio-fixture.js";
 
 test("shared speech becomes an editable general question and sends once only on acceptance", async ({
   page,
 }) => {
   const panel = await audioFixture(page);
-  await toggleTypedQuestion(page);
-  await page.getByText("Experience sample (optional)", { exact: true }).click();
-  await page
-    .getByLabel("Your experience sample", { exact: true })
-    .fill("PRIVATE EXPERIENCE SHOULD NOT BE SENT");
-  await toggleTypedQuestion(page);
   await page.evaluate(() => {
     const fixture = (
       window as unknown as {
@@ -77,20 +66,9 @@ test("shared speech becomes an editable general question and sends once only on 
   await expect(answer.locator(".interview-response")).toBeInViewport();
   await expect(answer).not.toContainText("Immediate cues");
   await expect(answer).not.toContainText("Supporting detail");
-  await openInterviewOptions(page);
-  await page.getByText("Response timing", { exact: true }).click();
-  const timing = page.locator(".response-timing");
-  await expect(timing.locator("dd").nth(0)).toHaveText("42 ms");
-  await expect(timing.locator("dd").nth(1)).toHaveText(/\d+ ms/);
-  await expect(timing.locator("dd").nth(2)).toHaveText(/\d+ ms/);
-  const firstTextTime = await timing.locator("dd").nth(2).textContent();
   await expect(
     page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();
-  await expect(timing.locator("dd").nth(2)).toHaveText(firstTextTime!);
-  await openInterviewOptions(page);
-  await page.getByText("Response timing", { exact: true }).click();
-  await closeInterviewOptions(page);
   const historyBox = await page.locator(".sent-questions").boundingBox();
   const responseBox = await answer.boundingBox();
   expect(historyBox!.y).toBeGreaterThanOrEqual(
@@ -120,10 +98,10 @@ test("shared speech becomes an editable general question and sends once only on 
       experience: "",
       inputSource: "speech",
       context: [],
-      useExperience: false,
+      useExperience: true,
+      useSources: true,
     },
   });
-  expect(JSON.stringify(submissions)).not.toContain("PRIVATE EXPERIENCE");
   await expect(card).toHaveCount(0);
   await page.evaluate(
     "window.speechTest.transcript('shared', 'How does lexical scope work?')",
@@ -168,7 +146,8 @@ test("shared speech becomes an editable general question and sends once only on 
     content: "How does lexical scope work?",
     interview: {
       experience: "",
-      useExperience: false,
+      useExperience: true,
+      useSources: true,
       inputSource: "speech",
       context: [
         {
@@ -179,7 +158,6 @@ test("shared speech becomes an editable general question and sends once only on 
     },
   });
   expect(JSON.stringify(submissions[1])).not.toContain("Synthetic example");
-  expect(JSON.stringify(submissions[1])).not.toContain("PRIVATE EXPERIENCE");
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
   await page
     .locator(".sent-questions")
@@ -260,17 +238,11 @@ test("failed spoken submissions are not retried automatically", async ({
     .getByLabel("Question to ask", { exact: true })
     .press("Control+Enter");
   await expect(card).toContainText("Submission not confirmed");
-  await openInterviewOptions(page);
-  await page.getByText("Response timing", { exact: true }).click();
-  await expect(page.locator(".response-timing")).toContainText(
-    "No response text received",
-  );
   await expect(page.getByRole("alert")).toContainText(
     "Controlled provider failure",
   );
   await page.waitForTimeout(1500);
   expect(attempts).toBe(1);
-  await closeInterviewOptions(page);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });
 
@@ -414,11 +386,7 @@ test("long answers stay in the workspace and can be scrolled with the keyboard",
       .join("\n");
     await route.fulfill({ response, body });
   });
-  await toggleTypedQuestion(page);
-  await page
-    .getByLabel("Interview question", { exact: true })
-    .fill("Explain closures");
-  await page.getByRole("button", { name: "Get response", exact: true }).click();
+  await submitAudioQuestion(page, "Explain closures?");
   const answer = page.getByRole("region", {
     name: "Interview answer",
     exact: true,
@@ -524,7 +492,8 @@ test("accepted requests leave room for more than five questions in one session",
     await expect(card).toHaveCount(0);
     expect(submissions.at(-1)?.interview).toEqual({
       experience: "",
-      useExperience: false,
+      useExperience: true,
+      useSources: true,
       inputSource: "speech",
       context: Array.from({ length: Math.min(number - 1, 4) }, (_, index) => ({
         question: `Explain concept number ${Math.max(1, number - 4) + index}?`,
@@ -561,81 +530,9 @@ test("accepted requests leave room for more than five questions in one session",
   ).toBeVisible();
   expect(submissions.at(-1)?.interview.context).toEqual([]);
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
-  await toggleTypedQuestion(page);
-  await page
-    .getByRole("button", { name: "New interview", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Chats", exact: true }).click();
+  await page.getByRole("button", { name: "Interview", exact: true }).click();
   await expect(page.getByText(/Sent questions \(/)).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "New topic", exact: true }),
-  ).toHaveCount(0);
-});
-
-test("typed topic reset also clears spoken context while disconnected", async ({
-  page,
-}) => {
-  test.setTimeout(45000);
-  const panel = await audioFixture(page);
-  await page.evaluate(
-    "window.speechTest.transcript('shared', 'Explain JavaScript closures?')",
-  );
-  await panel
-    .getByRole("button", { name: "Start listening", exact: true })
-    .click();
-  const card = page.getByRole("article", {
-    name: "Detected question",
-    exact: true,
-  });
-  await expect(card).toBeVisible({ timeout: 12000 });
-  await card
-    .getByRole("button", { name: "Send question", exact: true })
-    .click();
-  await expect(
-    page.getByText("Response ready.", { exact: true }),
-  ).toBeVisible();
-  await toggleTypedQuestion(page);
-  await page
-    .getByLabel("Interview question", { exact: true })
-    .fill("Explain lexical scope");
-  await page.getByRole("button", { name: "Get response", exact: true }).click();
-  await expect(
-    page.getByText("Response ready.", { exact: true }),
-  ).toBeVisible();
-  await page.route("**/api/health", (route) => route.abort("failed"));
-  await expect(
-    page.getByText("Connection lost. Refresh history to reconnect.", {
-      exact: true,
-    }),
-  ).toBeVisible({ timeout: 10000 });
-  await openInterviewOptions(page);
-  await page
-    .getByRole("button", { name: "Start new topic", exact: true })
-    .click();
-  await closeInterviewOptions(page);
-  await expect(page.getByText(/Using 1 recent spoken question/)).toHaveCount(0);
-  await page.unroute("**/api/health");
-  await expect(page.getByText("Response ready.", { exact: true })).toBeVisible({
-    timeout: 10000,
-  });
-  await page.evaluate(
-    "window.speechTest.transcript('shared', 'What is the event loop?')",
-  );
-  await expect(card.getByLabel("Question to ask")).toHaveValue(
-    "What is the event loop?",
-    { timeout: 12000 },
-  );
-  const request = page.waitForRequest(
-    (request) =>
-      request.method() === "POST" && request.url().endsWith("/messages"),
-  );
-  await card
-    .getByRole("button", { name: "Send question", exact: true })
-    .click();
-  expect((await request).postDataJSON().interview.context).toEqual([]);
-  await expect(
-    page.getByText("Response ready.", { exact: true }),
-  ).toBeVisible();
-  await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });
 
 test("the same follow-up can be asked after context changes without replaying consecutive chunks", async ({
@@ -914,9 +811,7 @@ test("sent questions reopen their own answers without stopping listening or repl
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
 });
 
-test("speech-derived questions keep their submitted text and typed questions do not opt into correction", async ({
-  page,
-}) => {
+test("speech-derived questions keep their submitted text", async ({ page }) => {
   const panel = await audioFixture(page);
   const question = "What is use state in React?";
   const submissions: Array<{
@@ -958,13 +853,4 @@ test("speech-derived questions keep their submitted text and typed questions do 
     page.getByRole("button", { name: `View answer: ${question}`, exact: true }),
   ).toBeVisible();
   await panel.getByRole("button", { name: "Stop", exact: true }).click();
-  await toggleTypedQuestion(page);
-  await page.getByLabel("Interview question", { exact: true }).fill(question);
-  await page.getByRole("button", { name: "Get response", exact: true }).click();
-  await expect(
-    page.getByText("Response ready.", { exact: true }),
-  ).toBeVisible();
-  expect(submissions).toHaveLength(2);
-  expect(submissions[1]?.content).toBe(question);
-  expect(submissions[1]?.interview.inputSource).toBeUndefined();
 });

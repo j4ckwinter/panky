@@ -74,6 +74,7 @@ export function NotionSources({
       <div className="notion-connection-actions">
         {connected && (
           <Button
+            size={40}
             ref={pickerButton}
             disabled={unavailable}
             onClick={() => setPicker(true)}
@@ -82,6 +83,7 @@ export function NotionSources({
           </Button>
         )}
         <Button
+          size={40}
           variant="secondary"
           disabled={unavailable || !connected || model.sources.length === 0}
           onClick={() => {
@@ -91,6 +93,7 @@ export function NotionSources({
           Refresh all
         </Button>
         <Button
+          size={40}
           variant="ghost"
           disabled={unavailable}
           onClick={() => {
@@ -145,10 +148,9 @@ export function NotionSources({
         <NotionPassages detail={model.detail} close={model.clearDetail} />
       )}
       <p className="connections-privacy">
-        Removing a page deletes its local searchable copy. Saved conversations
-        and their evidence excerpts remain. Access changes in Notion are
-        detected only when you check the connection or request pages; refresh
-        manually to update local copies.
+        Refresh manually to update copies. Removing pages keeps saved answers
+        and evidence. Access changes are detected when you check the connection
+        or request pages.
       </p>
     </section>
   );

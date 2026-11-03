@@ -206,9 +206,9 @@ test("general questions exclude pasted and imported experience while existing cl
   const speechSourced = interviewContext(question, speechInput, 8000, evidence);
   assert.equal(
     speechSourced.history[0]?.content,
-    `${generalInterviewInstructions}\n${transcriptionInstructions}`,
+    `${interviewInstructions}\n${transcriptionInstructions}`,
   );
-  assert.equal(speechSourced.sources.length, 0);
+  assert.deepEqual(speechSourced.sources, evidence);
   assert.equal(
     speechSourced.historyChars,
     speechSourced.history.reduce(

@@ -86,7 +86,7 @@ export function NotionPagePicker({
     <section className="notion-page-picker" aria-label="Choose Notion pages">
       <div className="notion-source-heading">
         <h3>Choose pages</h3>
-        <Button variant="ghost" disabled={disabled} onClick={close}>
+        <Button size={40} variant="ghost" disabled={disabled} onClick={close}>
           Close picker
         </Button>
       </div>
@@ -111,7 +111,12 @@ export function NotionPagePicker({
           disabled={unavailable}
           helperText="Leave blank to browse available pages."
         />
-        <Button type="submit" variant="secondary" disabled={unavailable}>
+        <Button
+          size={40}
+          type="submit"
+          variant="secondary"
+          disabled={unavailable}
+        >
           Search pages
         </Button>
       </form>
@@ -156,6 +161,7 @@ export function NotionPagePicker({
       <div className="notion-connection-actions">
         {cursor && (
           <Button
+            size={40}
             variant="secondary"
             disabled={unavailable}
             onClick={() => {
@@ -166,6 +172,7 @@ export function NotionPagePicker({
           </Button>
         )}
         <Button
+          size={40}
           disabled={unavailable || selected.length === 0}
           onClick={() => {
             const chosen = selected;
@@ -199,6 +206,7 @@ export function NotionPagePicker({
           onChange={(event) => setPageLink(event.currentTarget.value)}
         />
         <Button
+          size={40}
           type="submit"
           variant="secondary"
           disabled={unavailable || !pageLink.trim()}

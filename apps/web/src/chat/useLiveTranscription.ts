@@ -28,7 +28,6 @@ export function useLiveTranscription({
   const [state, setState] = useState(initialAudioState);
   const [speech, setSpeech] = useState(initialTranscriptionState);
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
-  const [removing, setRemoving] = useState(false);
   const capture = useRef<BrowserAudio | null>(null);
   const transcriber = useRef<BrowserTranscription | null>(null);
   const captureStatus = useRef(initialAudioState.status);
@@ -113,25 +112,13 @@ export function useLiveTranscription({
     setEntries([]);
     resetDetectionCallback.current?.();
   }
-  async function removeModel() {
-    setRemoving(true);
-    try {
-      await transcriber.current?.clearCache();
-    } finally {
-      setRemoving(false);
-    }
-  }
   return {
     state,
     speech,
     entries,
-    removing,
     start,
     pause: () => capture.current?.stop("paused"),
     stop: () => capture.current?.stop(),
-    cancelModelLoad: () => transcriber.current?.stop(),
-    loadModel: () => transcriber.current?.load(),
     clearTranscript,
-    removeModel,
   };
 }

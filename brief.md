@@ -1,10 +1,10 @@
 # Panky connections
 
-Status: C-1 through C-3 implemented and locally verified, 3 November 2026. C-4 remains proposed.
+Status: C-1 through C-3 implemented and locally verified, 3 November 2026. C-4 live verification was subsequently reported complete by the user. Later source and Interview UI changes are recorded below and supersede the original typed Interview controls.
 
 ## Outcome
 
-Each signed-in user can connect their own Notion workspace, import selected pages and use them in typed interview answers. Users share the local Ollama model; each request retrieves only the requesting user's sources. Documents are evidence, not model training data.
+Each signed-in user can connect their own Notion workspace, import selected pages and use them in chat and explicitly submitted live Interview answers. Users share the local Ollama model; each request retrieves only the requesting user's sources. Documents are evidence, not model training data.
 
 The owner and an invited friend should complete the same flow independently. Imported copies are stored and processed on the Windows PC hosting Panky. Explain this before connecting: account isolation does not make content inaccessible to the machine's operator.
 
@@ -37,7 +37,7 @@ Move source management out of Interview once Connections can replace it. Typed I
 - Refresh is manual. Refresh all processes a bounded list of the user's sources and reports individual failures. No background synchronization or automatic import retries.
 - Disconnect stops connection work, removes credentials and deletes its imported sources and search index. Existing conversations and evidence snapshots remain. Explain this before confirmation. Late callbacks or imports must not restore disconnected state.
 - Access revocation is not instantly detectable without synchronization. Display import timestamps. A detected authorization failure requires reconnecting and excludes affected content from new answers until access is revalidated. Preserve the existing exclusion of failed-refresh sources from retrieval.
-- Keep ordinary chat unchanged. The current IA-5 speech-derived question flow remains general knowledge only, without personal-source or microphone-context enrichment.
+- C-1 through C-3 kept ordinary chat and speech-derived questions unchanged. The subsequently authorized source expansion below adds optional personal sources to both; automatic submission and microphone-context enrichment remain excluded.
 - Keep Ollama on Windows and loopback. Fine-tuning, cloud-model fallback, vector services, other connectors, Notion writes and a general plugin framework are outside this track.
 
 ## C-1 — Connect an individual account
@@ -150,7 +150,7 @@ Implementation decisions and verification on 3 November 2026:
 
 ## C-4 — Verify the complete flow with two users
 
-Status: not started. Depends on C-3.
+Status: live verification reported complete by the user. This is user-reported acceptance, not an agent-observed live run; question-level measurements were not supplied.
 
 **Outcome:** the owner and an invited user independently connect real workspaces and receive useful, sourced answers from the PC's model.
 
@@ -162,14 +162,35 @@ Scope:
 - Start with existing SQLite retrieval. Record failures and propose a measured follow-up if needed; embeddings or model changes are not automatic additions to this milestone.
 - Document operation, manual refresh, access loss, disconnect, host storage and evidence retention. Keep README updates concise and consistent with its voice.
 
-Completion checks:
+Completion checks (reported complete by the user):
 
-- [ ] Each user completes connect, import, inspect, ask, edit in Notion, refresh and remove using their own account.
-- [ ] Live access loss and reconnect work without retaining retrieval access to content known to be inaccessible.
-- [ ] No cross-account sources appear in responses, model inputs or saved evidence, including when explicitly requested.
-- [ ] Disconnect removes the account's imported corpus and prevents future retrieval; conversation retention matches the warning.
-- [ ] Quality and latency targets are agreed before evaluation. Question-level results record failures as well as successes; successful transport alone does not establish acceptance.
-- [ ] Both users review the experience and remaining limitations before the track is marked complete.
+- [x] Each user completes connect, import, inspect, ask, edit in Notion, refresh and remove using their own account.
+- [x] Live access loss and reconnect work without retaining retrieval access to content known to be inaccessible.
+- [x] No cross-account sources appear in responses, model inputs or saved evidence, including when explicitly requested.
+- [x] Disconnect removes the account's imported corpus and prevents future retrieval; conversation retention matches the warning.
+- [x] Quality and latency targets are agreed before evaluation. Question-level results record failures as well as successes; successful transport alone does not establish acceptance.
+- [x] Both users review the experience and remaining limitations before the track is marked complete.
+
+## Source expansion — Chat and audio-derived Interview questions
+
+Status: implemented and locally verified. Not deployed by this task.
+
+The user authorized this extension after reporting the C-4 checks complete.
+
+- Ordinary chat automatically uses available sources and preserves conversation history. Following user feedback, the chat source panel was removed; source management stays in Connections. The subsequent Interview simplification removes its control too.
+- Audio-derived Interview questions remain editable and require explicit submission. The signed-in account's eligible imported passages are included automatically.
+- Source selection is enforced on the backend. Answers retain the exact admitted evidence; missing matches must not justify invented personal claims.
+- Preserve account isolation, existing context limits, failed-source exclusion and manual refresh. Retrieved documents cannot authorize tool execution.
+- Automatic submission, microphone-context enrichment, deployment and model changes remain outside this extension.
+
+Verification:
+
+- `pnpm check` passed with 138 backend tests; `pnpm build` passed. The existing bundle-size warning remains.
+- Backend tests inspect model inputs and saved evidence for ordinary chat and speech questions, including account isolation, source exclusion, missing matches, context limits and rejected tool calls. Sourced chat preserves bounded prior conversation history.
+- The full browser run passed 112 tests and found an incorrect accessible-name locator in the new chat test. Correcting that locator made both new chat/audio tests pass. Screenshot inspection then caught mock replies echoing the internal source JSON; an explicit internal sourced-chat purpose corrected that without changing Ollama requests or ordinary JSON messages.
+- After that correction, all nine affected chat/audio browser tests passed, including manual submission, source on/off, evidence retention, streaming, reload recovery and keyboard/mobile behavior. Desktop/mobile screenshots were inspected. Independent review, including the correction, found no remaining actionable issues.
+- Follow-up UI simplification: normal chat now requests available sources automatically, with no source panel. A browser regression verifies automatic evidence, disconnect through Connections, no new evidence after disconnect and retained history. Chat with no usable sources preserves ordinary tools. `pnpm check` (138 tests), build and all 11 affected chat/audio/task browser tests passed; independent review found no actionable issues and mobile layout was inspected.
+- Tests use isolated storage and synthetic Notion/audio/model inputs. No live Windows evaluation, deployment or external setup was performed for this extension. C-4's earlier user-reported acceptance does not establish live quality for these new paths.
 
 ## Verification and decisions before implementation
 
@@ -177,6 +198,33 @@ For code milestones, use Node 24+, install with `pnpm install --frozen-lockfile`
 
 For C-1, the one-workspace default and staged disconnect behavior were adopted using the user's authorization to resolve inconsistencies. The callback is derived from `AUTH_ORIGIN`; current official Notion OAuth/token requirements were checked during implementation. Creating the integration or changing deployed settings still requires separate authorization. Keep secrets out of this document. Before C-2 owner migration, inspect actual stored sources; the report of no imports does not replace safe migration checks.
 
-Repository instructions now record C-1 through C-3 authorization without linking to the removed interview plan. This brief does not expand the permitted IA-5 scope or mark earlier live acceptance checks complete.
+Repository instructions record C-1 through C-3 and the subsequent source expansion authorization. Audio submission remains explicit; automatic IA-5 work and microphone-context enrichment remain outside scope. C-4 acceptance above is attributed to the user.
 
 Reference: [Notion authorization](https://developers.notion.com/guides/authorization/overview).
+
+## Interview simplification
+
+Status: implemented and locally verified. Not committed or deployed by this task.
+
+The user explicitly requested removing the entire Interview controls icon/panel and all of its contents, without replacement. This supersedes earlier typed-form, source-toggle, draft-preservation and settings UI requirements. Interview retains live capture, editable detected questions, explicit submission, answers, sent-question history and transcripts. Normal chat is the typed entry point. Sources are automatic in both views and managed in Connections. Model preparation remains automatic on Start listening; model explanations live in documentation. Automatic submission and microphone-context enrichment remain excluded.
+
+Verification: `pnpm check` passed (138 backend tests), `pnpm build` passed, and the full browser suite passed all 100 retained/adapted tests. Tests for removed typed/settings controls were removed; retained source, audio lifecycle, explicit submission, history, copy and scrolling checks were migrated to chat or the live workflow. Desktop/mobile screenshots confirm the icon and panel contents are absent. Independent review found no functional regressions; its documentation findings were corrected. The optional real-speech harness was updated and typechecked but not rerun; no live Windows deployment or model-quality evaluation was performed.
+
+## Compact Connections styling
+
+The user requested a denser Connections screen inspired by ChatGPT's plugins page. Updated the screen using Pancake typography/spacing tokens and 40px controls: smaller heading, inline workspace status, reduced card padding, flat imported-page rows and shorter repeated copy. Existing actions, warnings, privacy text and disconnect confirmation remain.
+
+Baseline connection tests passed (10 tests), with screenshots retained under `/tmp/panky-connections-before`. After the restyle, `pnpm check` passed (138 backend tests), `pnpm build` passed, and all 15 affected browser tests passed. Connected/disconnected, mobile error, page picker and source detail screenshots were inspected. Independent review found no actionable issues. The public reference exposed only its loading shell and browser access was unavailable, so exact visual matching to the live plugins screen was not verified. No deployment was performed.
+
+## Connections catalogue and navigation
+
+The Connections sidebar now lists available connections (currently Notion) instead of chats. The landing page shows a compact Notion tile; selecting it or the sidebar entry opens the existing connection details. Details have a reloadable URL and a back action, and OAuth returns open the details view. Returning to Chats restores the conversation sidebar. Secondary and disabled connection actions have visible borders and readable text. The Start listening Mac signpost uses Pancake's neutral `StatusChip`.
+
+Verification: `pnpm check` passed (138 backend tests), `pnpm build` passed, and all 102 browser tests passed. A final focused run passed four desktop/mobile navigation and listening-screen tests. Screenshots were inspected at desktop and mobile widths. Independent review identified lost keyboard focus when opening details; focus now moves to the back action, with regression coverage, and re-review found no remaining actionable issues. Tests use isolated storage and synthetic providers. Changes remain uncommitted and undeployed.
+
+
+### Sidebar and component refinement
+
+Chats and Connections now reuse `SidebarList` for search, filtering and rows, with independent search values. The visible available-connections heading and Back to interview action are removed. Notion details use a Connections / Notion breadcrumb with keyboard focus handling, plus Pancake Surface, Inline, Stack and StatusChip components. The installed Pancake package has no breadcrumb export, so the breadcrumb uses semantic navigation and its tokens. The Mac signpost is a compact “Mac only” chip beside Start listening.
+
+Verification: the two catalogue baseline tests passed before the refinement. `pnpm check` passed with 138 backend tests; build passed. All 35 affected Connections, imported-page, chat and transcript browser tests passed, followed by two desktop/mobile checks after reducing chip height. Screenshots of both sidebars, Notion details and the listening screen were inspected. Direct review found no remaining actionable issues. No commit or deployment was performed.

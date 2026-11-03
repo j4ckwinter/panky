@@ -1,7 +1,10 @@
 import { expect } from "@playwright/test";
-import { toggleTypedQuestion } from "./interview-options.js";
 import { test } from "./auth-fixture.js";
-import { audioFixture, expectReleased } from "./browser-audio-fixture.js";
+import {
+  audioFixture,
+  expectReleased,
+  submitAudioQuestion,
+} from "./browser-audio-fixture.js";
 
 for (const width of [1280, 390]) {
   test(`listening controls remain usable after scrolling at ${width}px`, async ({
@@ -122,11 +125,7 @@ test("answer copy preserves Markdown and reports clipboard failure on mobile", a
       .join("\n");
     await route.fulfill({ response, body });
   });
-  await toggleTypedQuestion(page);
-  await page
-    .getByLabel("Interview question", { exact: true })
-    .fill("Explain closures");
-  await page.getByRole("button", { name: "Get response", exact: true }).click();
+  await submitAudioQuestion(page, "Explain closures?");
   await expect(
     page.getByText("Response ready.", { exact: true }),
   ).toBeVisible();

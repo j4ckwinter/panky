@@ -10,7 +10,6 @@ import { MessageList } from "./MessageList";
 import { useChat } from "./useChat";
 import { useChatScroll } from "./useChatScroll";
 import { Interview } from "./Interview";
-import { useInterviewDraft } from "./useInterviewDraft";
 import { Connections, type ConnectionReturn } from "./Connections";
 
 function initialView(): ChatView {
@@ -41,31 +40,37 @@ export function Chat({
   email: string;
 }) {
   const chat = useChat(api);
-  const typedDraft = useInterviewDraft();
   const [interviewSession, setInterviewSession] = useState(false);
-  const [restoreDraft, setRestoreDraft] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const menu = useRef<HTMLButtonElement>(null);
   const [managedChat, setManagedChat] = useState<Conversation | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [toolsTarget, setToolsTarget] = useState<HTMLDivElement | null>(null);
   const [view, setView] = useState<ChatView>(initialView);
   const [connectionReturn, setConnectionReturn] = useState(
     initialConnectionReturn,
+  );
+  const [selectedConnection, setSelectedConnection] = useState<"notion" | null>(
+    () => {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("connection") === "notion" || initialConnectionReturn()
+        ? "notion"
+        : null;
+    },
   );
   const interview = view === "interview";
   useEffect(() => {
     const url = new URL(window.location.href);
     if (view === "connections") url.searchParams.set("view", "connections");
     else url.searchParams.delete("view");
+    if (view === "connections" && selectedConnection)
+      url.searchParams.set("connection", selectedConnection);
+    else url.searchParams.delete("connection");
     url.searchParams.delete("notion");
     window.history.replaceState(window.history.state, "", url);
-  }, [view]);
+  }, [view, selectedConnection]);
   function openChat() {
-    typedDraft.reset();
     setInterviewSession(false);
-    setRestoreDraft(false);
     setView("chat");
     setConnectionReturn(null);
   }
@@ -73,10 +78,8 @@ export function Chat({
     if (interview || chat.pending) return;
     const returning = view === "connections" && interviewSession;
     if (!returning) {
-      typedDraft.reset();
       chat.create();
     }
-    setRestoreDraft(returning);
     setInterviewSession(true);
     setView("interview");
     setConnectionReturn(null);
@@ -118,7 +121,16 @@ export function Chat({
         view={view}
         onChat={openChat}
         onInterview={openInterview}
-        onConnections={() => setView("connections")}
+        selectedConnection={selectedConnection}
+        onSelectConnection={() => {
+          setSelectedConnection("notion");
+          setView("connections");
+        }}
+        onConnections={() => {
+          setSelectedConnection(null);
+          setConnectionReturn(null);
+          setView("connections");
+        }}
         pending={chat.pending}
         providerLabel={chat.providerLabel}
         sidebarOpen={sidebarOpen}
@@ -145,11 +157,6 @@ export function Chat({
       />
       <main className="chat-main" inert={sidebarOpen}>
         <ChatHeader
-          toolsSlot={
-            interview ? (
-              <div className="interview-header-tools" ref={setToolsTarget} />
-            ) : undefined
-          }
           title={
             view === "connections"
               ? "Connections"
@@ -184,20 +191,14 @@ export function Chat({
         {view === "connections" ? (
           <Connections
             api={api}
+            selectedConnection={selectedConnection}
+            onSelectConnection={setSelectedConnection}
             returnResult={connectionReturn}
             clearReturn={() => setConnectionReturn(null)}
-            onBackToInterview={interviewSession ? openInterview : undefined}
             pending={chat.pending}
           />
         ) : interview ? (
-          <Interview
-            chat={chat}
-            api={api}
-            toolsTarget={toolsTarget}
-            typedDraft={typedDraft}
-            restoreDraft={restoreDraft}
-            onManageSources={() => setView("connections")}
-          />
+          <Interview chat={chat} />
         ) : (
           <div className={`chat-body${hasMessages ? "" : " chat-body-empty"}`}>
             <div className="chat-scroll" ref={scrollArea} onScroll={onScroll}>
@@ -225,7 +226,7 @@ export function Chat({
               jumpToLatest={jumpToLatest}
               showRecoveryNote={showRecoveryNote}
               onSend={(content) => {
-                void chat.send(content);
+                void chat.send(content, undefined, undefined, undefined, true);
               }}
               onCancel={(id) => {
                 void chat.cancel(id);

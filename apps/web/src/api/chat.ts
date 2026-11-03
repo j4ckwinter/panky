@@ -175,6 +175,7 @@ export function createApi(token?: string) {
       signal: AbortSignal,
       onEvent: (event: StreamEvent) => void,
       interview?: InterviewInput,
+      useSources = false,
     ) {
       const response = await request(
         `/conversations/${encodeURIComponent(id)}/messages`,
@@ -184,7 +185,12 @@ export function createApi(token?: string) {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
           },
-          body: JSON.stringify({ content, includeActivity: true, interview }),
+          body: JSON.stringify({
+            content,
+            includeActivity: true,
+            interview,
+            useSources,
+          }),
           signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]),
         },
       );

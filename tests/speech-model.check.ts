@@ -1,7 +1,3 @@
-import {
-  openInterviewOptions,
-  closeInterviewOptions,
-} from "./interview-options.js";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -43,6 +39,7 @@ test("production speech reaches an editable question and the answer endpoint", a
           new Uint8Array(bytes).buffer,
         );
         const destination = context.createMediaStreamDestination();
+        source.loop = true;
         source.connect(destination);
         await context.resume();
         source.start(context.currentTime + 0.5);
@@ -80,15 +77,6 @@ test("production speech reaches an editable question and the answer endpoint", a
     await login(page);
     await page.getByRole("button", { name: "Interview", exact: true }).click();
     const panel = page.getByRole("region", { name: "Browser audio capture" });
-    await openInterviewOptions(page);
-    await page.getByText("Listening settings", { exact: true }).click();
-    await page
-      .getByRole("button", { name: "Load speech model", exact: true })
-      .click();
-    await expect(
-      page.getByRole("region", { name: "Local speech model" }),
-    ).toContainText("Speech model ready", { timeout: 90_000 });
-    await closeInterviewOptions(page);
     const captureStarted = Date.now();
     await panel.getByRole("button", { name: "Start listening" }).click();
     await panel.locator(".transcript-details > summary").click();
@@ -96,7 +84,7 @@ test("production speech reaches an editable question and the answer endpoint", a
       name: "Detected question",
       exact: true,
     });
-    await expect(card).toHaveCount(1, { timeout: 25000 });
+    await expect(card).toHaveCount(1, { timeout: 120000 });
     await expect(card.getByLabel("Question to ask")).toHaveValue(/closure/i);
     console.log(
       JSON.stringify({
@@ -107,13 +95,15 @@ test("production speech reaches an editable question and the answer endpoint", a
     const entries = panel
       .getByRole("region", { name: "Live transcript" })
       .locator("article");
-    await expect(entries).toHaveCount(2, { timeout: 25000 });
-    await expect(entries.filter({ hasText: "Shared audio" })).toContainText(
-      /closure/i,
-    );
-    await expect(entries.filter({ hasText: "Microphone" })).toContainText(
-      /closure/i,
-    );
+    await expect
+      .poll(() => entries.count(), { timeout: 25000 })
+      .toBeGreaterThanOrEqual(2);
+    await expect(
+      entries.filter({ hasText: "Shared audio" }).first(),
+    ).toContainText(/closure/i);
+    await expect(
+      entries.filter({ hasText: "Microphone" }).first(),
+    ).toContainText(/closure/i);
     await card
       .getByRole("button", { name: "Send question", exact: true })
       .click();
@@ -137,13 +127,6 @@ test("production speech reaches an editable question and the answer endpoint", a
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await panel
-      .getByRole("button", { name: "Remove downloaded model" })
-      .click();
-    await expect(panel).toContainText("Downloaded speech model removed");
-    expect(await page.evaluate(() => caches.keys())).not.toContain(
-      "panky-speech-model-v1",
-    );
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }

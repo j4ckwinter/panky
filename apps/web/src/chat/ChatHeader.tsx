@@ -3,7 +3,6 @@ import type { ReactNode, RefObject } from "react";
 import { ActionMenu } from "../components/ActionMenu";
 
 export function ChatHeader({
-  toolsSlot,
   title,
   connected,
   streaming,
@@ -16,7 +15,6 @@ export function ChatHeader({
   onRefresh,
   onCreate,
 }: {
-  toolsSlot?: ReactNode;
   title: string;
   connected: boolean;
   streaming: boolean;
@@ -34,7 +32,9 @@ export function ChatHeader({
       <div className="chat-heading">
         <Button
           ref={menu}
-          aria-label="Conversations"
+          aria-label={
+            showChatActions ? "Conversations" : "Connections navigation"
+          }
           aria-controls="conversation-sidebar"
           className="mobile-menu header-icon-button"
           size={40}
@@ -59,7 +59,6 @@ export function ChatHeader({
         </Text>
       </div>
       <Inline gap="space12" className="chat-header-actions">
-        {toolsSlot}
         <span
           className={`connection ${!connected ? "offline" : !streaming && !serverBusy ? "connection-idle" : ""}`}
           title={connected ? "Connected" : "Connection lost"}

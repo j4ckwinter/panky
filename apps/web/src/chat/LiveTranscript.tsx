@@ -1,43 +1,27 @@
-import { BannerToast, Button } from "@jack.winter/pancake-ui";
+import { BannerToast, Button, StatusChip } from "@jack.winter/pancake-ui";
 import type { ReactNode } from "react";
-import { createPortal } from "react-dom";
 import { AudioSourceStatus } from "./AudioSourceStatus";
 import {
-  useLiveTranscription,
   type TranscriptEntry,
+  useLiveTranscription,
 } from "./useLiveTranscription";
 
 export function LiveTranscript({
   children,
-  settingsTarget,
   onTranscript,
   onUseAsQuestion,
   onResetDetection,
 }: {
   children?: ReactNode;
-  settingsTarget?: HTMLElement | null;
   onTranscript?: (entry: TranscriptEntry) => void;
   onUseAsQuestion?: (text: string) => void;
   onResetDetection?: () => void;
 }) {
-  const {
-    state,
-    speech,
-    entries,
-    removing,
-    start,
-    pause,
-    stop,
-    cancelModelLoad,
-    loadModel,
-    clearTranscript,
-    removeModel,
-  } = useLiveTranscription({ onTranscript, onResetDetection });
+  const { state, speech, entries, start, pause, stop, clearTranscript } =
+    useLiveTranscription({ onTranscript, onResetDetection });
   const active = state.status === "listening";
   const pending = state.status === "starting";
   const loading = speech.status === "loading";
-  const modelReady =
-    speech.status === "ready" || speech.status === "transcribing";
   const hasSession = active || pending || loading || entries.length > 0;
   return (
     <section
@@ -45,13 +29,20 @@ export function LiveTranscript({
       aria-label="Browser audio capture"
     >
       <div className="welcome listening-welcome">
-        <h2>
-          {active
-            ? "Listening"
-            : entries.length
-              ? "Your transcript"
-              : "Start listening"}
-        </h2>
+        <div className="listening-title">
+          <h2>
+            {active
+              ? "Listening"
+              : entries.length
+                ? "Your transcript"
+                : "Start listening"}
+          </h2>
+          {!hasSession && (
+            <StatusChip tone="neutral" className="mac-only-chip">
+              Mac only
+            </StatusChip>
+          )}
+        </div>
         {((state.status !== "idle" && !active) || loading) && (
           <p role="status" className="listening-status">
             {loading
@@ -69,9 +60,7 @@ export function LiveTranscript({
         <AudioSourceStatus state={state} />
         <div className="browser-audio-actions listening-controls">
           {!active && !pending && !loading && (
-            <Button disabled={removing} onClick={() => void start()}>
-              Start listening
-            </Button>
+            <Button onClick={() => void start()}>Start listening</Button>
           )}
           {active && !loading && (
             <Button
@@ -110,11 +99,6 @@ export function LiveTranscript({
                 <rect x="5" y="5" width="14" height="14" rx="2" />
               </svg>
               Stop
-            </Button>
-          )}
-          {loading && !active && !pending && (
-            <Button variant="secondary" onClick={cancelModelLoad}>
-              Cancel model load
             </Button>
           )}
         </div>
@@ -168,81 +152,6 @@ export function LiveTranscript({
           </section>
         </details>
       )}
-      {settingsTarget &&
-        createPortal(
-          <details className="listening-settings">
-            <summary>Listening settings</summary>
-            <section aria-label="Local speech model" className="speech-model">
-              <p>
-                English transcription runs locally. The first use downloads
-                about 70 MB from Hugging Face and this app, then caches it in
-                your browser. You can load it before your call.
-              </p>
-              <div className="browser-audio-actions">
-                <Button
-                  variant="secondary"
-                  disabled={
-                    active || pending || loading || modelReady || removing
-                  }
-                  onClick={() => void loadModel()}
-                >
-                  Load speech model
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={active || pending || removing}
-                  onClick={removeModel}
-                >
-                  Remove downloaded model
-                </Button>
-              </div>
-              <p role="status">
-                {removing
-                  ? "Removing downloaded model…"
-                  : speech.progress ||
-                    (modelReady
-                      ? "Speech model ready"
-                      : "Speech model not loaded")}
-              </p>
-            </section>
-            <div className="browser-audio-meters">
-              <label>
-                Shared audio{" "}
-                <meter
-                  aria-label="Shared audio level"
-                  min={0}
-                  max={100}
-                  value={state.sharedLevel}
-                />
-              </label>
-              <label>
-                Microphone{" "}
-                <meter
-                  aria-label="Microphone level"
-                  min={0}
-                  max={100}
-                  value={state.microphoneLevel}
-                />
-              </label>
-            </div>
-            <p className="interview-note">
-              Use headphones. Enable Share audio in the browser picker and allow
-              microphone access.{" "}
-              {active && `Selected source: ${state.surface}. `}A silent meter
-              does not confirm audio capture.
-            </p>
-            <p className="interview-note">
-              Audio and unsent transcripts stay on this device. Up to 50
-              transcript segments remain until cleared or you leave Interview.
-              Pause and Stop discard pending audio and transcription; Start asks
-              you to choose a source again. Dismiss any permission prompt left
-              open after Stop. Shared speech can suggest editable questions.
-              Only Send question sends a question to the model; microphone
-              speech is never submitted.
-            </p>
-          </details>,
-          settingsTarget,
-        )}
     </section>
   );
 }

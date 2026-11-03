@@ -32,6 +32,7 @@ export const submissionSchema = z
   .object({
     content: z.string().trim().min(1).max(MESSAGE_MAX_CHARS),
     includeActivity: z.boolean().default(false),
+    useSources: z.boolean().default(false),
     interview: interviewInputSchema.optional(),
   })
   .strict();

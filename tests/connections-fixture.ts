@@ -25,7 +25,7 @@ export async function mockNotion(page: Page, code = "owner", denied = false) {
   });
 }
 
-export async function openConnections(page: Page) {
+export async function openConnectionsCatalogue(page: Page) {
   await page.goto("/");
   await login(page);
   if ((page.viewportSize()?.width ?? 1280) <= 640)
@@ -36,6 +36,13 @@ export async function openConnections(page: Page) {
   await expect(
     page.getByRole("heading", { name: "Connections", exact: true }),
   ).toBeVisible();
+}
+
+export async function openConnections(page: Page) {
+  await openConnectionsCatalogue(page);
+  await page
+    .getByRole("button", { name: "View Notion connection", exact: true })
+    .click();
 }
 
 export async function authorize(page: Page, denied = false) {
@@ -51,5 +58,5 @@ export async function authorize(page: Page, denied = false) {
   await expect(
     page.getByRole("heading", { name: "Connections", exact: true }),
   ).toBeVisible();
-  await expect(page).toHaveURL(`${origin}/?view=connections`);
+  await expect(page).toHaveURL(`${origin}/?view=connections&connection=notion`);
 }

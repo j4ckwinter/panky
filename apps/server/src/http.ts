@@ -225,11 +225,13 @@ export function createApp(
       return;
     }
     if (match[2] && request.method === "POST") {
-      const { content, includeActivity, interview } =
+      const { content, includeActivity, interview, useSources } =
         await readSubmission(request);
       assertAccess();
       if (!store.ownsConversation(id.data, userId))
         throw new HttpError(404, "Conversation not found.");
+      const useChatSources =
+        !interview && useSources && experience.status(userId).usableCount > 0;
       const controller = new AbortController();
       const disconnect = () => controller.abort();
       response.once("close", disconnect);
@@ -252,15 +254,19 @@ export function createApp(
           controller.signal,
           includeActivity,
           interview,
-          interview &&
-            interview.useExperience &&
-            interview.useSources &&
-            interview.inputSource === "typed"
+          (
+            interview
+              ? interview.useExperience && interview.useSources
+              : useChatSources
+          )
             ? experience.search(
                 userId,
-                interviewRetrievalQuery(content, interview),
+                interview
+                  ? interviewRetrievalQuery(content, interview)
+                  : content,
               )
             : [],
+          useChatSources,
         );
         response.end();
       } finally {

@@ -2,140 +2,211 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--spacing-pancake-32) var(--spacing-pancake-24);
+  padding: var(--spacing-pancake-24);
 }
 .connections-panel {
   max-width: 720px;
   margin: 0 auto;
   display: grid;
-  gap: var(--spacing-pancake-24);
+  gap: var(--spacing-pancake-16);
+  font-size: var(--text-pancake-body);
   overflow-wrap: anywhere;
 }
 .connections-panel h2,
 .connections-panel p {
   margin: 0;
 }
+.connections-panel .pancake-button {
+  min-width: 0;
+  padding-inline: var(--spacing-pancake-16);
+}
+.connections-panel .pancake-button--secondary,
+.connections-panel .pancake-button--ghost {
+  border: 1px solid var(--color-pancake-control-border);
+  color: var(--color-pancake-ink);
+}
+.connections-panel .pancake-button:disabled {
+  opacity: 1;
+  color: var(--color-pancake-muted);
+  background: var(--color-pancake-surface-muted);
+  border: 1px solid var(--color-pancake-border);
+}
+.connections-catalogue {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--spacing-pancake-16);
+}
+.connection-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-pancake-16);
+  padding: var(--spacing-pancake-24);
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-16);
+  background: var(--color-pancake-surface);
+  color: var(--color-pancake-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.connection-tile:hover {
+  background: var(--color-pancake-canvas);
+  border-color: var(--color-pancake-control-border);
+}
+.connection-tile:focus-visible {
+  outline: 2px solid var(--color-pancake-control-focus);
+  outline-offset: 4px;
+}
+.connection-tile-copy {
+  display: grid;
+  gap: var(--spacing-pancake-4);
+  flex: 1;
+}
+.connection-tile-copy strong {
+  font-size: var(--text-pancake-body-strong);
+}
+.connection-tile-copy > span {
+  color: var(--color-pancake-muted);
+}
+.connection-tile > svg {
+  flex-shrink: 0;
+  color: var(--color-pancake-muted);
+}
 .connections-intro {
   display: grid;
-  gap: var(--spacing-pancake-8);
+  gap: var(--spacing-pancake-4);
 }
 .connections-intro > p,
 .connections-privacy {
   color: var(--color-pancake-muted);
 }
 .connections-privacy {
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
 }
 .notion-connection-card {
   display: grid;
-  gap: var(--spacing-pancake-24);
-  padding: var(--spacing-pancake-24);
+  gap: var(--spacing-pancake-16);
+  padding: var(--spacing-pancake-16);
   border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
+  border-radius: var(--radius-pancake-16);
 }
 .notion-connection-heading {
   display: flex;
   align-items: center;
-  gap: var(--spacing-pancake-16);
+  gap: var(--spacing-pancake-12);
 }
 .notion-connection-heading h2 {
-  font-size: 18px;
+  font-size: var(--text-pancake-body-strong);
 }
 .notion-connection-heading .muted {
-  font-size: 14px;
   margin-top: var(--spacing-pancake-4);
 }
 .notion-connection-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 44px;
-  height: 44px;
+  flex: 0 0 var(--spacing-pancake-40);
+  height: var(--spacing-pancake-40);
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-8);
   font-family: Georgia, serif;
-  font-size: 28px;
+  font-size: var(--text-pancake-title);
   font-weight: 700;
 }
 .notion-workspace {
-  display: grid;
-  gap: var(--spacing-pancake-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-pancake-4) var(--spacing-pancake-12);
 }
 .notion-workspace p {
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
 }
 .notion-connection-actions {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: var(--spacing-pancake-12);
+  gap: var(--spacing-pancake-4);
 }
 .notion-disconnect-confirmation {
   display: grid;
   gap: var(--spacing-pancake-12);
-  padding: var(--spacing-pancake-16);
+  padding: var(--spacing-pancake-12);
   background: var(--color-pancake-canvas);
   border-radius: var(--radius-pancake-8);
 }
 .connections-notice {
-  padding: var(--spacing-pancake-12) var(--spacing-pancake-16);
+  padding: var(--spacing-pancake-8) var(--spacing-pancake-12);
   background: var(--color-pancake-canvas);
   border-radius: var(--radius-pancake-8);
 }
 .notion-sources,
 .notion-page-picker,
-.notion-source-list,
 .notion-source,
 .notion-passages {
   display: grid;
   min-width: 0;
-  gap: var(--spacing-pancake-16);
+  gap: var(--spacing-pancake-8);
 }
 .notion-sources {
   border-top: 1px solid var(--color-pancake-border);
-  padding-top: var(--spacing-pancake-24);
+  padding-top: var(--spacing-pancake-16);
+  gap: var(--spacing-pancake-12);
 }
-.notion-source-heading {
+.notion-source-list {
+  min-width: 0;
+}
+.notion-source-heading,
+.notion-source-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--spacing-pancake-12);
+  gap: var(--spacing-pancake-8);
 }
 .notion-source-heading h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-pancake-body);
 }
 .notion-source-heading p,
 .notion-source .muted,
 .notion-source-warnings,
 .notion-page-picker > .muted {
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
 }
 .notion-page-picker,
-.notion-source,
 .notion-passages {
-  padding: var(--spacing-pancake-16);
+  padding: var(--spacing-pancake-12);
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-8);
 }
+.notion-source {
+  padding: var(--spacing-pancake-12) 0;
+  border-top: 1px solid var(--color-pancake-border);
+}
+.notion-source:last-child {
+  padding-bottom: 0;
+}
 .notion-page-picker {
   background: var(--color-pancake-canvas);
+  gap: var(--spacing-pancake-12);
 }
 .notion-page-search {
   display: grid;
-  gap: var(--spacing-pancake-12);
+  gap: var(--spacing-pancake-8);
 }
 .notion-page-search button {
   justify-self: start;
 }
 .notion-page-options {
   display: grid;
-  gap: var(--spacing-pancake-8);
+  gap: var(--spacing-pancake-4);
 }
 .notion-page-option {
   display: flex;
   align-items: flex-start;
-  gap: var(--spacing-pancake-12);
-  padding: var(--spacing-pancake-12);
+  gap: var(--spacing-pancake-8);
+  min-height: var(--spacing-pancake-40);
+  padding: var(--spacing-pancake-8);
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-8);
   background: var(--color-pancake-surface);
@@ -156,33 +227,62 @@
   text-underline-offset: 3px;
 }
 .notion-source-status {
-  font-weight: 600;
-  font-size: 13px;
+  color: var(--color-pancake-muted);
+  font-size: var(--text-pancake-label);
 }
 .notion-source-error,
 .notion-page-results {
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
 }
 .notion-page-results,
 .notion-source-warnings {
   margin: 0;
-  padding-left: var(--spacing-pancake-24);
+  padding-left: var(--spacing-pancake-16);
 }
 .notion-page-results li + li {
-  margin-top: var(--spacing-pancake-12);
+  margin-top: var(--spacing-pancake-8);
 }
 .notion-passages blockquote {
   margin: 0;
-  padding-left: var(--spacing-pancake-16);
+  padding-left: var(--spacing-pancake-12);
   border-left: 2px solid var(--color-pancake-border);
   white-space: pre-wrap;
-  font-size: 13px;
+  font-size: var(--text-pancake-label);
 }
 @media (max-width: 640px) {
   .connections-scroll {
-    padding: var(--spacing-pancake-24) var(--spacing-pancake-16);
-  }
-  .notion-connection-card {
     padding: var(--spacing-pancake-16);
   }
+  .notion-connection-card {
+    padding: var(--spacing-pancake-12);
+  }
+}
+
+.connection-breadcrumbs ol {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-pancake-8);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-pancake-label);
+}
+.connection-breadcrumbs li + li::before {
+  content: "/";
+  color: var(--color-pancake-muted);
+  margin-right: var(--spacing-pancake-8);
+}
+.connection-breadcrumbs a {
+  color: var(--color-pancake-muted);
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+.connection-breadcrumbs a:hover {
+  color: var(--color-pancake-ink);
+  text-decoration: underline;
+}
+.connection-breadcrumbs a:focus-visible {
+  outline: 2px solid var(--color-pancake-control-focus);
+  outline-offset: 4px;
+  border-radius: var(--radius-pancake-8);
 }

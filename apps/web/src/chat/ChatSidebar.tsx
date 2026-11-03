@@ -1,15 +1,16 @@
-import { Button, TextField } from "@jack.winter/pancake-ui";
+import { Button } from "@jack.winter/pancake-ui";
 import type { Conversation } from "@panky/shared";
 import {
-  useEffect,
-  useRef,
-  useState,
   type Dispatch,
   type RefObject,
   type SetStateAction,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
 import { ActionMenu } from "../components/ActionMenu";
 import { Brand } from "../components/Brand";
+import { SidebarList } from "./SidebarList";
 
 export type ChatView = "chat" | "interview" | "connections";
 
@@ -33,6 +34,8 @@ export function ChatSidebar({
   view,
   onInterview,
   onConnections,
+  selectedConnection,
+  onSelectConnection,
   onChat,
 }: {
   conversations: Conversation[];
@@ -54,12 +57,12 @@ export function ChatSidebar({
   view: ChatView;
   onInterview: () => void;
   onConnections: () => void;
+  selectedConnection: "notion" | null;
+  onSelectConnection: () => void;
   onChat: () => void;
 }) {
   const [search, setSearch] = useState("");
-  const visibleConversations = conversations.filter((item) =>
-    item.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
-  );
+  const [connectionSearch, setConnectionSearch] = useState("");
   const sidebar = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!sidebarOpen) return;
@@ -113,15 +116,25 @@ export function ChatSidebar({
         role={sidebarOpen ? "dialog" : undefined}
         aria-modal={sidebarOpen || undefined}
         className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}
-        aria-label="Conversations"
+        aria-label={
+          view === "connections" ? "Connections navigation" : "Conversations"
+        }
       >
         <div className="feature-rail">
           <Button
             className="mobile-menu sidebar-close"
             variant="ghost"
             onClick={() => setSidebarOpen(false)}
-            aria-label="Close conversations"
-            title="Close conversations"
+            aria-label={
+              view === "connections"
+                ? "Close connections"
+                : "Close conversations"
+            }
+            title={
+              view === "connections"
+                ? "Close connections"
+                : "Close conversations"
+            }
           >
             <svg
               width="18"
@@ -230,7 +243,11 @@ export function ChatSidebar({
               }
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!sidebarCollapsed}
-              aria-controls="conversation-history"
+              aria-controls={
+                view === "connections"
+                  ? "available-connections"
+                  : "conversation-history"
+              }
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             >
               <svg
@@ -304,83 +321,100 @@ export function ChatSidebar({
           <div className="sidebar-brand">
             <Brand />
           </div>
-          <Button
-            size={40}
-            variant="ghost"
-            className="new-chat-button"
-            onClick={() => {
-              setSidebarOpen(false);
-              onCreate();
-            }}
-            disabled={pending}
-            aria-label="New conversation"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          {view !== "connections" && (
+            <Button
+              size={40}
+              variant="ghost"
+              className="new-chat-button"
+              onClick={() => {
+                setSidebarOpen(false);
+                onCreate();
+              }}
+              disabled={pending}
+              aria-label="New conversation"
             >
-              <path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6M16 3l5 5-10 10-5 1 1-5Z" />
-            </svg>
-            <span className="new-chat-label">New chat</span>
-          </Button>
-          <div className="chat-search">
-            <TextField
-              label="Search chats"
-              placeholder="Search chats"
-              value={search}
-              onChange={(event) => setSearch(event.currentTarget.value)}
-            />
-          </div>
-          <nav
-            id="conversation-history"
-            className="conversation-list"
-            aria-label="Conversation history"
-          >
-            {conversations.length === 0 && (
-              <p className="muted sidebar-empty">No conversations yet.</p>
-            )}
-            {conversations.length > 0 && visibleConversations.length === 0 && (
-              <p className="muted sidebar-empty">No matching chats.</p>
-            )}
-            {visibleConversations.map((conversation) => (
-              <div className="conversation-row" key={conversation.id}>
-                <button
-                  type="button"
-                  className="conversation-link"
-                  aria-current={
-                    currentId === conversation.id ? "page" : undefined
-                  }
-                  disabled={pending}
-                  onClick={() => {
-                    setSidebarOpen(false);
-                    onSelect(conversation.id);
-                  }}
-                >
-                  <span>{conversation.title}</span>
-                </button>
-                <Button
-                  variant="ghost"
-                  size={40}
-                  className="manage-chat-button"
-                  aria-label={`Manage chat: ${conversation.title}`}
-                  disabled={pending}
-                  onClick={() => {
-                    setSidebarOpen(false);
-                    onManage(conversation);
-                  }}
-                >
-                  ···
-                </Button>
-              </div>
-            ))}
-          </nav>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6M16 3l5 5-10 10-5 1 1-5Z" />
+              </svg>
+              <span className="new-chat-label">New chat</span>
+            </Button>
+          )}
+          <SidebarList
+            id={
+              view === "connections"
+                ? "available-connections"
+                : "conversation-history"
+            }
+            label={
+              view === "connections"
+                ? "Available connections"
+                : "Conversation history"
+            }
+            searchLabel={
+              view === "connections" ? "Search connections" : "Search chats"
+            }
+            search={view === "connections" ? connectionSearch : search}
+            onSearch={view === "connections" ? setConnectionSearch : setSearch}
+            emptyMessage={
+              view === "connections"
+                ? "No connections available."
+                : "No conversations yet."
+            }
+            noMatchesMessage={
+              view === "connections"
+                ? "No matching connections."
+                : "No matching chats."
+            }
+            items={
+              view === "connections"
+                ? [
+                    {
+                      id: "notion",
+                      title: "Notion",
+                      selected: selectedConnection === "notion",
+                      onSelect: () => {
+                        setSidebarOpen(false);
+                        onSelectConnection();
+                      },
+                    },
+                  ]
+                : conversations.map((conversation) => ({
+                    id: conversation.id,
+                    title: conversation.title,
+                    selected: currentId === conversation.id,
+                    disabled: pending,
+                    onSelect: () => {
+                      setSidebarOpen(false);
+                      onSelect(conversation.id);
+                    },
+                    action: (
+                      <Button
+                        variant="ghost"
+                        size={40}
+                        className="manage-chat-button"
+                        aria-label={`Manage chat: ${conversation.title}`}
+                        disabled={pending}
+                        onClick={() => {
+                          setSidebarOpen(false);
+                          onManage(conversation);
+                        }}
+                      >
+                        ···
+                      </Button>
+                    ),
+                  }))
+            }
+          />
         </div>
       </aside>
     </>

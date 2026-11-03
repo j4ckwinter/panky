@@ -175,6 +175,22 @@ test("typed source selection reaches model inputs and persisted evidence with ac
     assert(source.importedAt);
     assert.match(source.url, /^https:\/\/www\.notion\.so\/.*#/);
   }
+  const speechEnabled = await submit({
+    experience: "",
+    inputSource: "speech",
+    useSources: true,
+  });
+  assert.deepEqual(speechEnabled.history.messages[1]?.sources, payload.sources);
+  assert.match(speechEnabled.model?.[0]?.content ?? "", /speech transcription/);
+  const friendSpeech = await submit(
+    { experience: "", inputSource: "speech", useSources: true },
+    app.friend.cookie,
+  );
+  assert.deepEqual(
+    friendSpeech.history.messages[1]?.sources.map((source) => source.sourceId),
+    [friendSource.id],
+  );
+  assert(!JSON.stringify(friendSpeech.model).includes("Owner secret"));
   const disabled = await submit({ experience: pasted, useSources: false });
   assert.deepEqual(JSON.parse(disabled.model?.[1]?.content ?? ""), {
     question: "Describe the database migration rollback.",
@@ -193,7 +209,7 @@ test("typed source selection reaches model inputs and persisted evidence with ac
   assert(!JSON.stringify(friend.model).includes("Owner secret"));
   for (const interview of [
     undefined,
-    { experience: "", inputSource: "speech" as const, useSources: true },
+    { experience: "", inputSource: "speech" as const, useSources: false },
     { experience: pasted, useExperience: false, useSources: true },
   ]) {
     const result = await submit(interview);
@@ -273,7 +289,7 @@ test("prompt source exclusion preserves pasted samples and context budgets indep
   );
   const speech = interviewContext(
     "Explain the decision",
-    { experience: "", inputSource: "speech", useSources: true },
+    { experience: "", inputSource: "speech", useSources: false },
     8000,
     [candidate],
   );

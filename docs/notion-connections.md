@@ -1,6 +1,6 @@
 # Personal Notion connections
 
-Each signed-in Panky account can connect one Notion workspace through OAuth and import selected pages in Connections. Copies are scoped to that account and can supply evidence to typed interview answers. The existing owner-only internal connection remains separate; invited accounts cannot use its credentials.
+Each signed-in Panky account can connect one Notion workspace through OAuth and import selected pages in Connections. Copies are scoped to that account and automatically supply relevant evidence to chat and explicitly submitted Interview questions. The existing owner-only internal connection remains separate; invited accounts cannot use its credentials.
 
 ## Host setup
 
@@ -23,7 +23,7 @@ Panky retains its strict session cookie. Notion returns to a small callback page
 
 ## Connect and check
 
-Open **Connections** in the feature rail or mobile menu, then **Connect Notion**. Authorize the workspace and pages you want Panky to access. You return to Connections with the workspace name and connection date. Connecting alone does not copy any pages.
+Open **Connections** in the feature rail or mobile menu. The sidebar lists available connections instead of chats. Select the **Notion** tile or sidebar entry to open its details, then choose **Connect Notion**. The **Connections** breadcrumb returns to the catalogue. Authorize the workspace and pages you want Panky to access. You return to Connections with the workspace name and connection date. Connecting alone does not copy any pages.
 
 **Check connection** explicitly verifies the stored token with Notion. If necessary, Panky attempts one refresh and persists the replacement credentials. Failed authorization requires **Reconnect Notion**. Temporary HTTP failures preserve credentials for a manual retry. If a refresh response is lost or malformed, Panky requires reconnection because it cannot safely establish which rotated credentials are valid. Merely viewing the page does not call Notion or detect remote revocation immediately.
 
@@ -39,15 +39,17 @@ Granting access in Notion and importing a copy into Panky are separate actions. 
 
 **Remove page** deletes its copy and search index. It does not alter Notion or saved answers. Connection authorization failures require reconnection and exclude the connection's corpus from new retrieval. Temporary failures can be retried manually; remote revocation is not detected instantly. Import timestamps show when the local content was last fetched.
 
-## Typed interview answers
+## Chat and Interview answers
 
-In Interview options, open **Ask a question**. **Use my sources** includes relevant passages from your usable imported pages. Turning it off omits imported content from the model input while keeping the separate pasted sample. The count updates when you return from **Manage sources**. Questions, pasted text, source choice and typed context survive that in-app visit; reload, sign-out and OAuth redirects clear this in-memory draft. Audio capture stops when you leave Interview.
+Chat and Interview automatically use relevant passages from your usable imported pages. Manage sources in Connections. Interview has no source controls or settings panel; use normal chat for typed questions. Audio capture stops when you leave Interview.
 
-Saved answers retain exact evidence excerpts, titles, links and import timestamps. A lack of matching passages is not evidence for a personal claim; the model is instructed to identify the gap or offer general guidance. Ordinary chat and speech-derived questions receive no imported personal sources.
+Saved answers retain exact evidence excerpts, titles, links and import timestamps. A lack of matching passages is not evidence for a personal claim; the model is instructed to identify the gap or offer general guidance. Ordinary chat automatically retrieves relevant available passages and retains conversation history. Manage or disconnect sources in **Connections**. Disconnect deletes that connection’s imported copies, so reconnect and import selected pages again to restore them. Saved answers and their evidence remain in chat history; legacy owner imports remain separate. With no usable sources, chat uses its normal conversation and tools.
+
+Review or edit an extracted Interview question and submit it explicitly. Capture and transcription never submit questions automatically, and microphone transcripts do not enrich submitted questions.
 
 ## Existing owner imports
 
-Existing sources are not automatically assigned to an OAuth workspace. To migrate one, explicitly import its page through Connections. Only a successful read using the owner's OAuth credential moves that source to the connection; a failed attempt leaves the legacy copy intact. Source IDs and saved evidence snapshots are preserved. The existing internal importer remains available under **Connections → Legacy owner sources** until its host setup and remaining imports are retired deliberately. It cannot refresh an OAuth-managed copy using the server token.
+Existing sources are not automatically assigned to an OAuth workspace. To migrate one, explicitly import its page through Connections. Only a successful read using the owner's OAuth credential moves that source to the connection; a failed attempt leaves the legacy copy intact. Source IDs and saved evidence snapshots are preserved. The existing internal importer remains available under **Connections → Notion → Legacy owner sources** until its host setup and remaining imports are retired deliberately. It cannot refresh an OAuth-managed copy using the server token.
 
 The configured local database was inspected read-only on 3 November 2026 and contained zero sources. This does not establish the state of the Windows host. The schema migration preserves existing sources there and requires no bulk deletion or reassignment.
 
@@ -61,4 +63,4 @@ Disconnect removes the connection from Panky; remove the integration's access in
 
 Automated tests use synthetic Notion responses and isolated databases. Browser tests pass through a synthetic external authorization page and the real local callback/completion endpoints, including the strict-cookie return. They do not grant access to real workspaces.
 
-Before claiming live acceptance, configure the integration and verify owner and invited-user authorization through the actual frontend proxy. Check denial, expired access, reconnect and disconnect. Live personal imports and retrieval quality remain unverified; the two-user live acceptance work belongs to C-4.
+The user reported the C-4 two-user live checks complete. That acceptance was user-reported; the agent did not observe the Windows run or receive question-level measurements. The subsequent chat and audio source expansion requires its own local verification and deployment before it is available on the PC.

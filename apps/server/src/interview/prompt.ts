@@ -25,9 +25,7 @@ export function interviewContext(
   candidates: readonly Evidence[] = [],
 ) {
   const evidence =
-    input.useExperience === false ||
-    input.useSources === false ||
-    input.inputSource === "speech"
+    input.useExperience === false || input.useSources === false
       ? []
       : candidates;
   const experience = input.useExperience === false ? "" : input.experience;

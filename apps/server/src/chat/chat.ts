@@ -3,6 +3,7 @@ import type { Config } from "../config.js";
 import { HttpError } from "../http-utils.js";
 import type { ModelProvider } from "../providers/provider.js";
 import { interviewContext } from "../interview/prompt.js";
+import { sourcedChatContext } from "./sources.js";
 import { boundedHistory, runLoop } from "./loop.js";
 import { TaskError } from "../task-error.js";
 import type { Store } from "./store.js";
@@ -33,6 +34,7 @@ export class Chat {
     includeActivity = false,
     interview?: InterviewInput,
     sources: Evidence[] = [],
+    useSources = false,
   ): Promise<void> {
     if (this.active)
       throw new HttpError(
@@ -48,7 +50,14 @@ export class Chat {
           this.config.HISTORY_MAX_CHARS,
           sources,
         )
-      : undefined;
+      : useSources
+        ? sourcedChatContext(
+            this.store.messages(conversationId),
+            content,
+            this.config.HISTORY_MAX_CHARS,
+            sources,
+          )
+        : undefined;
     const controller = new AbortController();
     const active: NonNullable<Chat["active"]> = { controller, conversationId };
     this.active = active;
@@ -66,6 +75,7 @@ export class Chat {
       active,
       includeActivity,
       context,
+      Boolean(interview),
     ).finally(() => {
       clearTimeout(timeout);
       signal.removeEventListener("abort", abort);
@@ -93,14 +103,17 @@ export class Chat {
     send: (event: StreamEvent) => Promise<void>,
     active: NonNullable<Chat["active"]>,
     includeActivity: boolean,
-    interview?: ReturnType<typeof interviewContext>,
+    suppliedContext?: ReturnType<typeof interviewContext> & {
+      omittedMessages?: number;
+    },
+    isInterview = false,
   ) {
     const signal = active.controller.signal;
     signal.throwIfAborted();
     const { user, assistant, run } = this.store.beginResponse(
       conversationId,
       content,
-      interview?.sources,
+      suppliedContext?.sources,
     );
     active.runId = run.id;
     let status: "completed" | "failed" | "cancelled" | "interrupted" =
@@ -108,10 +121,11 @@ export class Chat {
     let error: string | null = null;
     try {
       await send({ type: "start", user, assistant, run });
-      const context = interview
+      const context = suppliedContext
         ? {
-            ...interview,
+            ...suppliedContext,
             omittedMessages:
+              suppliedContext.omittedMessages ??
               this.store
                 .messages(conversationId)
                 .filter((message) => message.status === "completed").length - 1,
@@ -132,8 +146,12 @@ export class Chat {
       await runLoop({
         history: context.history,
         provider: this.provider,
-        purpose: interview ? "interview" : "chat",
-        tools: interview ? [] : this.tools,
+        purpose: isInterview
+          ? "interview"
+          : suppliedContext
+            ? "sourced-chat"
+            : "chat",
+        tools: suppliedContext ? [] : this.tools,
         config: this.config,
         signal,
         activity,

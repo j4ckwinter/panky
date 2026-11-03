@@ -1,7 +1,7 @@
 .experience-sources {
-  padding: var(--spacing-pancake-16);
+  padding: var(--spacing-pancake-12);
   background: var(--color-pancake-canvas);
-  border-radius: var(--radius-pancake-12);
+  border-radius: var(--radius-pancake-8);
 }
 .experience-import {
   display: grid;
@@ -13,14 +13,12 @@
 }
 .experience-source-list {
   display: grid;
-  gap: var(--spacing-pancake-16);
-  margin: var(--spacing-pancake-16) 0;
+  gap: var(--spacing-pancake-8);
+  margin: var(--spacing-pancake-12) 0;
 }
 .experience-source {
-  padding: var(--spacing-pancake-16);
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
-  background: var(--color-pancake-surface);
+  padding: var(--spacing-pancake-12) 0;
+  border-top: 1px solid var(--color-pancake-border);
 }
 .experience-source a,
 .source-passage a {
@@ -84,36 +82,4 @@
   padding-left: var(--spacing-pancake-16);
   border-left: 3px solid var(--color-pancake-control-border);
   line-height: 1.6;
-}
-
-.interview-sources {
-  display: grid;
-  gap: var(--spacing-pancake-8);
-  padding: var(--spacing-pancake-12) var(--spacing-pancake-16);
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
-}
-.interview-sources p {
-  margin: 0;
-}
-.interview-source-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-pancake-8);
-}
-.interview-source-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-pancake-8);
-  min-height: 44px;
-  cursor: pointer;
-}
-.interview-source-toggle input {
-  accent-color: var(--color-pancake-deep);
-}
-.interview-source-toggle input:focus-visible {
-  outline: 2px solid var(--color-pancake-deep);
-  outline-offset: 3px;
 }

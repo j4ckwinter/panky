@@ -1,7 +1,3 @@
-import {
-  toggleTypedQuestion,
-  openInterviewOptions,
-} from "./interview-options.js";
 import { expect } from "@playwright/test";
 import { test, login } from "./auth-fixture.js";
 
@@ -11,6 +7,9 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Connections", exact: true }).click();
+  await page
+    .getByRole("button", { name: "View Notion connection", exact: true })
+    .click();
   await page.getByText("Legacy owner sources", { exact: true }).click();
   const field = page.getByLabel("Legacy Notion page ID or link", {
     exact: true,
@@ -29,16 +28,17 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
     page.getByRole("region", { name: "Imported passages" }),
   ).toContainText("I proposed a staged database migration");
   await page.getByRole("button", { name: "Close passages" }).click();
-  await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await toggleTypedQuestion(page);
+  await page.getByRole("button", { name: "Chats", exact: true }).click();
   await page
-    .getByLabel("Interview question", { exact: true })
+    .getByLabel("Message", { exact: true })
     .fill("Describe a database migration rollout and rollback rehearsal.");
-  await page.getByRole("button", { name: "Get response" }).click();
+  await page.getByRole("button", { name: "Send message" }).click();
   await expect(
-    page.getByText("Response ready.", { exact: true }),
+    page.getByRole("button", { name: "Copy response", exact: true }).last(),
   ).toBeVisible();
-  const answer = page.getByRole("region", { name: "Interview answer" });
+  const answer = page
+    .getByRole("article", { name: "Panky response", exact: true })
+    .last();
   await answer.getByText("Retrieved evidence (1)", { exact: true }).click();
   await expect(answer).toContainText("I proposed a staged database migration");
   await expect(
@@ -50,14 +50,14 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
     "href",
     "https://www.notion.so/11111111111141118111111111111111#22222222222242228222222222222222",
   );
-  await expect(answer).toContainText("synthetic demo");
+  await expect(answer).toContainText("mock response");
   await page.screenshot({
     path: "test-results/experience-desktop.png",
     fullPage: true,
   });
-  await openInterviewOptions(page);
+  await page.getByRole("button", { name: "Connections", exact: true }).click();
   await page
-    .getByRole("button", { name: "Manage sources", exact: true })
+    .getByRole("button", { name: "View Notion connection", exact: true })
     .click();
   await page.getByText("Legacy owner sources", { exact: true }).click();
   await source
@@ -87,21 +87,22 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
     .click();
   await expect(updated).toContainText("Last refresh failed:");
   await expect(updated).toContainText("excluded from new answers");
+  await page.getByRole("button", { name: "Chats", exact: true }).click();
   await page
-    .getByRole("button", { name: "Back to interview", exact: true })
-    .click();
-  await page
-    .getByLabel("Interview question", { exact: true })
+    .getByLabel("Message", { exact: true })
     .fill("How did I use idempotency keys and durable delivery?");
-  await page.getByRole("button", { name: "Get response" }).click();
+  await page.getByRole("button", { name: "Send message" }).click();
   await expect(
-    page.getByText("Response ready.", { exact: true }),
+    page.getByRole("button", { name: "Copy response", exact: true }).last(),
   ).toBeVisible();
   await expect(answer.locator(".source-evidence")).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
-  await openInterviewOptions(page);
   await page
-    .getByRole("button", { name: "Manage sources", exact: true })
+    .getByRole("button", { name: "Conversations", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Connections", exact: true }).click();
+  await page
+    .getByRole("button", { name: "View Notion connection", exact: true })
     .click();
   await page.getByText("Legacy owner sources", { exact: true }).click();
   await updated.scrollIntoViewIfNeeded();
@@ -151,6 +152,9 @@ test("an inaccessible selected Notion page reports a failure without adding a so
   await page.goto("/");
   await login(page);
   await page.getByRole("button", { name: "Connections", exact: true }).click();
+  await page
+    .getByRole("button", { name: "View Notion connection", exact: true })
+    .click();
   await page.getByText("Legacy owner sources", { exact: true }).click();
   await page
     .getByLabel("Legacy Notion page ID or link", { exact: true })

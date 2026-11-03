@@ -25,28 +25,30 @@ export function NotionSourceList({
           key={source.id}
           aria-label={source.title}
         >
-          <a
-            href={`https://www.notion.so/${source.pageId.replaceAll("-", "")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {source.title}
-          </a>
+          <div className="notion-source-title">
+            <a
+              href={`https://www.notion.so/${source.pageId.replaceAll("-", "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {source.title}
+            </a>
+            <p className="notion-source-status">
+              {!connected
+                ? "Reconnect required"
+                : source.error
+                  ? "Failed refresh"
+                  : source.passageCount === 0
+                    ? "No usable text"
+                    : source.warnings.length
+                      ? "Partial import"
+                      : "Ready"}
+            </p>
+          </div>
           <p className="muted">
             Imported {new Date(source.importedAt).toLocaleString()} ·{" "}
             {source.passageCount}{" "}
             {source.passageCount === 1 ? "passage" : "passages"}
-          </p>
-          <p className="notion-source-status">
-            {!connected
-              ? "Reconnect required"
-              : source.error
-                ? "Failed refresh"
-                : source.passageCount === 0
-                  ? "No usable text"
-                  : source.warnings.length
-                    ? "Partial import"
-                    : "Ready"}
           </p>
           {source.error && (
             <p className="notion-source-error">
@@ -63,6 +65,7 @@ export function NotionSourceList({
           )}
           <div className="notion-connection-actions">
             <Button
+              size={40}
               variant="ghost"
               disabled={disabled}
               onClick={() => inspect(source.id)}
@@ -70,6 +73,7 @@ export function NotionSourceList({
               Inspect passages
             </Button>
             <Button
+              size={40}
               variant="ghost"
               disabled={disabled || !connected}
               onClick={() => refresh(source)}
@@ -77,6 +81,7 @@ export function NotionSourceList({
               Refresh page
             </Button>
             <Button
+              size={40}
               variant="ghost"
               disabled={disabled}
               onClick={() => remove(source.id)}
@@ -101,7 +106,7 @@ export function NotionPassages({
     <section className="notion-passages" aria-label="Imported passages">
       <div className="notion-source-heading">
         <h3>{detail.source.title}</h3>
-        <Button variant="ghost" onClick={close}>
+        <Button size={40} variant="ghost" onClick={close}>
           Close passages
         </Button>
       </div>

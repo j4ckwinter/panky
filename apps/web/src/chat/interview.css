@@ -23,52 +23,13 @@
   align-content: start;
   padding-bottom: 24px;
 }
-.interview-tools > summary {
-  text-align: center;
-  font-size: 14px;
-}
-.interview-tools-content {
-  display: grid;
-  gap: var(--spacing-pancake-16);
-  padding-top: var(--spacing-pancake-16);
-}
 .interview-panel h2 {
   margin: 0;
 }
-.interview-mode,
 .interview-note {
   margin: 0;
   font-size: 13px;
   color: var(--color-pancake-muted);
-}
-.interview-mode {
-  padding: var(--spacing-pancake-12) var(--spacing-pancake-16);
-  background: var(--color-pancake-canvas);
-  border-radius: var(--radius-pancake-12);
-}
-.interview-form {
-  display: grid;
-  gap: var(--spacing-pancake-16);
-}
-.interview-context {
-  display: grid;
-  gap: var(--spacing-pancake-12);
-  padding: var(--spacing-pancake-16);
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
-}
-.interview-context h2 {
-  font-size: 14px;
-}
-.interview-context ol {
-  margin: 0;
-  padding-left: var(--spacing-pancake-24);
-}
-.interview-context li p {
-  white-space: pre-wrap;
-}
-.interview-form textarea {
-  resize: vertical;
 }
 .interview-panel summary {
   cursor: pointer;
@@ -314,42 +275,6 @@
 .spoken-question-list:focus-visible {
   outline: 2px solid var(--color-pancake-control-focus);
   outline-offset: 3px;
-}
-
-.response-timing {
-  font-size: 13px;
-}
-.response-timing dl {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-pancake-8);
-}
-.response-timing dd {
-  margin: 0;
-}
-
-.interview-options {
-  position: fixed;
-  z-index: 4;
-  top: 64px;
-  right: 12px;
-  bottom: 12px;
-  width: min(520px, calc(100vw - 24px));
-  overflow-y: auto;
-  padding: var(--spacing-pancake-16);
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-12);
-  background: var(--color-pancake-surface);
-  box-shadow: 0 8px 32px #38454020;
-}
-.interview-options[hidden] {
-  display: none;
-}
-.interview-options .dialog-heading {
-  margin-bottom: var(--spacing-pancake-16);
-}
-.interview-options .interview-tools > summary {
-  text-align: left;
 }
 
 @keyframes question-arrival {
