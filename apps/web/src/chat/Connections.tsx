@@ -69,8 +69,15 @@ export function Connections({
               aria-label={`View ${item.name} connection`}
               onClick={() => onSelectConnection(item.id)}
             >
-              <span className="connection-icon" aria-hidden="true">
-                {item.mark}
+              <span
+                className={`connection-icon${typeof item.mark === "string" ? "" : " connection-icon-image"}`}
+                aria-hidden="true"
+              >
+                {typeof item.mark === "string" ? (
+                  item.mark
+                ) : (
+                  <img src={item.mark.src} alt="" width={28} height={28} />
+                )}
               </span>
               <span className="connection-tile-copy">
                 <strong>{item.name}</strong>

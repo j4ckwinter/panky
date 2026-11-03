@@ -3,7 +3,7 @@ export type ConnectionItem = {
   id: ConnectionId;
   name: string;
   description: string;
-  mark: string;
+  mark: string | { src: string };
 };
 const notion: ConnectionItem = {
   id: "notion",
@@ -15,7 +15,7 @@ const chatGPT: ConnectionItem = {
   id: "chatgpt",
   name: "ChatGPT",
   description: "Use your ChatGPT plan for answers.",
-  mark: "AI",
+  mark: { src: "/icons/chatgpt.svg" },
 };
 export function connectionCatalogue(showChatGPT: boolean): ConnectionItem[] {
   return showChatGPT ? [notion, chatGPT] : [notion];

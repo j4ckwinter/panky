@@ -4,8 +4,6 @@ import {
   Inline,
   Stack,
   StatusChip,
-  Surface,
-  Text,
 } from "@jack.winter/pancake-ui";
 import type { NotionConnection } from "@panky/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -124,7 +122,68 @@ export function NotionConnectionDetails({
     connection?.kind === "reconnect_required";
   const busy = operation !== null;
   return (
-    <ConnectionDetails name="Notion" onBack={onBack}>
+    <ConnectionDetails
+      name="Notion"
+      onBack={onBack}
+      description="Your notes, projects and experience."
+      actions={
+        <>
+          {connection?.kind === "disconnected" && (
+            <div className="notion-connection-actions">
+              <Button
+                size={40}
+                disabled={busy}
+                onClick={() => {
+                  void run("authorizing");
+                }}
+              >
+                {operation === "authorizing" ? "Connecting…" : "Connect Notion"}
+              </Button>
+            </div>
+          )}
+          {linked && !confirmDisconnect && (
+            <div className="notion-connection-actions">
+              {connection.kind === "reconnect_required" ? (
+                <Button
+                  size={40}
+                  disabled={busy || sourcesBusy}
+                  onClick={() => {
+                    void run("authorizing");
+                  }}
+                >
+                  {operation === "authorizing"
+                    ? "Connecting…"
+                    : "Reconnect Notion"}
+                </Button>
+              ) : (
+                <Button
+                  size={40}
+                  variant="secondary"
+                  disabled={busy || sourcesBusy}
+                  onClick={() => {
+                    void run("checking");
+                  }}
+                >
+                  {operation === "checking" ? "Checking…" : "Check connection"}
+                </Button>
+              )}
+              <Button
+                size={40}
+                ref={disconnectButton}
+                variant="ghost"
+                disabled={busy}
+                onClick={() => {
+                  clearReturn();
+                  setConfirmDisconnect(true);
+                }}
+              >
+                Disconnect Notion
+              </Button>
+            </div>
+          )}
+        </>
+      }
+    >
       {returnResult === "denied" && (
         <p className="connections-notice" role="status">
           Notion access was not granted. You can try connecting again.
@@ -146,26 +205,32 @@ export function NotionConnectionDetails({
           {error}
         </BannerToast>
       )}
-      <Surface
+      <div className="connection-overview">
+        <p>
+          Bring your experience into the conversation. Import selected Notion
+          pages so Panky can use your notes, projects and examples in chat and
+          Interview.
+        </p>
+        <ul>
+          <li>
+            <strong>Choose what to share.</strong> Only the pages you select are
+            imported.
+          </li>
+          <li>
+            <strong>Get answers with context.</strong> Relevant passages are
+            included automatically when you ask a question.
+          </li>
+          <li>
+            <strong>Keep your sources current.</strong> Refresh imported pages
+            whenever your notes change.
+          </li>
+        </ul>
+      </div>
+      <section
         role="region"
         className="connection-card"
-        aria-labelledby="notion-connection-title"
+        aria-label="Notion connection"
       >
-        <Inline
-          gap="space12"
-          wrap={false}
-          className="notion-connection-heading"
-        >
-          <span className="connection-icon" aria-hidden="true">
-            N
-          </span>
-          <div>
-            <Text as="h2" variant="heading" id="notion-connection-title">
-              Notion
-            </Text>
-            <p className="muted">Your notes, projects and experience.</p>
-          </div>
-        </Inline>
         {state.kind === "loading" && <p role="status">Loading connection…</p>}
         {state.kind === "failed" && (
           <Button
@@ -183,23 +248,7 @@ export function NotionConnectionDetails({
           <p>Notion connections are not available on this Panky server yet.</p>
         )}
         {connection?.kind === "disconnected" && (
-          <Stack gap="space12">
-            <p>
-              Connect your workspace, then choose pages to use in chat and
-              Interview. Only selected pages are imported.
-            </p>
-            <div className="notion-connection-actions">
-              <Button
-                size={40}
-                disabled={busy}
-                onClick={() => {
-                  void run("authorizing");
-                }}
-              >
-                {operation === "authorizing" ? "Connecting…" : "Connect Notion"}
-              </Button>
-            </div>
-          </Stack>
+          <p>Connect your workspace to choose pages for chat and Interview.</p>
         )}
         {linked && (
           <Stack gap="space12">
@@ -221,7 +270,7 @@ export function NotionConnectionDetails({
             {connection.kind === "reconnect_required" && (
               <p>Reconnect, then refresh each page to use it in new answers.</p>
             )}
-            {confirmDisconnect ? (
+            {confirmDisconnect && (
               <div
                 className="notion-disconnect-confirmation"
                 role="group"
@@ -257,47 +306,6 @@ export function NotionConnectionDetails({
                   </Button>
                 </div>
               </div>
-            ) : (
-              <div className="notion-connection-actions">
-                {connection.kind === "reconnect_required" ? (
-                  <Button
-                    size={40}
-                    disabled={busy || sourcesBusy}
-                    onClick={() => {
-                      void run("authorizing");
-                    }}
-                  >
-                    {operation === "authorizing"
-                      ? "Connecting…"
-                      : "Reconnect Notion"}
-                  </Button>
-                ) : (
-                  <Button
-                    size={40}
-                    variant="secondary"
-                    disabled={busy || sourcesBusy}
-                    onClick={() => {
-                      void run("checking");
-                    }}
-                  >
-                    {operation === "checking"
-                      ? "Checking…"
-                      : "Check connection"}
-                  </Button>
-                )}
-                <Button
-                  size={40}
-                  ref={disconnectButton}
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={() => {
-                    clearReturn();
-                    setConfirmDisconnect(true);
-                  }}
-                >
-                  Disconnect Notion
-                </Button>
-              </div>
             )}
           </Stack>
         )}
@@ -313,7 +321,7 @@ export function NotionConnectionDetails({
             onSourcesChanged={sourcesChanged}
           />
         )}
-      </Surface>
+      </section>
       <ExperienceSources
         api={api}
         disabled={pending || busy || sourcesBusy}

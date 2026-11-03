@@ -83,23 +83,58 @@
 .connections-privacy {
   font-size: var(--text-pancake-label);
 }
-.connection-card {
-  display: grid;
-  gap: var(--spacing-pancake-16);
-  padding: var(--spacing-pancake-16);
-  border: 1px solid var(--color-pancake-border);
-  border-radius: var(--radius-pancake-16);
+.connection-detail-panel {
+  gap: var(--spacing-pancake-24);
 }
-.notion-connection-heading {
+.connection-detail-header,
+.connection-detail-identity {
   display: flex;
   align-items: center;
-  gap: var(--spacing-pancake-12);
+  gap: var(--spacing-pancake-16);
 }
-.notion-connection-heading h2 {
-  font-size: var(--text-pancake-body-strong);
+.connection-detail-header {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding-block: var(--spacing-pancake-16);
 }
-.notion-connection-heading .muted {
+.connection-detail-identity {
+  min-width: 0;
+}
+.connection-detail-identity .connection-icon {
+  flex-basis: 56px;
+  height: 56px;
+}
+.connection-detail-identity h2 {
+  font-size: var(--text-pancake-title);
+}
+.connection-detail-identity p {
   margin-top: var(--spacing-pancake-4);
+}
+.connection-detail-actions {
+  margin-left: auto;
+}
+.connection-detail-actions .pancake-button {
+  border-radius: 999px;
+}
+.connection-card a {
+  color: var(--color-pancake-deep);
+  text-underline-offset: 3px;
+}
+.connection-overview {
+  line-height: 1.7;
+}
+.connection-overview ul {
+  margin: var(--spacing-pancake-12) 0 0;
+  padding-left: var(--spacing-pancake-24);
+}
+.connection-overview li + li {
+  margin-top: var(--spacing-pancake-4);
+}
+.connection-card {
+  display: grid;
+  gap: var(--spacing-pancake-24);
+  padding-top: var(--spacing-pancake-24);
+  border-top: 1px solid var(--color-pancake-border);
 }
 .connection-icon {
   display: grid;
@@ -111,6 +146,13 @@
   font-family: Georgia, serif;
   font-size: var(--text-pancake-title);
   font-weight: 700;
+}
+.connection-icon-image {
+  background: #000;
+  border-color: #000;
+}
+.connection-icon-image img {
+  display: block;
 }
 .notion-workspace {
   display: flex;
@@ -253,8 +295,9 @@
   .connections-scroll {
     padding: var(--spacing-pancake-16);
   }
-  .connection-card {
-    padding: var(--spacing-pancake-12);
+  .connection-detail-actions {
+    margin-left: 0;
+    width: 100%;
   }
 }
 

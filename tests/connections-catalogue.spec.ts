@@ -31,6 +31,11 @@ for (const width of [1280, 390]) {
     await expect(
       page.getByRole("navigation", { name: "Conversation history" }),
     ).toHaveCount(0);
+    await expect(
+      page
+        .getByRole("button", { name: "View ChatGPT connection" })
+        .locator("img"),
+    ).toHaveJSProperty("naturalWidth", 21);
     await page.screenshot({
       path: `test-results/connections-catalogue-${width}.png`,
       fullPage: true,
