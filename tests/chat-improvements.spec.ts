@@ -369,7 +369,7 @@ test("task activity remains persisted without cluttering replies after reload", 
   await page.screenshot({ path: "test-results/per-reply-mobile.png" });
 });
 
-test("composer aligns send with input and grows for multiline drafts on desktop and mobile", async ({
+test("composer stays one row and preserves scrollable multiline drafts on desktop and mobile", async ({
   page,
 }) => {
   await connect(page);
@@ -397,10 +397,14 @@ test("composer aligns send with input and grows for multiline drafts on desktop 
       })
       .toBeLessThan(2);
     await page.screenshot({ path: `test-results/composer-${width}.png` });
-    await input.fill("First line\nSecond line\nThird line");
-    await expect
-      .poll(() => input.evaluate((element) => element.clientHeight))
-      .toBeGreaterThan(80);
+    await input.fill("First line");
+    await input.press("End");
+    await input.press("Shift+Enter");
+    await input.pressSequentially("Second line");
+    await input.press("Shift+Enter");
+    await input.pressSequentially("Third line");
+    await expect(input).toHaveValue("First line\nSecond line\nThird line");
+    expect(await input.evaluate((element) => element.clientHeight)).toBe(40);
     await expect
       .poll(async () => {
         const field = await input.boundingBox();
@@ -409,10 +413,20 @@ test("composer aligns send with input and grows for multiline drafts on desktop 
         return Math.abs(field.y + field.height - send.y - send.height);
       })
       .toBeLessThan(2);
-    await input.fill("A long draft\n".repeat(30));
+    const longDraft = "A long draft\n".repeat(30);
+    await input.fill(longDraft);
+    await expect(input).toHaveValue(longDraft);
+    expect(await input.evaluate((element) => element.clientHeight)).toBe(40);
     expect(
-      await input.evaluate((element) => element.clientHeight),
-    ).toBeLessThanOrEqual(160);
+      await input.evaluate(
+        (element) => element.scrollHeight > element.clientHeight,
+      ),
+    ).toBe(true);
+    await input.press("ControlOrMeta+End");
+    expect(
+      await input.evaluate((element) => element.scrollTop),
+    ).toBeGreaterThan(0);
+    await expect(input).toHaveValue(longDraft);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
