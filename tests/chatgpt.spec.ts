@@ -34,6 +34,32 @@ for (const width of [1280, 390]) {
       .getByRole("combobox", { name: "Answer model" });
     await expect(picker).toHaveValue("");
     await picker.selectOption("synthetic-chatgpt");
+    await expect(picker).toHaveAttribute(
+      "title",
+      "Answer model: ChatGPT · Synthetic ChatGPT",
+    );
+    await expect(
+      page.locator(".model-picker .pancake-select-chevron"),
+    ).toBeHidden();
+    const modelBox = await picker.boundingBox();
+    expect(modelBox!.width).toBe(40);
+    const message = page.getByLabel("Message", { exact: true });
+    const composer = page.locator("form").filter({ has: message });
+    const border = await composer.evaluate(
+      (element) => getComputedStyle(element).borderColor,
+    );
+    await message.fill("A long draft that stays on one line. ".repeat(20));
+    await message.focus();
+    expect((await message.boundingBox())!.height).toBeLessThanOrEqual(40);
+    expect((await composer.boundingBox())!.height).toBeLessThanOrEqual(56);
+    expect(
+      await composer.evaluate(
+        (element) => getComputedStyle(element).borderColor,
+      ),
+    ).toBe(border);
+    await page.screenshot({
+      path: `test-results/single-row-chat-${width}.png`,
+    });
     await expect(
       page.getByText(
         /Questions, chat context and relevant source passages are sent to OpenAI/,

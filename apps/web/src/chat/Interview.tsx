@@ -1,3 +1,4 @@
+import { InterviewReply } from "./InterviewReply";
 import { Button } from "@jack.winter/pancake-ui";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LiveTranscript } from "./LiveTranscript";
@@ -109,6 +110,20 @@ export function Interview({
                     panelRef={answerPanel}
                   />
                 ) : null}
+                {question && (
+                  <InterviewReply
+                    questionId={question.id}
+                    hidden={
+                      displayedRun?.status !== "completed" || !answer?.content
+                    }
+                    disabled={questions.unavailable}
+                    onSend={(text) =>
+                      answer
+                        ? questions.reply(text, question, answer)
+                        : Promise.resolve(false)
+                    }
+                  />
+                )}
               </div>
               <SentQuestions
                 questions={questions}

@@ -9,7 +9,7 @@
   padding-top: 0;
 }
 .interview-panel {
-  max-width: 1040px;
+  max-width: 760px;
   width: 100%;
   min-height: 100%;
   align-content: center;
@@ -290,4 +290,18 @@
   .spoken-question {
     animation: none;
   }
+}
+
+.interview-reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-pancake-8);
+}
+.interview-reply-actions p {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-pancake-label);
+  color: var(--color-pancake-muted);
 }

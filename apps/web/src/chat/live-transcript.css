@@ -139,10 +139,6 @@
     width: 100%;
     flex-wrap: nowrap;
   }
-  .live-transcript-active .model-picker {
-    flex: 1;
-    max-width: none;
-  }
   .listening-controls .capture-action {
     flex-shrink: 0;
   }

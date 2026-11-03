@@ -5,13 +5,14 @@ export function interviewRetrievalQuery(
   input: InterviewInput,
 ) {
   const followsUp =
-    question.length <= 160 &&
-    /^(?:why\b|what (?:if|about|happens|would|were)\b|how (?:did|would|could|does|do|will|can)\b|(?:can|could|would) you\b|(?:and|but)\b)/i.test(
-      question,
-    ) &&
-    /\b(that|this|it|those|these|they|them|your approach|your decision)\b/i.test(
-      question,
-    ) &&
+    (input.context?.at(-1)?.assistantResponse !== undefined ||
+      (question.length <= 160 &&
+        /^(?:why\b|what (?:if|about|happens|would|were)\b|how (?:did|would|could|does|do|will|can)\b|(?:can|could|would) you\b|(?:and|but)\b)/i.test(
+          question,
+        ) &&
+        /\b(that|this|it|those|these|they|them|your approach|your decision)\b/i.test(
+          question,
+        ))) &&
     !/\b(new topic|switch topics|moving on|instead discuss)\b/i.test(question);
   if (!followsUp) return question;
   const turns: string[] = [];

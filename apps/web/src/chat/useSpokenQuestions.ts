@@ -1,4 +1,8 @@
-import { INTERVIEW_LIMITS, MESSAGE_MAX_CHARS } from "@panky/shared";
+import {
+  INTERVIEW_LIMITS,
+  MESSAGE_MAX_CHARS,
+  type Message,
+} from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
 import type { TranscriptEntry } from "./useLiveTranscription";
 import { normalizeQuestion, QuestionDetector } from "./questionDetection";
@@ -184,6 +188,75 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
       sending.current = false;
     }
   }
+  async function reply(text: string, question: Message, answer: Message) {
+    const submitted = text.trim();
+    if (
+      unavailable ||
+      sending.current ||
+      !submitted ||
+      !chat.runs.some(
+        (run) =>
+          run.userMessageId === question.id &&
+          run.assistantMessageId === answer.id &&
+          run.status === "completed",
+      )
+    )
+      return false;
+    sending.current = true;
+    const current = generation.current;
+    let accepted = false;
+    const previous =
+      chat.messages.findLast((message) => message.role === "user")?.id ===
+        question.id && topicQuestions.at(-1) === question.content
+        ? topicQuestions
+        : [question.content];
+    const truncated = "[Earlier response truncated]\n";
+    const context = previous
+      .slice(-INTERVIEW_LIMITS.contextTurns)
+      .map((text, index, turns) => ({
+        question: text,
+        spokenAnswer: "",
+        ...(index === turns.length - 1
+          ? {
+              assistantResponse:
+                answer.content.length > INTERVIEW_LIMITS.assistantResponseChars
+                  ? `${truncated}${answer.content.slice(-(INTERVIEW_LIMITS.assistantResponseChars - truncated.length))}`
+                  : answer.content,
+            }
+          : {}),
+      }));
+    try {
+      await chat.send(
+        submitted,
+        {
+          experience: "",
+          inputSource: "typed",
+          context,
+          useExperience: true,
+          useSources: true,
+        },
+        (messages) => {
+          accepted = true;
+          if (!mounted.current || generation.current !== current) return;
+          setTopicQuestions(
+            [...previous, submitted].slice(-INTERVIEW_LIMITS.contextTurns),
+          );
+          history.current = [];
+          remember(submitted);
+          setAcceptedQuestions((items) =>
+            [
+              ...items,
+              { id: nextId.current++, text: submitted, ...messages },
+            ].slice(-20),
+          );
+          setNotice("");
+        },
+      );
+      return accepted;
+    } finally {
+      sending.current = false;
+    }
+  }
   function review(id: number) {
     update(
       items.current.map((item) =>
@@ -219,5 +292,6 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     dismiss,
     submit,
     review,
+    reply,
   };
 }

@@ -89,9 +89,16 @@ const app = createApp(
         async *stream(history, tools) {
           if (tools.length)
             throw new Error("Subscription prototype must not receive tools");
+          const content = history.at(-1)?.content ?? "";
+          const question = content.startsWith("{")
+            ? JSON.parse(content).question
+            : content;
           yield {
             type: "delta",
-            text: `Subscription response: ${history.at(-1)?.content ?? ""}`,
+            text:
+              question === "What is a direct agreement?"
+                ? "Do you mean a direct agreement in project finance, or another context?"
+                : `Subscription response: ${content}`,
           };
           yield { type: "complete" };
         },

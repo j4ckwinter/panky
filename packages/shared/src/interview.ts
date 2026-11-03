@@ -12,6 +12,11 @@ export const interviewInputSchema = z
         z
           .object({
             question: z.string().trim().min(1).max(MESSAGE_MAX_CHARS),
+            assistantResponse: z
+              .string()
+              .trim()
+              .max(INTERVIEW_LIMITS.assistantResponseChars)
+              .optional(),
             spokenAnswer: z
               .string()
               .trim()
