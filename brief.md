@@ -1,6 +1,6 @@
 # Panky connections
 
-Status: C-1 and C-2 implemented and locally verified, 3 November 2026. C-3 and C-4 remain proposed.
+Status: C-1 through C-3 implemented and locally verified, 3 November 2026. C-4 remains proposed.
 
 ## Outcome
 
@@ -8,7 +8,7 @@ Each signed-in user can connect their own Notion workspace, import selected page
 
 The owner and an invited friend should complete the same flow independently. Imported copies are stored and processed on the Windows PC hosting Panky. Explain this before connecting: account isolation does not make content inaccessible to the machine's operator.
 
-The user authorized C-1 and subsequently C-2 implementation and verification on 3 November 2026, including improvements consistent with existing processes and styling. Work through later milestones only when requested, record evidence and review the outcome before continuing. This does not authorize external provisioning, deployment, model training or later audio features. Existing authentication, user isolation and local-model safeguards remain in force.
+The user authorized C-1, C-2 and subsequently C-3 implementation and verification on 3 November 2026, including improvements consistent with existing processes and styling. Work through later milestones only when requested, record evidence and review the outcome before continuing. This does not authorize external provisioning, deployment, model training or later audio features. Existing authentication, user isolation and local-model safeguards remain in force.
 
 ## Current baseline
 
@@ -118,7 +118,7 @@ Implementation decisions and verification on 3 November 2026:
 
 ## C-3 — Use sources in typed interviews
 
-Status: not started. Depends on C-2.
+Status: implemented and locally verified. Live model quality remains unverified.
 
 **Outcome:** typed interview questions use the current user's ready sources without putting connection management in the interview form.
 
@@ -132,11 +132,21 @@ Scope:
 
 Completion checks:
 
-- [ ] Browser tests cover no connection, zero usable pages, sources on/off, management navigation and persisted evidence.
-- [ ] Backend tests inspect model inputs to prove only the requesting user's eligible sources are included, and none when disabled.
-- [ ] Ordinary chat and the current speech-derived question path remain unchanged and receive no imported personal material.
-- [ ] Missing evidence yields an explicit gap or general guidance rather than invented personal experience.
-- [ ] Desktop, collapsed-rail and mobile flows have keyboard access, visible focus and usable layouts.
+- [x] Browser tests cover no connection, zero usable pages, sources on/off, management navigation and persisted evidence.
+- [x] Backend tests inspect model inputs to prove only the requesting user's eligible sources are included, and none when disabled.
+- [x] Ordinary chat and the current speech-derived question path remain unchanged and receive no imported personal material.
+- [x] Missing evidence yields an explicit gap or general guidance rather than invented personal experience.
+- [x] Desktop, collapsed-rail and mobile flows have keyboard access, visible focus and usable layouts.
+
+Implementation decisions and verification on 3 November 2026:
+
+- Added **Use my sources**, a usable-page count and **Manage sources** to typed Interview. The shared `useSources` flag defaults to true for existing clients; switching it off removes imported passages from retrieval, model input and new evidence snapshots while keeping the pasted sample separate.
+- The backend counts only the requesting user's ready, nonempty legacy sources and sources attached to the current eligible OAuth connection. HTTP retrieval and prompt assembly both exclude imported evidence for speech-derived questions. Ordinary chat remains unchanged.
+- Question text, pasted sample, source selection, typed context and spoken-answer notes share an in-memory draft owned above the view switch. Connections visits preserve it and the current conversation. Chats, a new interview, sign-out, reload and OAuth redirects clear it. This milestone does not add browser persistence of personal drafts. Audio capture stops when Interview unmounts and is never restarted automatically.
+- Legacy owner management now lives in Connections; existing host credentials and imports are preserved for explicit migration. Independent review found that a successful OAuth migration left the legacy list stale. Source mutations now refresh that list and clear inspected content without collapsing its panel; the reviewer cleared the correction.
+- `pnpm install --frozen-lockfile`, `pnpm check` (133 backend tests) and `pnpm build` passed. The existing non-blocking bundle-size warning remains. Model-input tests cover two accounts, failed/empty/obsolete sources, reconnect-required exclusion, source selection independent of pasted samples, missing-evidence guidance, context budgets and exact saved-evidence retention.
+- Eleven focused browser tests passed for typed drafts/context, imported-source selection, management navigation, legacy controls and audio release. Desktop and mobile screenshots were inspected. The full `pnpm test:e2e` run passed 110 tests in 7.8 minutes. After the migration-list correction and added regression, all 17 affected Connections, source-management and interview-source tests passed on the final code. Screenshots are in `test-results/interview-sources-{desktop,mobile}.png`; later runs may overwrite them.
+- C-2 was committed as `9177ea3` before C-3 implementation. No deployment, external setup, personal import or live model evaluation was performed. C-4 remains proposed.
 
 ## C-4 — Verify the complete flow with two users
 
@@ -167,6 +177,6 @@ For code milestones, use Node 24+, install with `pnpm install --frozen-lockfile`
 
 For C-1, the one-workspace default and staged disconnect behavior were adopted using the user's authorization to resolve inconsistencies. The callback is derived from `AUTH_ORIGIN`; current official Notion OAuth/token requirements were checked during implementation. Creating the integration or changing deployed settings still requires separate authorization. Keep secrets out of this document. Before C-2 owner migration, inspect actual stored sources; the report of no imports does not replace safe migration checks.
 
-Repository instructions now record C-1 and C-2 authorization without linking to the removed interview plan. This brief does not expand the permitted IA-5 scope or mark earlier live acceptance checks complete.
+Repository instructions now record C-1 through C-3 authorization without linking to the removed interview plan. This brief does not expand the permitted IA-5 scope or mark earlier live acceptance checks complete.
 
 Reference: [Notion authorization](https://developers.notion.com/guides/authorization/overview).

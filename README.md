@@ -98,7 +98,9 @@ logs appear in the same terminal. wait for any reply to finish, then press **Ctr
 
 open **Connections** in the sidebar to link your own Notion workspace. each account has its own connection. choose pages to import, inspect their passages and refresh or remove the local copies.
 
-the host needs to [configure Notion OAuth](docs/notion-connections.md) first. the existing owner-only imports in Interview keep working separately until explicitly re-imported through Connections. disconnecting removes that connection’s copies; saved conversations and evidence stay.
+the host needs to [configure Notion OAuth](docs/notion-connections.md) first. legacy owner imports remain under **Connections → Legacy owner sources** until explicitly re-imported through the personal connection. disconnecting removes that connection’s copies; saved conversations and evidence stay.
+
+in typed Interview, **Use my sources** controls imported evidence independently of the pasted sample. **Manage sources** opens Connections and keeps the typed draft for your return.
 
 ## development
 

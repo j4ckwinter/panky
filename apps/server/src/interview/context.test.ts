@@ -23,6 +23,7 @@ test("context contract defaults old clients and rejects untrusted extra fields",
     experience: "",
     inputSource: "typed",
     useExperience: true,
+    useSources: true,
     context: [],
   });
   assert.equal(

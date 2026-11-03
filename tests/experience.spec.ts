@@ -10,10 +10,11 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
 }) => {
   await page.goto("/");
   await login(page);
-  await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await toggleTypedQuestion(page);
-  await page.getByText("Notion experience", { exact: true }).click();
-  const field = page.getByLabel("Notion page ID or link", { exact: true });
+  await page.getByRole("button", { name: "Connections", exact: true }).click();
+  await page.getByText("Legacy owner sources", { exact: true }).click();
+  const field = page.getByLabel("Legacy Notion page ID or link", {
+    exact: true,
+  });
   await expect(field).toBeEnabled();
   await field.fill("11111111-1111-4111-8111-111111111111");
   await page.getByRole("button", { name: "Import page", exact: true }).click();
@@ -28,6 +29,8 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
     page.getByRole("region", { name: "Imported passages" }),
   ).toContainText("I proposed a staged database migration");
   await page.getByRole("button", { name: "Close passages" }).click();
+  await page.getByRole("button", { name: "Interview", exact: true }).click();
+  await toggleTypedQuestion(page);
   await page
     .getByLabel("Interview question", { exact: true })
     .fill("Describe a database migration rollout and rollback rehearsal.");
@@ -53,6 +56,10 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
     fullPage: true,
   });
   await openInterviewOptions(page);
+  await page
+    .getByRole("button", { name: "Manage sources", exact: true })
+    .click();
+  await page.getByText("Legacy owner sources", { exact: true }).click();
   await source
     .getByRole("button", { name: "Refresh page", exact: true })
     .click();
@@ -81,6 +88,9 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   await expect(updated).toContainText("Last refresh failed:");
   await expect(updated).toContainText("excluded from new answers");
   await page
+    .getByRole("button", { name: "Back to interview", exact: true })
+    .click();
+  await page
     .getByLabel("Interview question", { exact: true })
     .fill("How did I use idempotency keys and durable delivery?");
   await page.getByRole("button", { name: "Get response" }).click();
@@ -90,6 +100,10 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   await expect(answer.locator(".source-evidence")).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await openInterviewOptions(page);
+  await page
+    .getByRole("button", { name: "Manage sources", exact: true })
+    .click();
+  await page.getByText("Legacy owner sources", { exact: true }).click();
   await updated.scrollIntoViewIfNeeded();
   expect(
     await page.evaluate(
@@ -114,7 +128,7 @@ test("selected Notion imports supply inspectable evidence, refresh safely and ca
   ).toBeVisible();
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.reload();
-  await login(page);
+  await page.getByRole("button", { name: "Chats", exact: true }).click();
   await page
     .getByRole("button", {
       name: "Describe a database migration rollout and rollback rehearsal.".slice(
@@ -136,11 +150,10 @@ test("an inaccessible selected Notion page reports a failure without adding a so
 }) => {
   await page.goto("/");
   await login(page);
-  await page.getByRole("button", { name: "Interview", exact: true }).click();
-  await toggleTypedQuestion(page);
-  await page.getByText("Notion experience", { exact: true }).click();
+  await page.getByRole("button", { name: "Connections", exact: true }).click();
+  await page.getByText("Legacy owner sources", { exact: true }).click();
   await page
-    .getByLabel("Notion page ID or link", { exact: true })
+    .getByLabel("Legacy Notion page ID or link", { exact: true })
     .fill("33333333-3333-4333-8333-333333333333");
   await page.getByRole("button", { name: "Import page", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText(

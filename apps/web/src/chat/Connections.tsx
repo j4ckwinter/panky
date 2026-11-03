@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type Api, errorMessage } from "../api/chat";
 
 import { NotionSources } from "./NotionSources";
+import { ExperienceSources } from "./ExperienceSources";
 
 export type ConnectionReturn = "connected" | "denied" | "error" | null;
 
@@ -16,10 +17,14 @@ export function Connections({
   api,
   returnResult,
   clearReturn,
+  onBackToInterview,
+  pending = false,
 }: {
   api: Api;
   returnResult: ConnectionReturn;
   clearReturn: () => void;
+  onBackToInterview?: () => void;
+  pending?: boolean;
 }) {
   const [state, setState] = useState<ConnectionState>({ kind: "loading" });
   const [error, setError] = useState("");
@@ -27,6 +32,10 @@ export function Connections({
     "authorizing" | "checking" | "disconnecting" | null
   >(null);
   const [sourcesBusy, setSourcesBusy] = useState(false);
+  const [legacyRevision, setLegacyRevision] = useState(0);
+  const sourcesChanged = useCallback(() => {
+    setLegacyRevision((value) => value + 1);
+  }, []);
   const [sourceRevision, setSourceRevision] = useState(0);
   const updateConnection = useCallback((connection: NotionConnection) => {
     setState({ kind: "loaded", connection });
@@ -109,6 +118,17 @@ export function Connections({
   return (
     <div className="connections-scroll">
       <section className="connections-panel" aria-label="Your connections">
+        {onBackToInterview && (
+          <div>
+            <Button
+              variant="ghost"
+              disabled={pending}
+              onClick={onBackToInterview}
+            >
+              Back to interview
+            </Button>
+          </div>
+        )}
         <div className="connections-intro">
           <Text as="h2" variant="title">
             Bring your tools to Panky
@@ -293,9 +313,15 @@ export function Connections({
               disabled={busy}
               onBusy={setSourcesBusy}
               onConnectionChange={updateConnection}
+              onSourcesChanged={sourcesChanged}
             />
           )}
         </section>
+        <ExperienceSources
+          api={api}
+          disabled={pending || busy || sourcesBusy}
+          revision={legacyRevision}
+        />
         <p className="connections-privacy">
           Imported content is stored and processed on the Windows PC hosting
           Panky. Other Panky accounts cannot access your sources; the PC's

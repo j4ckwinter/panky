@@ -15,6 +15,7 @@ import { loadConfig } from "../config.js";
 import { createApp } from "../http.js";
 import type { NotionOAuth, NotionTokens } from "./notion.js";
 import type { importNotionPage } from "../experience/notion.js";
+import type { ModelProvider } from "../providers/provider.js";
 import type { searchNotionPages } from "./pages.js";
 
 export const origin = "http://localhost:5173";
@@ -42,6 +43,7 @@ export async function fixture(
     importer?: typeof importNotionPage;
     searcher?: typeof searchNotionPages;
     legacyToken?: string;
+    model?: ModelProvider;
   } = {},
 ) {
   const dir = mkdtempSync(join(tmpdir(), "panky-notion-oauth-"));
@@ -73,7 +75,7 @@ export async function fixture(
   };
   let app = createApp(
     config,
-    undefined,
+    content.model,
     undefined,
     undefined,
     content.importer,
@@ -175,7 +177,7 @@ export async function fixture(
       await app.close();
       app = createApp(
         config,
-        undefined,
+        content.model,
         undefined,
         undefined,
         content.importer,

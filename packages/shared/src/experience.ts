@@ -46,3 +46,8 @@ export const experienceDetailSchema = z.object({
 export const importExperienceSchema = z
   .object({ page: z.string().trim().min(1).max(500) })
   .strict();
+
+export const experienceStatusSchema = z.object({
+  usableCount: z.number().int().nonnegative(),
+  totalCount: z.number().int().nonnegative(),
+});

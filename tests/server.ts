@@ -5,6 +5,7 @@ import { HttpError } from "../apps/server/src/http-utils.js";
 import {
   notionFixture,
   personalImporter,
+  personalPages,
   personalSearcher,
 } from "./notion-fixture.js";
 
@@ -31,6 +32,18 @@ const app = createApp(
   async (pageId, token, signal) => {
     if (token.startsWith("synthetic-notion-access-"))
       return personalImporter(pageId, token, signal);
+    if (pageId === personalPages.migration)
+      return {
+        pageId,
+        title: "Legacy OAuth migration",
+        warnings: [],
+        passages: [
+          {
+            blockId: "99999999-9999-4999-8999-999999999999",
+            text: "Legacy migration evidence.",
+          },
+        ],
+      };
     if (pageId !== "11111111-1111-4111-8111-111111111111")
       throw new HttpError(
         403,

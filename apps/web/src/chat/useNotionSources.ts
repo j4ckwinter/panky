@@ -22,6 +22,7 @@ export function useNotionSources(
   revision: number,
   disabled: boolean,
   onConnectionChange: (connection: NotionConnection) => void,
+  onSourcesChanged: () => void,
 ) {
   const [sources, setSources] = useState<ExperienceSource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,11 +111,13 @@ export function useNotionSources(
         let failed = false;
         try {
           await item.action(signal);
-          if (!signal.aborted)
+          if (!signal.aborted) {
+            onSourcesChanged();
             setResults((current) => [
               ...current,
               { title: item.title, outcome },
             ]);
+          }
         } catch (cause) {
           if (signal.aborted) break;
           failed = true;
@@ -174,6 +177,7 @@ export function useNotionSources(
       run(async (signal) => {
         await api.removeNotionSource(id, signal);
         if (signal.aborted) return;
+        onSourcesChanged();
         setDetail(null);
         setResults([]);
         await reload(signal);

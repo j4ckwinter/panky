@@ -12,14 +12,16 @@ import { DialogHeading } from "../components/DialogHeading";
 export function InterviewOptions({
   target,
   children,
+  initiallyOpen = false,
 }: {
   target: HTMLElement | null;
+  initiallyOpen?: boolean;
   children: (
     settingsTarget: HTMLElement | null,
     close: () => void,
   ) => ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
   const [settingsTarget, setSettingsTarget] = useState<HTMLElement | null>(
     null,
   );

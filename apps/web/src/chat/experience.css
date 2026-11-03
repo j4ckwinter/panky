@@ -85,3 +85,35 @@
   border-left: 3px solid var(--color-pancake-control-border);
   line-height: 1.6;
 }
+
+.interview-sources {
+  display: grid;
+  gap: var(--spacing-pancake-8);
+  padding: var(--spacing-pancake-12) var(--spacing-pancake-16);
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-12);
+}
+.interview-sources p {
+  margin: 0;
+}
+.interview-source-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-pancake-8);
+}
+.interview-source-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-pancake-8);
+  min-height: 44px;
+  cursor: pointer;
+}
+.interview-source-toggle input {
+  accent-color: var(--color-pancake-deep);
+}
+.interview-source-toggle input:focus-visible {
+  outline: 2px solid var(--color-pancake-deep);
+  outline-offset: 3px;
+}

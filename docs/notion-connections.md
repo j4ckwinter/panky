@@ -39,9 +39,15 @@ Granting access in Notion and importing a copy into Panky are separate actions. 
 
 **Remove page** deletes its copy and search index. It does not alter Notion or saved answers. Connection authorization failures require reconnection and exclude the connection's corpus from new retrieval. Temporary failures can be retried manually; remote revocation is not detected instantly. Import timestamps show when the local content was last fetched.
 
+## Typed interview answers
+
+In Interview options, open **Ask a question**. **Use my sources** includes relevant passages from your usable imported pages. Turning it off omits imported content from the model input while keeping the separate pasted sample. The count updates when you return from **Manage sources**. Questions, pasted text, source choice and typed context survive that in-app visit; reload, sign-out and OAuth redirects clear this in-memory draft. Audio capture stops when you leave Interview.
+
+Saved answers retain exact evidence excerpts, titles, links and import timestamps. A lack of matching passages is not evidence for a personal claim; the model is instructed to identify the gap or offer general guidance. Ordinary chat and speech-derived questions receive no imported personal sources.
+
 ## Existing owner imports
 
-Existing sources are not automatically assigned to an OAuth workspace. To migrate one, explicitly import its page through Connections. Only a successful read using the owner's OAuth credential moves that source to the connection; a failed attempt leaves the legacy copy intact. Source IDs and saved evidence snapshots are preserved. The existing internal importer remains available for legacy sources until its callers and host setup are retired deliberately. It cannot refresh an OAuth-managed copy using the server token.
+Existing sources are not automatically assigned to an OAuth workspace. To migrate one, explicitly import its page through Connections. Only a successful read using the owner's OAuth credential moves that source to the connection; a failed attempt leaves the legacy copy intact. Source IDs and saved evidence snapshots are preserved. The existing internal importer remains available under **Connections → Legacy owner sources** until its host setup and remaining imports are retired deliberately. It cannot refresh an OAuth-managed copy using the server token.
 
 The configured local database was inspected read-only on 3 November 2026 and contained zero sources. This does not establish the state of the Windows host. The schema migration preserves existing sources there and requires no bulk deletion or reassignment.
 

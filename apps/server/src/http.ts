@@ -252,7 +252,10 @@ export function createApp(
           controller.signal,
           includeActivity,
           interview,
-          interview && interview.useExperience
+          interview &&
+            interview.useExperience &&
+            interview.useSources &&
+            interview.inputSource === "typed"
             ? experience.search(
                 userId,
                 interviewRetrievalQuery(content, interview),

@@ -6,7 +6,7 @@ IA-2 adds selected page imports and local text retrieval to Interview. Importing
 
 1. Create a Notion internal connection with **Read content** capability. Grant it access only to the pages you want available. Notion's [internal connection guide](https://developers.notion.com/guides/get-started/internal-connections) covers capabilities and page access. Sharing a parent also grants access to its children in Notion; Panky still requires a separate import for each child page.
 2. Set `NOTION_TOKEN` privately in `apps/server/.env` on the backend machine and restart it. Use the connection's API token, not Panky's bearer token. Never put it in frontend configuration or the interview form.
-3. Sign in as the Panky owner. Open **Interview → Notion experience**, enter a page link or ID, and choose **Import page**.
+3. Sign in as the Panky owner. Open **Connections → Legacy owner sources**, enter a page link or ID, and choose **Import page**.
 4. Inspect the title, timestamp, passage count and warnings. **Inspect passages** shows the local copy.
 
 The configured connection belongs only to the Panky owner. Invited accounts cannot use it, view the owner's sources or retrieve them in answers. Storage remains scoped per authenticated user. [Personal Notion OAuth connections](notion-connections.md) support selected imports in Connections for both owner and invited accounts. The controls described here manage legacy owner sources. Re-import a page through Connections to migrate it after validating access with the OAuth credential.
@@ -15,7 +15,9 @@ The importer makes only GET requests to `https://api.notion.com/v1`, using API v
 
 ## Ask and inspect evidence
 
-Each interview question searches the local corpus. Up to three matching passages are included within the configured context budget, alongside any pasted sample. Short follow-ups can use recent questions and explicit spoken-answer notes to find the referenced experience. Standalone questions search their own terms; **Start new topic** clears earlier context. This is a bounded lexical heuristic, not semantic search.
+In typed Interview, **Use my sources** controls whether the local corpus is searched for that question. It starts enabled. Turning it off excludes imported passages from the model input and saved evidence; the separate pasted experience sample remains included. The usable-page count excludes failed, empty and ineligible connection copies. **Manage sources** opens Connections; return using **Back to interview** or the rail. The question, pasted sample, recent typed context, spoken-answer note and source choice survive that visit in memory. Leaving for Chats, starting a new interview, signing out or reloading clears the draft; OAuth authorization also navigates away and reloads the app. Audio capture stops on leaving Interview and never restarts automatically.
+
+With sources enabled, each typed interview question searches the local corpus. Up to three matching passages are included within the configured context budget, alongside any pasted sample. Short follow-ups can use recent questions and explicit spoken-answer notes to find the referenced experience. Standalone questions search their own terms; **Start new topic** clears earlier context. Ordinary chat and speech-derived questions do not receive imported personal passages. This is a bounded lexical heuristic, not semantic search.
 
 Expand **Retrieved evidence** beneath an answer for the exact supplied excerpts, import timestamps and Notion block links. Labels `[S1]`, `[S2]` and `[S3]` identify the supplied passages. The real model is instructed to cite them, distinguish individual contributions from team work and label general suggestions. Inspect generated claims against the excerpts; citations are not a guarantee of factual accuracy.
 

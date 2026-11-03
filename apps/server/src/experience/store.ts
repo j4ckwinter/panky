@@ -69,6 +69,20 @@ export class ExperienceStore {
       .map(source);
   }
 
+  status(ownerId: string) {
+    const connectionId = this.eligibleConnection(ownerId);
+    const sources = this.list(ownerId);
+    return {
+      totalCount: sources.length,
+      usableCount: sources.filter(
+        (source) =>
+          !source.error &&
+          source.passageCount > 0 &&
+          (!source.connectionId || source.connectionId === connectionId),
+      ).length,
+    };
+  }
+
   findByPage(ownerId: string, pageId: string): ExperienceSource | undefined {
     const row = this.db
       .prepare(

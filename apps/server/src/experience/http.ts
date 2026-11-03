@@ -35,6 +35,12 @@ export class ExperienceApi {
   ) {
     if (path !== "/api/experience" && !path.startsWith("/api/experience/"))
       return false;
+    if (path === "/api/experience/status") {
+      if (request.method !== "GET")
+        throw new HttpError(405, "Method not allowed.");
+      json(response, 200, this.store.status(userId));
+      return true;
+    }
     const configured = userId === "owner" && Boolean(this.token);
     if (path === "/api/experience" && request.method === "GET") {
       json(response, 200, {

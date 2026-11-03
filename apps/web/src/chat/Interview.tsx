@@ -1,14 +1,11 @@
 import { Button, Text, Textarea } from "@jack.winter/pancake-ui";
-import {
-  INTERVIEW_LIMITS,
-  MESSAGE_MAX_CHARS,
-  type InterviewInput,
-} from "@panky/shared";
+import { INTERVIEW_LIMITS, MESSAGE_MAX_CHARS } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { InterviewOptions } from "./InterviewOptions";
 import type { Api } from "../api/chat";
-import { ExperienceSources } from "./ExperienceSources";
+import { InterviewSources } from "./InterviewSources";
+import type { useInterviewDraft } from "./useInterviewDraft";
 import { LiveTranscript } from "./LiveTranscript";
 import { InterviewAnswer } from "./InterviewAnswer";
 import { ResponseTiming } from "./ResponseTiming";
@@ -21,19 +18,27 @@ export function Interview({
   chat,
   api,
   toolsTarget,
+  typedDraft,
+  onManageSources,
+  restoreDraft,
 }: {
   chat: ReturnType<typeof useChat>;
   api: Api;
   toolsTarget: HTMLElement | null;
+  typedDraft: ReturnType<typeof useInterviewDraft>;
+  onManageSources: () => void;
+  restoreDraft: boolean;
 }) {
   const questions = useSpokenQuestions(chat);
   const [session, setSession] = useState(0);
-  const [draft, setDraft] = useState("");
-  const [experience, setExperience] = useState("");
-  const [context, setContext] = useState<
-    NonNullable<InterviewInput["context"]>
-  >([]);
-  const [spokenAnswer, setSpokenAnswer] = useState("");
+  const {
+    question: draft,
+    experience,
+    context,
+    spokenAnswer,
+    useSources,
+  } = typedDraft.value;
+  const [typedOpen, setTypedOpen] = useState(restoreDraft);
   const latestQuestion = chat.messages.findLast((item) => item.role === "user");
   const latestAnswer = chat.messages.findLast(
     (item) => item.role === "assistant",
@@ -88,7 +93,7 @@ export function Interview({
   return (
     <div className="interview-scroll">
       <div className="interview-panel">
-        <InterviewOptions target={toolsTarget}>
+        <InterviewOptions target={toolsTarget} initiallyOpen={restoreDraft}>
           {(settingsTarget, closeOptions) => (
             <>
               <LiveTranscript
@@ -155,7 +160,11 @@ export function Interview({
                 )}
               {settingsTarget &&
                 createPortal(
-                  <details className="interview-tools">
+                  <details
+                    className="interview-tools"
+                    open={typedOpen}
+                    onToggle={(event) => setTypedOpen(event.currentTarget.open)}
+                  >
                     <summary>Ask a question</summary>
                     <div className="interview-tools-content">
                       <div className="interview-actions">
@@ -166,10 +175,7 @@ export function Interview({
                             chat.create();
                             questions.reset();
                             setSession((value) => value + 1);
-                            setDraft("");
-                            setExperience("");
-                            setContext([]);
-                            setSpokenAnswer("");
+                            typedDraft.reset();
                           }}
                         >
                           New interview
@@ -181,7 +187,15 @@ export function Interview({
                           ? " · Scripted synthetic examples, not your experience. No AI reasoning. Retrieved evidence is shown separately."
                           : " · Uses relevant imported passages and the experience you paste below. Check the evidence behind personal claims."}
                       </p>
-                      <ExperienceSources api={api} disabled={chat.pending} />
+                      <InterviewSources
+                        api={api}
+                        enabled={useSources}
+                        disabled={chat.pending}
+                        onChange={(enabled) =>
+                          typedDraft.update({ useSources: enabled })
+                        }
+                        onManage={onManageSources}
+                      />
                       <form
                         className="interview-form"
                         autoComplete="off"
@@ -196,16 +210,16 @@ export function Interview({
                             );
                             void questions.sendTyped(
                               submitted,
-                              { experience, context: prior },
+                              { experience, context: prior, useSources },
                               () => {
-                                setContext(
-                                  [
+                                typedDraft.update({
+                                  context: [
                                     ...prior,
                                     { question: submitted, spokenAnswer: "" },
                                   ].slice(-INTERVIEW_LIMITS.contextTurns),
-                                );
-                                setSpokenAnswer("");
-                                setDraft("");
+                                  spokenAnswer: "",
+                                  question: "",
+                                });
                                 closeOptions();
                               },
                             );
@@ -221,9 +235,11 @@ export function Interview({
                             maxLength={INTERVIEW_LIMITS.experienceChars}
                             disabled={chat.pending}
                             onChange={(event) =>
-                              setExperience(event.currentTarget.value)
+                              typedDraft.update({
+                                experience: event.currentTarget.value,
+                              })
                             }
-                            helperText="Paste a short project example, your contribution, and its outcome. Up to 4,000 characters. The sample stays in this view until you leave; answers may quote it and are saved in chat history."
+                            helperText="Paste a short project example, your contribution, and its outcome. Up to 4,000 characters. The sample survives a visit to Connections but clears when you leave for Chats or start a new interview. Answers may quote it and are saved in chat history."
                           />
                         </details>
                         <div className="interview-context">
@@ -235,9 +251,11 @@ export function Interview({
                               variant="ghost"
                               disabled={chat.pending || context.length === 0}
                               onClick={() => {
-                                setContext([]);
+                                typedDraft.update({
+                                  context: [],
+                                  spokenAnswer: "",
+                                });
                                 questions.newTopic();
-                                setSpokenAnswer("");
                               }}
                             >
                               Start new topic
@@ -247,8 +265,9 @@ export function Interview({
                             Up to four recent questions and your notes can
                             inform the next answer. Older context may be omitted
                             to fit the model. Suggestions are never treated as
-                            things you said. Context clears when you leave this
-                            view and is not restored from saved history.
+                            things you said. Context survives a visit to
+                            Connections, clears when you leave for Chats, and is
+                            not restored from saved history.
                           </p>
                           {context.length > 0 ? (
                             <>
@@ -277,7 +296,9 @@ export function Interview({
                                 maxLength={INTERVIEW_LIMITS.spokenAnswerChars}
                                 disabled={chat.pending}
                                 onChange={(event) =>
-                                  setSpokenAnswer(event.currentTarget.value)
+                                  typedDraft.update({
+                                    spokenAnswer: event.currentTarget.value,
+                                  })
                                 }
                                 helperText={`Optional summary of your answer to: ${context.at(-1)?.question}. Used for the next question; generated replies may quote it and are saved.`}
                               />
@@ -295,7 +316,9 @@ export function Interview({
                           maxLength={MESSAGE_MAX_CHARS}
                           disabled={chat.pending}
                           onChange={(event) =>
-                            setDraft(event.currentTarget.value)
+                            typedDraft.update({
+                              question: event.currentTarget.value,
+                            })
                           }
                           placeholder="Tell me about a technical decision you influenced…"
                         />
@@ -311,7 +334,9 @@ export function Interview({
                               variant="ghost"
                               disabled={chat.pending}
                               onClick={() =>
-                                setDraft(latestQuestion?.content ?? "")
+                                typedDraft.update({
+                                  question: latestQuestion?.content ?? "",
+                                })
                               }
                             >
                               Edit last question

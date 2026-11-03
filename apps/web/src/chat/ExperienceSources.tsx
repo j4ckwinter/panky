@@ -6,9 +6,11 @@ import { type Api, errorMessage } from "../api/chat";
 export function ExperienceSources({
   api,
   disabled,
+  revision = 0,
 }: {
   api: Api;
   disabled: boolean;
+  revision?: number;
 }) {
   const [sources, setSources] = useState<ExperienceSource[]>([]);
   const [configured, setConfigured] = useState(false);
@@ -24,6 +26,9 @@ export function ExperienceSources({
   useEffect(() => {
     mounted.current = true;
     let alive = true;
+    setLoading(true);
+    setError("");
+    setDetail(null);
     void api
       .experience()
       .then((result) => {
@@ -41,7 +46,7 @@ export function ExperienceSources({
       alive = false;
       mounted.current = false;
     };
-  }, [api]);
+  }, [api, revision]);
   async function reload() {
     const result = await api.experience();
     if (!mounted.current) return;
@@ -63,12 +68,15 @@ export function ExperienceSources({
     }
   }
   const unavailable = disabled || busy || loading;
+  if (!error && !configured && sources.length === 0) return null;
   return (
     <details className="experience-sources">
-      <summary>Notion experience</summary>
+      <summary>Legacy owner sources</summary>
       <p className="muted">
-        Import only the pages you choose. Relevant passages are searched locally
-        when you submit an interview question.
+        These pages use the owner's separate server connection. To move a page
+        to your personal workspace connection, explicitly re-import it with
+        Choose pages above. It moves only after a successful read through your
+        own connection. Existing answers retain their evidence.
       </p>
       {error && (
         <BannerToast tone="error" title="Could not update experience">
@@ -103,7 +111,7 @@ export function ExperienceSources({
           }}
         >
           <TextField
-            label="Notion page ID or link"
+            label="Legacy Notion page ID or link"
             value={page}
             maxLength={500}
             onChange={(event) => setPage(event.currentTarget.value)}

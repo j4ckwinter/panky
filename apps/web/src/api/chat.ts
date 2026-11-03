@@ -7,6 +7,7 @@ import {
   conversationsSchema,
   errorSchema,
   experienceDetailSchema,
+  experienceStatusSchema,
   experienceListSchema,
   experienceSourceSchema,
   healthSchema,
@@ -81,6 +82,11 @@ export function createApi(token?: string) {
   }
   return {
     ...connectionApi(request),
+    async experienceStatus() {
+      return experienceStatusSchema.parse(
+        await (await request("/experience/status")).json(),
+      );
+    },
     async experience() {
       return experienceListSchema.parse(
         await (await request("/experience")).json(),

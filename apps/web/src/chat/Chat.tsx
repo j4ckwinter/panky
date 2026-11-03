@@ -10,6 +10,7 @@ import { MessageList } from "./MessageList";
 import { useChat } from "./useChat";
 import { useChatScroll } from "./useChatScroll";
 import { Interview } from "./Interview";
+import { useInterviewDraft } from "./useInterviewDraft";
 import { Connections, type ConnectionReturn } from "./Connections";
 
 function initialView(): ChatView {
@@ -40,6 +41,9 @@ export function Chat({
   email: string;
 }) {
   const chat = useChat(api);
+  const typedDraft = useInterviewDraft();
+  const [interviewSession, setInterviewSession] = useState(false);
+  const [restoreDraft, setRestoreDraft] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const menu = useRef<HTMLButtonElement>(null);
   const [managedChat, setManagedChat] = useState<Conversation | null>(null);
@@ -58,6 +62,25 @@ export function Chat({
     url.searchParams.delete("notion");
     window.history.replaceState(window.history.state, "", url);
   }, [view]);
+  function openChat() {
+    typedDraft.reset();
+    setInterviewSession(false);
+    setRestoreDraft(false);
+    setView("chat");
+    setConnectionReturn(null);
+  }
+  function openInterview() {
+    if (interview || chat.pending) return;
+    const returning = view === "connections" && interviewSession;
+    if (!returning) {
+      typedDraft.reset();
+      chat.create();
+    }
+    setRestoreDraft(returning);
+    setInterviewSession(true);
+    setView("interview");
+    setConnectionReturn(null);
+  }
   const hasMessages = chat.messages.length > 0;
   const { scrollArea, scrollContent, showJump, jumpToLatest, onScroll } =
     useChatScroll(chat.current?.id, hasMessages && view === "chat");
@@ -93,16 +116,8 @@ export function Chat({
         conversations={chat.conversations}
         currentId={view === "chat" ? chat.current?.id : undefined}
         view={view}
-        onChat={() => {
-          setView("chat");
-          setConnectionReturn(null);
-        }}
-        onInterview={() => {
-          if (interview) return;
-          chat.create();
-          setView("interview");
-          setConnectionReturn(null);
-        }}
+        onChat={openChat}
+        onInterview={openInterview}
         onConnections={() => setView("connections")}
         pending={chat.pending}
         providerLabel={chat.providerLabel}
@@ -113,13 +128,11 @@ export function Chat({
         menu={menu}
         email={email}
         onCreate={() => {
-          setView("chat");
-          setConnectionReturn(null);
+          openChat();
           chat.create();
         }}
         onSelect={(id) => {
-          setView("chat");
-          setConnectionReturn(null);
+          openChat();
           void chat.select(id);
         }}
         onManage={(conversation) => {
@@ -156,7 +169,7 @@ export function Chat({
             void chat.refresh(chat.current?.id);
           }}
           onCreate={() => {
-            setView("chat");
+            openChat();
             chat.create();
             input.current?.focus();
           }}
@@ -173,9 +186,18 @@ export function Chat({
             api={api}
             returnResult={connectionReturn}
             clearReturn={() => setConnectionReturn(null)}
+            onBackToInterview={interviewSession ? openInterview : undefined}
+            pending={chat.pending}
           />
         ) : interview ? (
-          <Interview chat={chat} api={api} toolsTarget={toolsTarget} />
+          <Interview
+            chat={chat}
+            api={api}
+            toolsTarget={toolsTarget}
+            typedDraft={typedDraft}
+            restoreDraft={restoreDraft}
+            onManageSources={() => setView("connections")}
+          />
         ) : (
           <div className={`chat-body${hasMessages ? "" : " chat-body-empty"}`}>
             <div className="chat-scroll" ref={scrollArea} onScroll={onScroll}>

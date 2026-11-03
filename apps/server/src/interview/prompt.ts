@@ -24,7 +24,12 @@ export function interviewContext(
   budget: number,
   candidates: readonly Evidence[] = [],
 ) {
-  const evidence = input.useExperience === false ? [] : candidates;
+  const evidence =
+    input.useExperience === false ||
+    input.useSources === false ||
+    input.inputSource === "speech"
+      ? []
+      : candidates;
   const experience = input.useExperience === false ? "" : input.experience;
   const sources: Evidence[] = [];
   const instructions = () => {

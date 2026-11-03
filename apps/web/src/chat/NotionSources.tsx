@@ -13,6 +13,7 @@ export function NotionSources({
   disabled,
   onBusy,
   onConnectionChange,
+  onSourcesChanged,
 }: {
   api: Api;
   connected: boolean;
@@ -20,6 +21,7 @@ export function NotionSources({
   disabled: boolean;
   onBusy: (busy: boolean) => void;
   onConnectionChange: (connection: NotionConnection) => void;
+  onSourcesChanged: () => void;
 }) {
   const [picker, setPicker] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -29,6 +31,7 @@ export function NotionSources({
     revision,
     disabled,
     onConnectionChange,
+    onSourcesChanged,
   );
   const pickerButton = useRef<HTMLButtonElement>(null);
   const wasPicking = useRef(false);

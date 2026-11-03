@@ -6,6 +6,7 @@ export const interviewInputSchema = z
     experience: z.string().trim().max(INTERVIEW_LIMITS.experienceChars),
     inputSource: z.enum(["typed", "speech"]).default("typed"),
     useExperience: z.boolean().default(true),
+    useSources: z.boolean().default(true),
     context: z
       .array(
         z

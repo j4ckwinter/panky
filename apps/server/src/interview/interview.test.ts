@@ -110,6 +110,8 @@ test("interview submissions validate before saving and retain existing authentic
     { experience: 42 },
     { experience: "", useExperience: "false" },
     { experience: "", useExperience: null },
+    { experience: "", useSources: "false" },
+    { experience: "", useSources: null },
     { experience: "a".repeat(4001) },
     { experience: "", extra: true },
     {
@@ -204,9 +206,9 @@ test("general questions exclude pasted and imported experience while existing cl
   const speechSourced = interviewContext(question, speechInput, 8000, evidence);
   assert.equal(
     speechSourced.history[0]?.content,
-    `${interviewInstructions}\n${transcriptionInstructions}`,
+    `${generalInterviewInstructions}\n${transcriptionInstructions}`,
   );
-  assert.equal(speechSourced.sources.length, 1);
+  assert.equal(speechSourced.sources.length, 0);
   assert.equal(
     speechSourced.historyChars,
     speechSourced.history.reduce(
