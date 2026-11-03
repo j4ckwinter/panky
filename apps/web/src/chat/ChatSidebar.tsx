@@ -11,6 +11,8 @@ import {
 import { ActionMenu } from "../components/ActionMenu";
 import { Brand } from "../components/Brand";
 
+export type ChatView = "chat" | "interview" | "connections";
+
 export function ChatSidebar({
   conversations,
   currentId,
@@ -28,8 +30,9 @@ export function ChatSidebar({
   onAccess,
   onSessions,
   onDisconnect,
-  interview,
+  view,
   onInterview,
+  onConnections,
   onChat,
 }: {
   conversations: Conversation[];
@@ -48,8 +51,9 @@ export function ChatSidebar({
   onAccess?: () => void;
   onSessions: () => void;
   onDisconnect: () => void;
-  interview: boolean;
+  view: ChatView;
   onInterview: () => void;
+  onConnections: () => void;
   onChat: () => void;
 }) {
   const [search, setSearch] = useState("");
@@ -138,7 +142,7 @@ export function ChatSidebar({
               className="sidebar-feature-button"
               aria-label="Chats"
               title="Chats"
-              aria-current={!interview ? "page" : undefined}
+              aria-current={view === "chat" ? "page" : undefined}
               disabled={pending}
               onClick={() => {
                 setSidebarOpen(false);
@@ -165,7 +169,7 @@ export function ChatSidebar({
               className="sidebar-feature-button"
               aria-label="Interview"
               title="Interview"
-              aria-current={interview ? "page" : undefined}
+              aria-current={view === "interview" ? "page" : undefined}
               disabled={pending}
               onClick={() => {
                 setSidebarOpen(false);
@@ -185,6 +189,33 @@ export function ChatSidebar({
               >
                 <rect x="9" y="2" width="6" height="12" rx="3" />
                 <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" />
+              </svg>
+            </Button>
+            <Button
+              size={40}
+              variant="ghost"
+              className="sidebar-feature-button"
+              aria-label="Connections"
+              title="Connections"
+              aria-current={view === "connections" ? "page" : undefined}
+              disabled={pending}
+              onClick={() => {
+                setSidebarOpen(false);
+                onConnections();
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M8 3v5M16 3v5M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v4" />
               </svg>
             </Button>
           </nav>

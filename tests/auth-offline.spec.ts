@@ -4,6 +4,46 @@ import { mockGoogle } from "./auth-fixture.js";
 const offlineMessage =
   "Can’t reach Panky’s PC. It might be switched off. Try again in a bit.";
 
+test("Google sign-in errors use a compact card without an empty button gap", async ({
+  page,
+}) => {
+  await mockGoogle(page.context());
+  await page.route("**/api/auth/google/options", (route) =>
+    route.fulfill({
+      status: 403,
+      json: { error: "Use the configured sign-in origin." },
+    }),
+  );
+  await page.goto("/");
+  await expect(page.getByRole("alert")).toContainText(
+    "Use the configured sign-in origin.",
+  );
+  await expect(page.locator(".google-sign-in")).toBeHidden();
+  await expect(page.locator(".connect-card")).toHaveCSS("padding-top", "24px");
+  const description = await page
+    .getByText("Continue with your Google account.")
+    .boundingBox();
+  const alert = await page.getByRole("alert").boundingBox();
+  expect(
+    description && alert && alert.y - description.y - description.height,
+  ).toBeLessThanOrEqual(24);
+  await page.screenshot({
+    path: "test-results/sign-in-origin-desktop.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".connect-card")).toHaveCSS("padding-top", "24px");
+  await page.screenshot({
+    path: "test-results/sign-in-origin-mobile.png",
+    fullPage: true,
+  });
+  await page.unroute("**/api/auth/google/options");
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Sign in with Google", exact: true }),
+  ).toBeVisible();
+});
+
 for (const failure of ["network", "tunnel", "502", "503", "504"]) {
   test(`offline sign-in shows the nap message for ${failure} and can recover`, async ({
     page,

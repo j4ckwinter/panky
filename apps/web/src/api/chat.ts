@@ -10,6 +10,8 @@ import {
   experienceSourceSchema,
   healthSchema,
   historySchema,
+  notionAuthorizationSchema,
+  notionConnectionSchema,
   type InterviewInput,
   type StreamEvent,
   streamEventSchema,
@@ -79,6 +81,28 @@ export function createApi(token?: string) {
     return response;
   }
   return {
+    async notionConnection() {
+      return notionConnectionSchema.parse(
+        await (await request("/connections/notion")).json(),
+      );
+    },
+    async authorizeNotion() {
+      return notionAuthorizationSchema.parse(
+        await (
+          await request("/connections/notion/authorize", { method: "POST" })
+        ).json(),
+      );
+    },
+    async checkNotion() {
+      return notionConnectionSchema.parse(
+        await (
+          await request("/connections/notion/check", { method: "POST" })
+        ).json(),
+      );
+    },
+    async disconnectNotion() {
+      await request("/connections/notion", { method: "DELETE" });
+    },
     async experience() {
       return experienceListSchema.parse(
         await (await request("/experience")).json(),

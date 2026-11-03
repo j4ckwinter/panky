@@ -154,7 +154,11 @@ export function GoogleSignIn({
           {verifying ? "Signing in…" : "Loading Google sign-in…"}
         </p>
       )}
-      <div ref={container} className="google-sign-in" />
+      <div
+        ref={container}
+        className="google-sign-in"
+        hidden={Boolean(error) || verifying}
+      />
       {error && (
         <>
           <BannerToast tone="error" title={signInErrorTitle(error)}>

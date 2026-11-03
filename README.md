@@ -35,6 +35,17 @@ no client secret is needed. add your account as a Google test user if the OAuth 
 pnpm dev
 ```
 
+if the production backend also runs on this PC, use separate development settings. put these in `apps/server/.env.development`:
+
+```dotenv
+AUTH_ORIGIN=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:5173
+PORT=3002
+DATABASE_PATH=./data/panky-dev.sqlite
+```
+
+put `PANKY_API_TARGET=http://127.0.0.1:3002` in `apps/web/.env.development`. restart `pnpm dev` and open `http://localhost:5173`. these ignored overrides keep development on its own port and database; the production launcher still uses `.env` only. the Google client must allow `http://localhost:5173` as an authorized JavaScript origin.
+
 open **http://localhost:5173** and sign in. the default mock model gives scripted replies without Ollama; chat storage and the clock tool work. try asking “What is the current date and time?”
 
 the owner can invite people through **Account → People**. each person has private chats and can manage their devices under **Account → Sessions**.
@@ -82,6 +93,12 @@ this uses the existing build. for the first run, or to pull the latest code, ins
 the launcher uses `apps/server/.env`, expects the backend at `127.0.0.1:3001`, and starts the existing ngrok tunnel with inspection disabled. failed updates stop startup.
 
 logs appear in the same terminal. wait for any reply to finish, then press **Ctrl+C** to stop the backend and tunnel. use Ctrl+C rather than closing the terminal; Ollama stays running.
+
+## connect Notion
+
+open **Connections** in the sidebar to link your own Notion workspace. each account has its own connection. this first step connects the workspace; page imports through it are coming next.
+
+the host needs to [configure Notion OAuth](docs/notion-connections.md) first. the existing owner-only imports in Interview keep working separately.
 
 ## development
 

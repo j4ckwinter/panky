@@ -69,6 +69,11 @@ export class Auth {
     const user = session && this.store.user(session.userId);
     return user;
   }
+  connectionSession(request: IncomingMessage) {
+    if (!this.authenticate(request)) return null;
+    const session = this.session(request);
+    return session ? { userId: session.userId, sessionId: session.id } : null;
+  }
   private issueSession(response: ServerResponse, userId: string) {
     const secret = randomBytes(32).toString("base64url");
     this.store.issueSession(userId, secret, lifetime);

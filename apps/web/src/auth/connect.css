@@ -28,8 +28,7 @@
 .connect-card {
   border: 1px solid var(--color-pancake-border);
   border-radius: var(--radius-pancake-20);
-  padding: var(--spacing-pancake-40) var(--spacing-pancake-32)
-    var(--spacing-pancake-32);
+  padding: var(--spacing-pancake-24);
   min-width: 0;
   background: var(--color-pancake-surface);
   box-shadow: 0 8px 32px rgb(55 69 59 / 4%);
@@ -41,12 +40,11 @@
   color: var(--color-pancake-deep);
 }
 .connect-card .auth-description {
-  margin-top: -12px;
   font-size: 14px;
 }
 .connect-access-note {
   margin: 0;
-  padding-top: var(--spacing-pancake-20);
+  padding-top: var(--spacing-pancake-16);
   border-top: 1px solid var(--color-pancake-border);
   color: var(--color-pancake-olive);
   font-size: 12px;
@@ -63,9 +61,6 @@
   }
   .connect-wordmark {
     font-size: clamp(72px, 18vw, 104px);
-  }
-  .connect-card {
-    padding: var(--spacing-pancake-32) var(--spacing-pancake-24);
   }
 }
 .auth-description {

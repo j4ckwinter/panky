@@ -25,6 +25,8 @@ import { ExperienceStore } from "./experience/store.js";
 import { ExperienceApi } from "./experience/http.js";
 import { interviewRetrievalQuery } from "./interview/retrieval.js";
 import { importNotionPage } from "./experience/notion.js";
+import { ConnectionsApi } from "./connections/http.js";
+import type { NotionOAuth } from "./connections/notion.js";
 
 async function readSubmission(request: IncomingMessage) {
   const result = submissionSchema.safeParse(await readJson(request));
@@ -48,9 +50,11 @@ export function createApp(
   tools?: readonly Tool[],
   googleVerifier?: GoogleVerifier,
   notionImporter: typeof importNotionPage = importNotionPage,
+  notionOAuth?: NotionOAuth,
 ) {
   const store = new Store(config.DATABASE_PATH);
   const auth = new Auth(config, googleVerifier);
+  const connections = new ConnectionsApi(config, auth, notionOAuth);
   const chat = new Chat(store, provider, config, tools);
   const experience = new ExperienceStore(config.DATABASE_PATH);
   const experienceApi = new ExperienceApi(
@@ -101,6 +105,7 @@ export function createApp(
       return;
     }
     const url = new URL(request.url ?? "/", "http://localhost");
+    if (await connections.route(request, response, url)) return;
     if (url.search)
       throw new HttpError(400, "Query parameters are not supported.");
     if (await auth.route(request, response, url.pathname)) return;
@@ -273,6 +278,7 @@ export function createApp(
     chat,
     experience,
     async close() {
+      await connections.close();
       await experienceApi.stop();
       await chat.stop();
       await new Promise<void>((resolve, reject) =>

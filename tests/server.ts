@@ -2,6 +2,7 @@ import type { GoogleIdentity } from "../apps/server/src/auth/google.js";
 import { loadConfig } from "../apps/server/src/config.js";
 import { createApp } from "../apps/server/src/http.js";
 import { HttpError } from "../apps/server/src/http-utils.js";
+import { notionFixture } from "./notion-fixture.js";
 
 const config = loadConfig({
   AUTH_TOKEN: "panky-browser-test-token-never-use-in-production",
@@ -13,6 +14,9 @@ const config = loadConfig({
   GOOGLE_CLIENT_ID: "123456789-browser-tests.apps.googleusercontent.com",
   MODEL_PROVIDER: "mock",
   NOTION_TOKEN: "synthetic-notion-token-for-browser-tests",
+  NOTION_CLIENT_ID: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  NOTION_CLIENT_SECRET: "synthetic-notion-oauth-secret",
+  NOTION_TOKEN_KEY: "ab".repeat(32),
 });
 let imports = 0;
 const app = createApp(
@@ -50,6 +54,7 @@ const app = createApp(
       warnings: ["Skipped unsupported block: image."],
     };
   },
+  notionFixture,
 );
 app.server.listen(3101, "127.0.0.1");
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

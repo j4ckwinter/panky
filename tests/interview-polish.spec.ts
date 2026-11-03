@@ -137,9 +137,12 @@ test("answer copy preserves Markdown and reports clipboard failure on mobile", a
   await answer
     .getByRole("button", { name: "Copy answer", exact: true })
     .click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-    content,
-  );
+  expect(
+    (await page.evaluate(() => navigator.clipboard.readText())).replaceAll(
+      "\r\n",
+      "\n",
+    ),
+  ).toBe(content);
   await expect(answer.locator(".copy-status").first()).toHaveText("Copied");
   await expect(answer.locator(".markdown li").first()).toHaveCSS(
     "margin-top",

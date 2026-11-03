@@ -8,6 +8,34 @@ const base = {
   MODEL_NAME: "qwen3:4b",
 };
 
+test("Notion OAuth requires complete configuration and validates the encryption key without leaking it", () => {
+  const oauth = {
+    NOTION_CLIENT_ID: "a2e473df-ce40-43eb-866c-679ff8f9ef27",
+    NOTION_CLIENT_SECRET: "private-client-secret",
+    NOTION_TOKEN_KEY: "a".repeat(64),
+    GOOGLE_CLIENT_ID: "123-test.apps.googleusercontent.com",
+    OWNER_EMAIL: "owner@gmail.com",
+  };
+  assert.equal(
+    loadConfig({ ...base, ...oauth }).NOTION_TOKEN_KEY,
+    oauth.NOTION_TOKEN_KEY,
+  );
+  for (const field of Object.keys(oauth)) {
+    assert.throws(
+      () => loadConfig({ ...base, ...oauth, [field]: "" }),
+      /Invalid server configuration/,
+    );
+  }
+  assert.throws(
+    () =>
+      loadConfig({ ...base, ...oauth, NOTION_TOKEN_KEY: "private-short-key" }),
+    (error) =>
+      error instanceof Error &&
+      error.message.includes("NOTION_TOKEN_KEY") &&
+      !error.message.includes("private-short-key"),
+  );
+});
+
 test("optional Notion credentials validate without exposing values", () => {
   assert.equal(
     loadConfig({ ...base, NOTION_TOKEN: "" }).NOTION_TOKEN,

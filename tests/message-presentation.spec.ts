@@ -181,14 +181,20 @@ test("copy response and code write the expected text and report clipboard failur
   });
   await expect(reply.getByLabel("Copy response")).toBeVisible();
   await reply.getByLabel("Copy code").click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-    "const answer = 42;\n",
-  );
+  expect(
+    (await page.evaluate(() => navigator.clipboard.readText())).replaceAll(
+      "\r\n",
+      "\n",
+    ),
+  ).toBe("const answer = 42;\n");
   await expect(reply.locator(".code-toolbar")).toContainText("javascript");
   await reply.getByLabel("Copy response").click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
-    "```javascript\nconst answer = 42;",
-  );
+  expect(
+    (await page.evaluate(() => navigator.clipboard.readText())).replaceAll(
+      "\r\n",
+      "\n",
+    ),
+  ).toContain("```javascript\nconst answer = 42;");
   await expect(reply.locator(".reply-actions")).toContainText("Copied");
   await page.evaluate(() => {
     navigator.clipboard.writeText = async () => {

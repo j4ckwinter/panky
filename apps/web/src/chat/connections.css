@@ -1,0 +1,91 @@
+.connections-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-pancake-32) var(--spacing-pancake-24);
+}
+.connections-panel {
+  max-width: 720px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--spacing-pancake-24);
+  overflow-wrap: anywhere;
+}
+.connections-panel h2,
+.connections-panel p {
+  margin: 0;
+}
+.connections-intro {
+  display: grid;
+  gap: var(--spacing-pancake-8);
+}
+.connections-intro > p,
+.connections-privacy {
+  color: var(--color-pancake-muted);
+}
+.connections-privacy {
+  font-size: 13px;
+}
+.notion-connection-card {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-pancake-24);
+  padding: var(--spacing-pancake-24);
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-12);
+}
+.notion-connection-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-pancake-16);
+}
+.notion-connection-heading h2 {
+  font-size: 18px;
+}
+.notion-connection-heading .muted {
+  font-size: 14px;
+  margin-top: var(--spacing-pancake-4);
+}
+.notion-connection-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  height: 44px;
+  border: 1px solid var(--color-pancake-border);
+  border-radius: var(--radius-pancake-8);
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: 700;
+}
+.notion-workspace {
+  display: grid;
+  gap: var(--spacing-pancake-4);
+}
+.notion-workspace p {
+  font-size: 13px;
+}
+.notion-connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-pancake-12);
+}
+.notion-disconnect-confirmation {
+  display: grid;
+  gap: var(--spacing-pancake-12);
+  padding: var(--spacing-pancake-16);
+  background: var(--color-pancake-canvas);
+  border-radius: var(--radius-pancake-8);
+}
+.connections-notice {
+  padding: var(--spacing-pancake-12) var(--spacing-pancake-16);
+  background: var(--color-pancake-canvas);
+  border-radius: var(--radius-pancake-8);
+}
+@media (max-width: 640px) {
+  .connections-scroll {
+    padding: var(--spacing-pancake-24) var(--spacing-pancake-16);
+  }
+  .notion-connection-card {
+    padding: var(--spacing-pancake-16);
+  }
+}

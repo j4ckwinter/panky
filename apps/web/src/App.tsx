@@ -118,7 +118,7 @@ export function App() {
           Panky<span>.</span>
         </div>
         <section className="connect-card" aria-labelledby="connect-title">
-          <Stack gap="space24">
+          <Stack gap="space16">
             <Text as="h1" variant="title" id="connect-title">
               {checking ? "Connecting…" : "Sign in"}
             </Text>

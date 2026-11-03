@@ -11,6 +11,21 @@ const originSchema = z
   }, "Origins must be exact HTTP(S) origins without paths or credentials.");
 
 const configSchema = z.object({
+  NOTION_CLIENT_ID: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.uuid().optional(),
+  ),
+  NOTION_CLIENT_SECRET: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(1).max(500).optional(),
+  ),
+  NOTION_TOKEN_KEY: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .string()
+      .regex(/^[a-fA-F0-9]{64}$/)
+      .optional(),
+  ),
   NOTION_TOKEN: z.preprocess(
     (value) => (value === "" ? undefined : value),
     z
@@ -109,6 +124,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(
       "Invalid server configuration: OWNER_EMAIL is required with GOOGLE_CLIENT_ID.",
     );
+  const notionFields = [
+    result.data.NOTION_CLIENT_ID,
+    result.data.NOTION_CLIENT_SECRET,
+    result.data.NOTION_TOKEN_KEY,
+  ];
+  if (
+    notionFields.some(Boolean) &&
+    (!notionFields.every(Boolean) ||
+      !result.data.GOOGLE_CLIENT_ID ||
+      !result.data.OWNER_EMAIL)
+  ) {
+    throw new Error(
+      "Invalid server configuration: Notion OAuth requires NOTION_CLIENT_ID, NOTION_CLIENT_SECRET, NOTION_TOKEN_KEY and Google sign-in configuration.",
+    );
+  }
   if (
     result.data.MODEL_PROVIDER === "ollama" &&
     (!env.MODEL_NAME || /(?:^|[:-])cloud$/i.test(result.data.MODEL_NAME))

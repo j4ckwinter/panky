@@ -3,6 +3,7 @@ export { MESSAGE_MAX_CHARS, INTERVIEW_LIMITS } from "./limits.js";
 import { z } from "zod";
 import { evidenceSchema } from "./experience.js";
 export * from "./experience.js";
+export * from "./connections.js";
 import { interviewInputSchema } from "./interview.js";
 
 export { type InterviewInput, interviewInputSchema } from "./interview.js";

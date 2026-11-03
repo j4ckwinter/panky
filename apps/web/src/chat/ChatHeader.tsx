@@ -9,6 +9,7 @@ export function ChatHeader({
   streaming,
   serverBusy,
   pending,
+  showChatActions = true,
   sidebarOpen,
   menu,
   onToggleSidebar,
@@ -21,6 +22,7 @@ export function ChatHeader({
   streaming: boolean;
   serverBusy: boolean;
   pending: boolean;
+  showChatActions?: boolean;
   sidebarOpen: boolean;
   menu: RefObject<HTMLButtonElement | null>;
   onToggleSidebar: () => void;
@@ -73,60 +75,66 @@ export function ChatHeader({
                   : "Connected"}
           </span>
         </span>
-        <Button
-          variant="ghost"
-          className="header-icon-button desktop-refresh"
-          size={40}
-          aria-label="Refresh history"
-          title="Refresh history"
-          onClick={onRefresh}
-          disabled={pending}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        {showChatActions && (
+          <Button
+            variant="ghost"
+            className="header-icon-button desktop-refresh"
+            size={40}
+            aria-label="Refresh history"
+            title="Refresh history"
+            onClick={onRefresh}
+            disabled={pending}
           >
-            <path d="M3 11a9 9 0 0 1 15.36-6.36L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.36 6.36L3 17M7 17H3v4" />
-          </svg>
-        </Button>
-        <Button
-          className="mobile-menu header-icon-button"
-          variant="ghost"
-          size={40}
-          aria-label="Start new chat"
-          title="New chat"
-          disabled={pending}
-          onClick={onCreate}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </Button>
-        <ActionMenu
-          label="Chat options"
-          iconOnly
-          className="mobile-header-menu"
-        >
-          <Button variant="ghost" disabled={pending} onClick={onRefresh}>
-            Refresh history
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 11a9 9 0 0 1 15.36-6.36L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.36 6.36L3 17M7 17H3v4" />
+            </svg>
           </Button>
-        </ActionMenu>
+        )}
+        {showChatActions && (
+          <Button
+            className="mobile-menu header-icon-button"
+            variant="ghost"
+            size={40}
+            aria-label="Start new chat"
+            title="New chat"
+            disabled={pending}
+            onClick={onCreate}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </Button>
+        )}
+        {showChatActions && (
+          <ActionMenu
+            label="Chat options"
+            iconOnly
+            className="mobile-header-menu"
+          >
+            <Button variant="ghost" disabled={pending} onClick={onRefresh}>
+              Refresh history
+            </Button>
+          </ActionMenu>
+        )}
       </Inline>
     </header>
   );

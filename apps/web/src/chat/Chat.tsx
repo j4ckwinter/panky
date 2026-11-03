@@ -1,15 +1,30 @@
 import { BannerToast } from "@jack.winter/pancake-ui";
 import type { Conversation } from "@panky/shared";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api/chat";
 import { ManageChat } from "./ManageChat";
-import { ChatSidebar } from "./ChatSidebar";
+import { ChatSidebar, type ChatView } from "./ChatSidebar";
 import { ChatHeader } from "./ChatHeader";
 import { ChatComposer } from "./ChatComposer";
 import { MessageList } from "./MessageList";
 import { useChat } from "./useChat";
 import { useChatScroll } from "./useChatScroll";
 import { Interview } from "./Interview";
+import { Connections, type ConnectionReturn } from "./Connections";
+
+function initialView(): ChatView {
+  return new URLSearchParams(window.location.search).get("view") ===
+    "connections"
+    ? "connections"
+    : "chat";
+}
+
+function initialConnectionReturn(): ConnectionReturn {
+  const result = new URLSearchParams(window.location.search).get("notion");
+  return result === "connected" || result === "denied" || result === "error"
+    ? result
+    : null;
+}
 
 export function Chat({
   api,
@@ -31,10 +46,21 @@ export function Chat({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [toolsTarget, setToolsTarget] = useState<HTMLDivElement | null>(null);
-  const [interview, setInterview] = useState(false);
+  const [view, setView] = useState<ChatView>(initialView);
+  const [connectionReturn, setConnectionReturn] = useState(
+    initialConnectionReturn,
+  );
+  const interview = view === "interview";
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (view === "connections") url.searchParams.set("view", "connections");
+    else url.searchParams.delete("view");
+    url.searchParams.delete("notion");
+    window.history.replaceState(window.history.state, "", url);
+  }, [view]);
   const hasMessages = chat.messages.length > 0;
   const { scrollArea, scrollContent, showJump, jumpToLatest, onScroll } =
-    useChatScroll(chat.current?.id, hasMessages && !interview);
+    useChatScroll(chat.current?.id, hasMessages && view === "chat");
   const lastMessage = chat.messages.at(-1);
   const latestRun = chat.runs.at(-1);
   const runningTask = chat.runs.find((task) => task.status === "running");
@@ -65,14 +91,19 @@ export function Chat({
       )}
       <ChatSidebar
         conversations={chat.conversations}
-        currentId={interview ? undefined : chat.current?.id}
-        interview={interview}
-        onChat={() => setInterview(false)}
+        currentId={view === "chat" ? chat.current?.id : undefined}
+        view={view}
+        onChat={() => {
+          setView("chat");
+          setConnectionReturn(null);
+        }}
         onInterview={() => {
           if (interview) return;
           chat.create();
-          setInterview(true);
+          setView("interview");
+          setConnectionReturn(null);
         }}
+        onConnections={() => setView("connections")}
         pending={chat.pending}
         providerLabel={chat.providerLabel}
         sidebarOpen={sidebarOpen}
@@ -82,11 +113,13 @@ export function Chat({
         menu={menu}
         email={email}
         onCreate={() => {
-          setInterview(false);
+          setView("chat");
+          setConnectionReturn(null);
           chat.create();
         }}
         onSelect={(id) => {
-          setInterview(false);
+          setView("chat");
+          setConnectionReturn(null);
           void chat.select(id);
         }}
         onManage={(conversation) => {
@@ -105,14 +138,17 @@ export function Chat({
             ) : undefined
           }
           title={
-            interview
-              ? "Interview assistant"
-              : (chat.current?.title ?? "New chat")
+            view === "connections"
+              ? "Connections"
+              : interview
+                ? "Interview assistant"
+                : (chat.current?.title ?? "New chat")
           }
           connected={chat.connected}
           streaming={chat.streaming}
           serverBusy={chat.serverBusy}
           pending={chat.pending}
+          showChatActions={view !== "connections"}
           sidebarOpen={sidebarOpen}
           menu={menu}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -120,7 +156,7 @@ export function Chat({
             void chat.refresh(chat.current?.id);
           }}
           onCreate={() => {
-            setInterview(false);
+            setView("chat");
             chat.create();
             input.current?.focus();
           }}
@@ -132,7 +168,13 @@ export function Chat({
             </BannerToast>
           </div>
         )}
-        {interview ? (
+        {view === "connections" ? (
+          <Connections
+            api={api}
+            returnResult={connectionReturn}
+            clearReturn={() => setConnectionReturn(null)}
+          />
+        ) : interview ? (
           <Interview chat={chat} api={api} toolsTarget={toolsTarget} />
         ) : (
           <div className={`chat-body${hasMessages ? "" : " chat-body-empty"}`}>
