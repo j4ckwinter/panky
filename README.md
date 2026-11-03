@@ -96,11 +96,9 @@ logs appear in the same terminal. wait for any reply to finish, then press **Ctr
 
 ## connect Notion
 
-open **Connections**, then select the **Notion** tile or sidebar entry to link your own workspace. each account has its own connection. choose pages to import, inspect their passages and refresh or remove the local copies.
+open **Connections → Notion** to connect your workspace and choose pages to import. each account has its own connection. chat and Interview automatically use relevant imported sources.
 
-the host needs to [configure Notion OAuth](docs/notion-connections.md) first. legacy owner imports remain under **Connections → Notion → Legacy owner sources** until explicitly re-imported through the personal connection. disconnecting removes that connection’s copies; saved conversations and evidence stay.
-
-chat and Interview automatically use relevant available sources; manage them in **Connections**. Interview focuses on listening, editable detected questions and answers. questions require explicit submission. use normal chat for typed questions.
+the host needs to [configure Notion OAuth](docs/notion-connections.md) first. that guide also covers refreshing pages, disconnecting and legacy imports.
 
 ## development
 
