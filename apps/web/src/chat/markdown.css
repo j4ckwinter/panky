@@ -13,6 +13,7 @@
 .markdown ol,
 .markdown blockquote,
 .markdown pre {
+  line-height: 1.5;
   margin: 0 0 var(--spacing-pancake-16);
 }
 .markdown h1,

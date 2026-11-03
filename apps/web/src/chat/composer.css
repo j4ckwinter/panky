@@ -31,9 +31,9 @@
 .composer-area {
   position: relative;
   width: 100%;
-  max-width: 824px;
+  max-width: calc(760px + 2 * var(--content-gutter));
   align-self: center;
-  padding: var(--spacing-pancake-12) var(--spacing-pancake-32)
+  padding: var(--spacing-pancake-12) var(--content-gutter)
     var(--spacing-pancake-16);
 }
 .composer-progress {
@@ -54,7 +54,7 @@
 }
 @media (max-width: 640px) {
   .composer-area {
-    padding: var(--spacing-pancake-8) var(--spacing-pancake-12)
+    padding: var(--spacing-pancake-8) var(--content-gutter)
       var(--spacing-pancake-12);
   }
   .composer-note {

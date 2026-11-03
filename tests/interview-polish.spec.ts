@@ -116,7 +116,7 @@ test("answer copy preserves Markdown and reports clipboard failure on mobile", a
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await audioFixture(page);
   const content =
-    "Two points:\n\n- First point\n- Second point\n\n```javascript\nconst example = '" +
+    "Two points:\n\n## Details\n\n- First point\n- Second point\n\n```javascript\nconst example = '" +
     "long ".repeat(40) +
     "';\n```";
   await page.route("**/api/conversations/*", async (route) => {
@@ -159,6 +159,15 @@ test("answer copy preserves Markdown and reports clipboard failure on mobile", a
     ),
   ).toBe(content);
   await expect(answer.locator(".copy-status").first()).toHaveText("Copied");
+  await expect(answer.getByRole("heading", { name: "Details" })).toHaveCSS(
+    "margin-top",
+    "24px",
+  );
+  await expect(answer.getByRole("heading", { name: "Details" })).toHaveCSS(
+    "margin-bottom",
+    "12px",
+  );
+  await expect(answer.locator("pre")).toHaveCSS("line-height", "22.5px");
   await expect(answer.locator(".markdown li").first()).toHaveCSS(
     "margin-top",
     "4px",

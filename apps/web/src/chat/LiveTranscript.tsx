@@ -68,10 +68,10 @@ export function LiveTranscript({
         </div>
         <div className="browser-audio-actions listening-controls">
           {topicAction}
-          {modelPicker}
           {!active && !pending && !loading && (
             <Button onClick={() => void start()}>Start listening</Button>
           )}
+          {modelPicker}
           {active && !loading && (
             <Button
               variant="ghost"

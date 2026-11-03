@@ -3,7 +3,6 @@
   min-height: 0;
   overflow-y: auto;
   scroll-padding-top: 140px;
-  padding: var(--spacing-pancake-24);
 }
 .interview-scroll:has(.live-transcript-active) {
   padding-top: 0;
@@ -23,7 +22,7 @@
   align-content: start;
   padding-bottom: var(--spacing-pancake-24);
 }
-.interview-panel h2 {
+.interview-answer-heading h2 {
   margin: 0;
 }
 .interview-note {
@@ -72,9 +71,6 @@
   line-height: 1.65;
   white-space: pre-wrap;
 }
-.interview-response {
-  padding: var(--spacing-pancake-20) 0;
-}
 .interview-answer-heading {
   display: flex;
   align-items: center;
@@ -86,13 +82,7 @@
   font-size: 15px;
   line-height: 1.65;
 }
-.interview-response pre {
-  line-height: 1.5;
-}
 @media (max-width: 640px) {
-  .interview-scroll {
-    padding: var(--spacing-pancake-16);
-  }
   .interview-panel {
     padding-bottom: var(--spacing-pancake-24);
   }

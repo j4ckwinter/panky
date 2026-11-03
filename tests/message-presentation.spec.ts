@@ -52,6 +52,15 @@ test("assistant Markdown renders safely and fits mobile while user input stays l
     reply.locator("strong").filter({ hasText: /^function$/ }),
   ).toBeVisible();
   await expect(reply.locator("pre code")).toContainText("const closure");
+  await expect(reply.getByRole("heading", { name: "A closure" })).toHaveCSS(
+    "margin-top",
+    "24px",
+  );
+  await expect(reply.getByRole("heading", { name: "A closure" })).toHaveCSS(
+    "margin-bottom",
+    "12px",
+  );
+  await expect(reply.locator("pre")).toHaveCSS("line-height", "22.5px");
   await expect(reply.getByRole("table")).toContainText("Variables");
   await expect(reply.getByRole("link", { name: "Reference" })).toHaveAttribute(
     "rel",

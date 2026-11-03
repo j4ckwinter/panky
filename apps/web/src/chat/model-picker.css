@@ -6,10 +6,69 @@
 }
 .model-picker-panel {
   width: 300px;
+  text-align: left;
+  position-area: block-start span-inline-start;
+  justify-self: end;
+  margin-inline: 0;
+  position-try-order: normal;
+  position-try-fallbacks:
+    flip-block,
+    flip-inline,
+    flip-block flip-inline;
   max-height: min(320px, calc(100% - var(--spacing-pancake-32)));
+  padding: var(--spacing-pancake-12);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-pancake-muted) transparent;
+}
+.listening-controls .model-picker-panel {
+  position-area: block-end span-inline-end;
+  justify-self: start;
+}
+.live-transcript:not(.live-transcript-active) .model-picker-panel {
+  position-area: block-end span-inline-start;
+  justify-self: end;
+}
+.model-picker-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.model-picker-panel::-webkit-scrollbar-thumb {
+  background: var(--color-pancake-muted);
+  border-radius: var(--radius-pancake-full);
+}
+.model-picker-panel::-webkit-scrollbar-track {
+  background: transparent;
 }
 .model-picker-panel fieldset {
   min-width: 0;
+}
+.model-picker-panel .pancake-radio-legend {
+  padding-inline: var(--spacing-pancake-8);
+}
+.model-picker-panel .pancake-radio-options {
+  gap: var(--spacing-pancake-4);
+}
+.model-picker-panel .pancake-radio-option {
+  gap: var(--spacing-pancake-8);
+  padding: var(--spacing-pancake-4) var(--spacing-pancake-8);
+  border-radius: var(--radius-pancake-8);
+}
+.model-picker-panel .pancake-radio-option:has(input:checked),
+.model-picker-panel .pancake-radio-option:hover:not(:has(input:disabled)) {
+  background: var(--color-pancake-canvas);
+}
+.model-picker-panel .pancake-radio-input {
+  width: var(--spacing-pancake-16);
+  height: var(--spacing-pancake-16);
+  margin: 0;
+}
+.model-picker-panel .pancake-radio-input:checked::before {
+  width: var(--spacing-pancake-8);
+  height: var(--spacing-pancake-8);
+}
+.model-picker-panel .pancake-radio-description {
+  margin-top: 0;
+  font-size: var(--text-pancake-label);
+  line-height: 16px;
 }
 
 .model-notice:empty {

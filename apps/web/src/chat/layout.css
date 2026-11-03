@@ -4,6 +4,7 @@
   height: 100dvh;
 }
 .chat-main {
+  --content-gutter: var(--spacing-pancake-32);
   isolation: isolate;
   min-width: 0;
   display: flex;
@@ -59,7 +60,10 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding: var(--spacing-pancake-24) var(--spacing-pancake-32);
+}
+.chat-scroll,
+.interview-scroll {
+  padding: var(--spacing-pancake-24) var(--content-gutter);
 }
 .chat-scroll > div {
   min-height: 100%;
@@ -88,8 +92,12 @@
   .chat-layout {
     grid-template-columns: 288px minmax(0, 1fr);
   }
-  .chat-scroll {
-    padding: var(--spacing-pancake-16) var(--spacing-pancake-24);
+  .chat-main {
+    --content-gutter: var(--spacing-pancake-24);
+  }
+  .chat-scroll,
+  .interview-scroll {
+    padding: var(--spacing-pancake-16) var(--content-gutter);
   }
 }
 @media (max-width: 640px) {
@@ -110,8 +118,8 @@
   .chat-heading h1 {
     font-size: 14px;
   }
-  .chat-scroll {
-    padding: var(--spacing-pancake-16);
+  .chat-main {
+    --content-gutter: var(--spacing-pancake-16);
   }
   .welcome {
     padding: var(--spacing-pancake-24) 0;

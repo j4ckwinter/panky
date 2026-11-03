@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { test, login } from "./auth-fixture.js";
 import { audioFixture } from "./browser-audio-fixture.js";
 
-for (const view of ["chat", "interview"]) {
+for (const view of ["chat", "interview", "interview-welcome"]) {
   for (const viewport of [
     { width: 1280, height: 844 },
     { width: 390, height: 844 },
@@ -24,14 +24,16 @@ for (const view of ["chat", "interview"]) {
           },
         }),
       );
-      if (view === "interview") {
+      if (view.startsWith("interview")) {
         const capture = await audioFixture(page);
-        await capture
-          .getByRole("button", { name: "Start listening", exact: true })
-          .click();
-        await expect(
-          capture.getByRole("button", { name: "Pause", exact: true }),
-        ).toBeVisible();
+        if (view === "interview") {
+          await capture
+            .getByRole("button", { name: "Start listening", exact: true })
+            .click();
+          await expect(
+            capture.getByRole("button", { name: "Pause", exact: true }),
+          ).toBeVisible();
+        }
       } else {
         await page.goto("/");
         await login(page);
@@ -45,7 +47,38 @@ for (const view of ["chat", "interview"]) {
       const panel = page.getByRole("region", { name: "Choose answer model" });
       const options = panel.getByRole("radio");
       await expect(options).toHaveCount(9);
+      await expect(panel.locator(".pancake-radio-copy").first()).toHaveCSS(
+        "text-align",
+        "left",
+      );
       const bounds = await panel.boundingBox();
+      const trigger = (await picker.boundingBox())!;
+      if (view === "interview-welcome") {
+        const start = (await page
+          .getByRole("button", { name: "Start listening", exact: true })
+          .boundingBox())!;
+        expect(trigger.x).toBeGreaterThanOrEqual(start.x + start.width);
+      }
+      if (viewport.width === 1280) {
+        if (view.startsWith("interview")) {
+          expect(bounds!.y).toBeGreaterThanOrEqual(trigger.y + trigger.height);
+          expect(
+            Math.abs(
+              view === "interview-welcome"
+                ? bounds!.x + bounds!.width - trigger.x - trigger.width
+                : bounds!.x - trigger.x,
+            ),
+          ).toBeLessThan(2);
+        } else {
+          expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(trigger.y);
+          expect(
+            Math.abs(bounds!.x + bounds!.width - trigger.x - trigger.width),
+          ).toBeLessThan(2);
+        }
+      }
+      await page.screenshot({
+        path: `test-results/model-placement-${view}-${viewport.width}-${viewport.height}.png`,
+      });
       expect(bounds!.height).toBeLessThanOrEqual(320);
       expect(
         await panel.evaluate(

@@ -4,7 +4,8 @@
   margin: 0 auto;
   padding-bottom: var(--spacing-pancake-24);
 }
-.message {
+.message,
+.interview-response {
   margin: var(--spacing-pancake-12) 0 var(--spacing-pancake-16);
   padding: var(--spacing-pancake-8) 0;
   border-radius: var(--radius-pancake-20);
@@ -55,6 +56,7 @@
 @media (max-width: 640px) {
   .message-user {
     max-width: 90%;
+    padding-inline: var(--spacing-pancake-16);
   }
 }
 .reply-actions {
