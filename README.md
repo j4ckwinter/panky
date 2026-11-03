@@ -65,6 +65,24 @@ MAX_TASK_DURATION_MS=120000
 
 the deployed frontend uses Vercel and an HTTPS tunnel to the PC backend. the PC, backend, Ollama and tunnel must stay running. keep Ollama's port private. deployment routing lives in [vercel.json](apps/web/vercel.json); set the backend's `AUTH_ORIGIN` and `ALLOWED_ORIGINS` to your exact frontend origin.
 
+### start on Windows
+
+with Ollama running and ngrok on your PATH, start the backend and tunnel from the repository root:
+
+```powershell
+.\scripts\start-panky.ps1
+```
+
+this uses the existing build. for the first run, or to pull the latest code, install dependencies and rebuild first:
+
+```powershell
+.\scripts\start-panky.ps1 -Update
+```
+
+the launcher uses `apps/server/.env`, expects the backend at `127.0.0.1:3001`, and starts the existing ngrok tunnel with inspection disabled. failed updates stop startup.
+
+logs appear in the same terminal. wait for any reply to finish, then press **Ctrl+C** to stop the backend and tunnel. use Ctrl+C rather than closing the terminal; Ollama stays running.
+
 ## development
 
 - `apps/web` — React/Vite UI and API client.
