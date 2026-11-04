@@ -12,8 +12,8 @@ The user authorized C-1, C-2 and subsequently C-3 implementation and verificatio
 
 ## Current baseline
 
-- [ChatSidebar](apps/web/src/chat/ChatSidebar.tsx) contains Chats and Interview navigation, including collapsed and mobile states.
-- [ExperienceSources](apps/web/src/chat/ExperienceSources.tsx) puts import, inspect, refresh and remove controls inside Interview.
+- [ChatSidebar](apps/web/src/chat/navigation/ChatSidebar.tsx) contains Chats and Interview navigation, including collapsed and mobile states.
+- [ExperienceSources](apps/web/src/chat/connections/ExperienceSources.tsx) puts import, inspect, refresh and remove controls inside Interview.
 - [ExperienceApi](apps/server/src/experience/http.ts) permits imports only through the owner's server `NOTION_TOKEN`. Invited users must never use that credential.
 - [ExperienceStore](apps/server/src/experience/store.ts) already scopes sources and SQLite FTS5 retrieval to a user. Preserve those guarantees when introducing connections.
 - [Notion experience documentation](docs/notion-experience.md) records supported content, traversal limits, partial-import warnings, failed-refresh behavior and retained evidence snapshots.

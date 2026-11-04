@@ -1,11 +1,11 @@
 import { InterviewReply } from "./InterviewReply";
 import { Button } from "@jack.winter/pancake-ui";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { LiveTranscript } from "./LiveTranscript";
+import { LiveTranscript } from "./audio/LiveTranscript";
 import { InterviewAnswer } from "./InterviewAnswer";
 import { SentQuestions } from "./SentQuestions";
 import { SpokenQuestions } from "./SpokenQuestions";
-import type { useChat } from "./useChat";
+import type { useChat } from "../useChat";
 import { useSpokenQuestions } from "./useSpokenQuestions";
 
 export function Interview({

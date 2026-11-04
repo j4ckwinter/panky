@@ -7,7 +7,7 @@ import {
 } from "@jack.winter/pancake-ui";
 import type { NotionConnection } from "@panky/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type Api, errorMessage } from "../api/chat";
+import { type Api, errorMessage } from "../../api/chat";
 import { ExperienceSources } from "./ExperienceSources";
 import { ConnectionDetails } from "./ConnectionDetails";
 import { NotionSources } from "./NotionSources";

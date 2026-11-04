@@ -4,9 +4,9 @@ import {
   type Message,
 } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
-import type { TranscriptEntry } from "./useLiveTranscription";
+import type { TranscriptEntry } from "./audio/useLiveTranscription";
 import { normalizeQuestion, QuestionDetector } from "./questionDetection";
-import type { useChat } from "./useChat";
+import type { useChat } from "../useChat";
 
 export type SpokenQuestion = {
   id: number;
@@ -155,9 +155,8 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
     changeStatus("pending");
     let accepted = false;
     try {
-      await chat.send(
-        submitted,
-        {
+      await chat.send(submitted, {
+        interview: {
           experience: "",
           inputSource: "speech",
           context: topicQuestions.map((question) => ({
@@ -167,7 +166,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           useExperience: true,
           useSources: true,
         },
-        (messages) => {
+        onAccepted: (messages) => {
           accepted = true;
           if (!mounted.current || generation.current !== current) return;
           setTopicQuestions((previous) =>
@@ -182,7 +181,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           update(items.current.filter((item) => item.id !== id));
           setNotice("");
         },
-      );
+      });
     } finally {
       if (!accepted) changeStatus("failed");
       sending.current = false;
@@ -226,16 +225,15 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           : {}),
       }));
     try {
-      await chat.send(
-        submitted,
-        {
+      await chat.send(submitted, {
+        interview: {
           experience: "",
           inputSource: "typed",
           context,
           useExperience: true,
           useSources: true,
         },
-        (messages) => {
+        onAccepted: (messages) => {
           accepted = true;
           if (!mounted.current || generation.current !== current) return;
           setTopicQuestions(
@@ -251,7 +249,7 @@ export function useSpokenQuestions(chat: ReturnType<typeof useChat>) {
           );
           setNotice("");
         },
-      );
+      });
       return accepted;
     } finally {
       sending.current = false;

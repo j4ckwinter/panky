@@ -6,10 +6,12 @@ for (const sampleRate of [44100, 48000]) {
   }) => {
     await page.goto("/");
     await page.evaluate(async (rate) => {
-      const modulePath = "/src/chat/pcmCapture.ts";
+      const modulePath = "/src/chat/interview/audio/pcmCapture.ts";
       const { attachPcmCapture } = await import(modulePath);
       const context = new AudioContext({ sampleRate: rate });
-      await context.audioWorklet.addModule("/src/chat/capture.worklet.js");
+      await context.audioWorklet.addModule(
+        "/src/chat/interview/audio/capture.worklet.js",
+      );
       const chunks: { source: string; length: number; mean: number }[] = [];
       const errors: string[] = [];
       const cleanup: (() => void)[] = [];
@@ -84,7 +86,9 @@ test("PCM worklet fails closed when its previous chunk is not acknowledged", asy
   await page.goto("/");
   await page.evaluate(async () => {
     const context = new AudioContext({ sampleRate: 48000 });
-    await context.audioWorklet.addModule("/src/chat/capture.worklet.js");
+    await context.audioWorklet.addModule(
+      "/src/chat/interview/audio/capture.worklet.js",
+    );
     const source = context.createConstantSource();
     source.offset.value = 0.1;
     const processor = new AudioWorkletNode(context, "panky-pcm-capture");
@@ -118,10 +122,12 @@ test("PCM capture preserves brief pauses and emits early after sustained silence
 }) => {
   await page.goto("/");
   await page.evaluate(async () => {
-    const path = "/src/chat/pcmCapture.ts";
+    const path = "/src/chat/interview/audio/pcmCapture.ts";
     const { attachPcmCapture } = await import(path);
     const context = new AudioContext({ sampleRate: 48000 });
-    await context.audioWorklet.addModule("/src/chat/capture.worklet.js");
+    await context.audioWorklet.addModule(
+      "/src/chat/interview/audio/capture.worklet.js",
+    );
     const source = context.createConstantSource();
     const destination = context.createMediaStreamDestination();
     source.connect(destination);

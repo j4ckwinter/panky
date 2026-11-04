@@ -1,6 +1,6 @@
 import { Button } from "@jack.winter/pancake-ui";
 import type { ExperienceSource } from "@panky/shared";
-import type { Api } from "../api/chat";
+import type { Api } from "../../api/chat";
 
 export function NotionSourceList({
   sources,

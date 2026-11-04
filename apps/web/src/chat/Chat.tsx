@@ -1,19 +1,24 @@
-import { ModelNotice, ModelPicker } from "./ModelPicker";
-import { useChatGPT } from "./useChatGPT";
-import { connectionCatalogue, type ConnectionId } from "./connection-catalogue";
+import { ModelNotice, ModelPicker } from "./models/ModelPicker";
+import { useChatGPT } from "./models/useChatGPT";
+import {
+  connectionCatalogue,
+  type ConnectionId,
+} from "./connections/connection-catalogue";
 import { BannerToast } from "@jack.winter/pancake-ui";
 import type { Conversation, ModelSelection } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api/chat";
-import { ManageChat } from "./ManageChat";
-import { ChatSidebar, type ChatView } from "./ChatSidebar";
-import { ChatHeader } from "./ChatHeader";
-import { ChatComposer } from "./ChatComposer";
-import { MessageList } from "./MessageList";
+import { ManageChat } from "./navigation/ManageChat";
+import { ChatSidebar } from "./navigation/ChatSidebar";
+import type { ChatView } from "./navigation/FeatureNavigation";
+import { AccountMenu } from "./navigation/AccountMenu";
+import { ChatHeader } from "./navigation/ChatHeader";
+import { ChatComposer } from "./composer/ChatComposer";
+import { MessageList } from "./messages/MessageList";
 import { useChat } from "./useChat";
-import { useChatScroll } from "./useChatScroll";
-import { Interview } from "./Interview";
-import { Connections, type ConnectionReturn } from "./Connections";
+import { useChatScroll } from "./messages/useChatScroll";
+import { Interview } from "./interview/Interview";
+import { Connections, type ConnectionReturn } from "./connections/Connections";
 
 function initialView(): ChatView {
   return new URLSearchParams(window.location.search).get("view") ===
@@ -144,27 +149,27 @@ export function Chat({
         conversations={chat.conversations}
         currentId={view === "chat" ? chat.current?.id : undefined}
         view={view}
-        onChat={openChat}
-        onInterview={openInterview}
+        onNavigate={(next) => {
+          if (next === "chat") openChat();
+          else if (next === "interview") openInterview();
+          else {
+            setSelectedConnection(null);
+            setConnectionReturn(null);
+            setView("connections");
+          }
+        }}
         selectedConnection={selectedConnection}
         connectionItems={catalogue}
         onSelectConnection={(id) => {
           setSelectedConnection(id);
           setView("connections");
         }}
-        onConnections={() => {
-          setSelectedConnection(null);
-          setConnectionReturn(null);
-          setView("connections");
-        }}
         pending={chat.pending}
-        providerLabel={chat.providerLabel}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
         menu={menu}
-        email={email}
         onCreate={() => {
           openChat();
           chat.create();
@@ -177,9 +182,17 @@ export function Chat({
           chat.clearError();
           setManagedChat(conversation);
         }}
-        onAccess={onAccess}
-        onSessions={onSessions}
-        onDisconnect={onDisconnect}
+        accountMenu={
+          <AccountMenu
+            email={email}
+            providerLabel={chat.providerLabel}
+            pending={chat.pending}
+            onAccess={onAccess}
+            onSessions={onSessions}
+            onDisconnect={onDisconnect}
+            onCloseSidebar={() => setSidebarOpen(false)}
+          />
+        }
       />
       <main className="chat-main" inert={sidebarOpen}>
         <ChatHeader
@@ -259,7 +272,7 @@ export function Chat({
               jumpToLatest={jumpToLatest}
               showRecoveryNote={showRecoveryNote}
               onSend={(content) => {
-                void chat.send(content, undefined, undefined, undefined, true);
+                void chat.send(content, { useSources: true });
               }}
               onCancel={(id) => {
                 void chat.cancel(id);

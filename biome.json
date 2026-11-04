@@ -17,7 +17,41 @@
   },
   "linter": {
     "rules": {
-      "preset": "none"
+      "preset": "none",
+      "correctness": {
+        "noConstAssign": "error",
+        "noInvalidConstructorSuper": "error",
+        "noReactPropAssignments": "error",
+        "noSelfAssign": "error",
+        "noUnreachable": "error",
+        "noUnsafeFinally": "error",
+        "noUnusedImports": "error",
+        "useExhaustiveDependencies": {
+          "level": "error",
+          "options": {
+            "reportUnnecessaryDependencies": false
+          }
+        },
+        "useHookAtTopLevel": "error",
+        "useJsxKeyInIterable": "error",
+        "noPlaywrightMissingAwait": "error"
+      },
+      "suspicious": {
+        "noAsyncPromiseExecutor": "error",
+        "noDuplicateCase": "error",
+        "noDuplicateElseIf": "error",
+        "noDuplicateJsxProps": "error",
+        "noDuplicateObjectKeys": "error",
+        "noFocusedTests": "error",
+        "noSelfCompare": "error",
+        "noUnsafeNegation": "error",
+        "useIterableCallbackReturn": {
+          "level": "error",
+          "options": {
+            "checkForEach": false
+          }
+        }
+      }
     }
   }
 }

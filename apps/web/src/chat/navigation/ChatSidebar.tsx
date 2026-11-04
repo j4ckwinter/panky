@@ -3,66 +3,56 @@ import type { Conversation } from "@panky/shared";
 import {
   type Dispatch,
   type RefObject,
+  type ReactNode,
   type SetStateAction,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { ActionMenu } from "../components/ActionMenu";
-import { Brand } from "../components/Brand";
-import type { ConnectionId, ConnectionItem } from "./connection-catalogue";
+import { FeatureNavigation, type ChatView } from "./FeatureNavigation";
+import { Brand } from "../../components/Brand";
+import type {
+  ConnectionId,
+  ConnectionItem,
+} from "../connections/connection-catalogue";
 import { SidebarList } from "./SidebarList";
 
-export type ChatView = "chat" | "interview" | "connections";
-
 export function ChatSidebar({
+  accountMenu,
+  onNavigate,
   conversations,
   currentId,
   pending,
-  providerLabel,
   sidebarOpen,
   setSidebarOpen,
   sidebarCollapsed,
   setSidebarCollapsed,
   menu,
-  email,
   onCreate,
   onSelect,
   onManage,
-  onAccess,
-  onSessions,
-  onDisconnect,
   view,
-  onInterview,
-  onConnections,
   selectedConnection,
   connectionItems,
   onSelectConnection,
-  onChat,
 }: {
+  accountMenu: ReactNode;
+  onNavigate: (view: ChatView) => void;
   conversations: Conversation[];
   currentId?: string;
   pending: boolean;
-  providerLabel: string;
   sidebarOpen: boolean;
   setSidebarOpen: Dispatch<SetStateAction<boolean>>;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: Dispatch<SetStateAction<boolean>>;
   menu: RefObject<HTMLButtonElement | null>;
-  email: string;
   onCreate: () => void;
   onSelect: (id: string) => void;
   onManage: (conversation: Conversation) => void;
-  onAccess?: () => void;
-  onSessions: () => void;
-  onDisconnect: () => void;
   view: ChatView;
-  onInterview: () => void;
-  onConnections: () => void;
   selectedConnection: ConnectionId | null;
   connectionItems: ConnectionItem[];
   onSelectConnection: (id: ConnectionId) => void;
-  onChat: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [connectionSearch, setConnectionSearch] = useState("");
@@ -151,90 +141,14 @@ export function ChatSidebar({
               <path d="m6 6 12 12M18 6 6 18" />
             </svg>
           </Button>
-          <nav aria-label="Panky features">
-            <Button
-              size={40}
-              variant="ghost"
-              className="sidebar-feature-button"
-              aria-label="Chats"
-              title="Chats"
-              aria-current={view === "chat" ? "page" : undefined}
-              disabled={pending}
-              onClick={() => {
-                setSidebarOpen(false);
-                onChat();
-              }}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" />
-              </svg>
-            </Button>
-            <Button
-              size={40}
-              variant="ghost"
-              className="sidebar-feature-button"
-              aria-label="Interview"
-              title="Interview"
-              aria-current={view === "interview" ? "page" : undefined}
-              disabled={pending}
-              onClick={() => {
-                setSidebarOpen(false);
-                onInterview();
-              }}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <rect x="9" y="2" width="6" height="12" rx="3" />
-                <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" />
-              </svg>
-            </Button>
-            <Button
-              size={40}
-              variant="ghost"
-              className="sidebar-feature-button"
-              aria-label="Connections"
-              title="Connections"
-              aria-current={view === "connections" ? "page" : undefined}
-              disabled={pending}
-              onClick={() => {
-                setSidebarOpen(false);
-                onConnections();
-              }}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M8 3v5M16 3v5M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v4" />
-              </svg>
-            </Button>
-          </nav>
+          <FeatureNavigation
+            view={view}
+            pending={pending}
+            onNavigate={(next) => {
+              setSidebarOpen(false);
+              onNavigate(next);
+            }}
+          />
           <div className="rail-bottom">
             {" "}
             <Button
@@ -266,58 +180,7 @@ export function ChatSidebar({
                 <path d="M9 4v16" />
               </svg>
             </Button>
-            <div className="sidebar-bottom">
-              <ActionMenu
-                label="Account"
-                iconOnly
-                className="account-menu"
-                icon={
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    aria-hidden="true"
-                  >
-                    <circle cx="12" cy="12" r="9" />
-                    <circle cx="12" cy="9" r="3" />
-                    <path d="M5 18c1-6 13-6 14 0" />
-                  </svg>
-                }
-              >
-                <p className="account-email">{email}</p>
-                <p className="account-provider">{providerLabel}</p>
-                {onAccess && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setSidebarOpen(false);
-                      onAccess();
-                    }}
-                  >
-                    People
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setSidebarOpen(false);
-                    onSessions();
-                  }}
-                >
-                  Sessions
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={onDisconnect}
-                  disabled={pending}
-                >
-                  Sign out
-                </Button>
-              </ActionMenu>
-            </div>
+            {accountMenu}
           </div>
         </div>
         <div className="sidebar-content">

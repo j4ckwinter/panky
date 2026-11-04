@@ -167,13 +167,18 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
   }
   function send(
     content: string,
-    interview?: InterviewInput,
-    onAccepted?: (messages: {
-      userMessageId: string;
-      assistantMessageId: string;
-    }) => void,
-    onFirstText?: () => void,
-    useSources = false,
+    {
+      interview,
+      onAccepted,
+      useSources = false,
+    }: {
+      interview?: InterviewInput;
+      onAccepted?: (messages: {
+        userMessageId: string;
+        assistantMessageId: string;
+      }) => void;
+      useSources?: boolean;
+    } = {},
   ) {
     return run(async () => {
       const conversation = current ?? (await api.create());
@@ -192,7 +197,6 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
       setStreaming(true);
       let assistantId: string | undefined;
       let runId: string | undefined;
-      let receivedText = false;
       const receive = (event: StreamEvent) => {
         if (!mounted.current) return;
         switch (event.type) {
@@ -214,10 +218,6 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
             });
             break;
           case "delta":
-            if (!receivedText && event.text.trim()) {
-              receivedText = true;
-              onFirstText?.();
-            }
             setMessages((items) =>
               items.map((item) =>
                 item.id === assistantId

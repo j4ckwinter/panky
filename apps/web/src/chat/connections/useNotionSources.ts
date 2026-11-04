@@ -4,7 +4,7 @@ import {
   type NotionConnection,
 } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
-import { type Api, errorMessage } from "../api/chat";
+import { type Api, errorMessage } from "../../api/chat";
 
 export type PageResult = {
   title: string;

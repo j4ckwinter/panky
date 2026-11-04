@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   normalizeQuestion,
   QuestionDetector,
-} from "../apps/web/src/chat/questionDetection.js";
+} from "../apps/web/src/chat/interview/questionDetection.js";
 
 test("question detection handles split prompts, compound questions and corrections", () => {
   const detector = new QuestionDetector();

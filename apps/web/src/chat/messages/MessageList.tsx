@@ -1,5 +1,5 @@
 import type { Message, TaskRun } from "@panky/shared";
-import { PankyMark } from "../components/PankyMark";
+import { PankyMark } from "../../components/PankyMark";
 import { CopyButton } from "./CopyButton";
 import { Markdown } from "./Markdown";
 

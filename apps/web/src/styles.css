@@ -4,15 +4,15 @@
 @import "./components/action-menu.css";
 @import "./auth/access.css";
 @import "./chat/layout.css";
-@import "./chat/sidebar.css";
-@import "./chat/markdown.css";
-@import "./chat/messages.css";
-@import "./chat/composer.css";
-@import "./chat/manage-chat.css";
-@import "./chat/interview.css";
-@import "./chat/experience.css";
-@import "./chat/live-transcript.css";
-@import "./chat/connections.css";
+@import "./chat/navigation/sidebar.css";
+@import "./chat/messages/markdown.css";
+@import "./chat/messages/messages.css";
+@import "./chat/composer/composer.css";
+@import "./chat/navigation/manage-chat.css";
+@import "./chat/interview/interview.css";
+@import "./chat/connections/experience.css";
+@import "./chat/interview/audio/live-transcript.css";
+@import "./chat/connections/connections.css";
 
 :root {
   font-family: var(--font-pancake);

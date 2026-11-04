@@ -1,5 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+export type RequestAccess = {
+  userId: string;
+  isOwner: boolean;
+  assertAccess: () => void;
+};
+
 export class HttpError extends Error {
   constructor(
     public readonly status: number,

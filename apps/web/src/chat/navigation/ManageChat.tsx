@@ -1,5 +1,5 @@
-import { useModalDialog } from "../components/useModalDialog";
-import { DialogHeading } from "../components/DialogHeading";
+import { useModalDialog } from "../../components/useModalDialog";
+import { DialogHeading } from "../../components/DialogHeading";
 import { BannerToast, Button, Stack, TextField } from "@jack.winter/pancake-ui";
 import type { Conversation } from "@panky/shared";
 import { useState } from "react";

@@ -1,6 +1,6 @@
 import { Button, Inline, Text } from "@jack.winter/pancake-ui";
-import type { ReactNode, RefObject } from "react";
-import { ActionMenu } from "../components/ActionMenu";
+import type { RefObject } from "react";
+import { ActionMenu } from "../../components/ActionMenu";
 
 export function ChatHeader({
   title,

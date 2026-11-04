@@ -1,5 +1,5 @@
 import { Button } from "@jack.winter/pancake-ui";
-import { MessageComposer } from "./MessageComposer";
+import { MessageComposer } from "../composer/MessageComposer";
 import { useRef, useState } from "react";
 
 export function InterviewReply({

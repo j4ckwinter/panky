@@ -1,16 +1,11 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { once } from "node:events";
 import {
   createServer,
   type IncomingMessage,
   type ServerResponse,
 } from "node:http";
-import {
-  renameConversationSchema,
-  type StreamEvent,
-  submissionSchema,
-} from "@panky/shared";
-import { z } from "zod";
+import { ChatApi } from "./chat/http.js";
+import { ChatGPTApi, type ChatGPTConnection } from "./chatgpt/http.js";
 import { ChatGPTService } from "./chatgpt/service.js";
 import { Auth } from "./auth/auth.js";
 import type { GoogleVerifier } from "./auth/google.js";
@@ -18,27 +13,16 @@ import { Chat } from "./chat/chat.js";
 import { Store } from "./chat/store.js";
 import type { Tool } from "./chat/tools.js";
 import type { Config } from "./config.js";
-import { HttpError, json, readJson } from "./http-utils.js";
+import { HttpError, json } from "./http-utils.js";
 import { OllamaProvider } from "./providers/ollama.js";
 import { type ModelProvider } from "./providers/provider.js";
 import { MockProvider } from "./providers/mock.js";
 import { ExperienceStore } from "./experience/store.js";
 import { ExperienceApi } from "./experience/http.js";
-import { interviewRetrievalQuery } from "./interview/retrieval.js";
 import { importNotionPage } from "./experience/notion.js";
 import { ConnectionsApi } from "./connections/http.js";
 import type { NotionOAuth } from "./connections/notion.js";
 import { searchNotionPages } from "./connections/pages.js";
-
-async function readSubmission(request: IncomingMessage) {
-  const result = submissionSchema.safeParse(await readJson(request));
-  if (!result.success)
-    throw new HttpError(
-      400,
-      "Message must contain 1–8000 characters, an optional includeActivity boolean and optional interview experience of up to 4000 characters and up to four context turns (8000-character questions and 2000-character spoken summaries).",
-    );
-  return result.data;
-}
 
 export function createApp(
   config: Config,
@@ -54,11 +38,7 @@ export function createApp(
   notionImporter: typeof importNotionPage = importNotionPage,
   notionOAuth?: NotionOAuth,
   notionSearcher: typeof searchNotionPages = searchNotionPages,
-  chatGPT: Pick<
-    ChatGPTService,
-    "status" | "models" | "disconnect" | "provider"
-  > &
-    Partial<Pick<ChatGPTService, "close">> = new ChatGPTService({
+  chatGPT: ChatGPTConnection = new ChatGPTService({
     enabled: config.CHATGPT_ENABLED,
     credentialPath: config.CHATGPT_CREDENTIAL_PATH,
   }),
@@ -85,21 +65,11 @@ export function createApp(
     notionImporter,
     (userId): boolean => connections.busy(userId),
   );
+  const chatGPTApi = new ChatGPTApi(config, chatGPT, chat);
+  const chatApi = new ChatApi(store, chat, experience, chatGPTApi);
   const expectedToken = createHash("sha256")
     .update(`Bearer ${config.AUTH_TOKEN}`)
     .digest();
-
-  async function chatGPTModels(response: ServerResponse) {
-    const controller = new AbortController();
-    const abort = () => controller.abort();
-    response.once("close", abort);
-    if (response.destroyed) controller.abort();
-    try {
-      return await chatGPT.models(controller.signal);
-    } finally {
-      response.off("close", abort);
-    }
-  }
 
   async function route(request: IncomingMessage, response: ServerResponse) {
     response.setHeader("Cache-Control", "no-store, no-transform");
@@ -168,42 +138,13 @@ export function createApp(
       )
     )
       return;
-    if (
-      url.pathname === "/api/connections/chatgpt" ||
-      url.pathname === "/api/connections/chatgpt/models"
-    ) {
-      if (!bearer && user?.role !== "owner")
-        throw new HttpError(
-          403,
-          "ChatGPT subscriptions are available only to the owner in this prototype.",
-        );
-      if (request.method === "GET") {
-        const result = url.pathname.endsWith("/models")
-          ? {
-              models: config.CHATGPT_ENABLED
-                ? await chatGPTModels(response)
-                : [],
-            }
-          : config.CHATGPT_ENABLED
-            ? await chatGPT.status()
-            : { kind: "unavailable" };
-        assertAccess();
-        json(response, 200, result);
-      } else if (
-        request.method === "DELETE" &&
-        !url.pathname.endsWith("/models")
-      ) {
-        if (chat.busy)
-          throw new HttpError(
-            409,
-            "Stop the active response before disconnecting ChatGPT.",
-          );
-        if (config.CHATGPT_ENABLED) await chatGPT.disconnect();
-        response.writeHead(204);
-        response.end();
-      } else throw new HttpError(405, "Method not allowed.");
-      return;
-    }
+    const access = {
+      userId,
+      isOwner: bearer || user?.role === "owner",
+      assertAccess,
+    };
+    if (await chatGPTApi.route(request, response, url.pathname, access)) return;
+    assertAccess();
     if (url.pathname === "/api/health" && request.method === "GET") {
       json(response, 200, {
         provider: config.MODEL_PROVIDER,
@@ -212,155 +153,8 @@ export function createApp(
       });
       return;
     }
-    if (url.pathname === "/api/conversations") {
-      if (request.method === "GET")
-        json(response, 200, store.conversations(userId));
-      else if (request.method === "POST")
-        json(response, 201, store.createConversation(userId));
-      else throw new HttpError(405, "Method not allowed.");
-      return;
-    }
-    const cancellation = /^\/api\/runs\/([^/]+)\/cancel$/.exec(url.pathname);
-    if (cancellation) {
-      if (request.method !== "POST")
-        throw new HttpError(405, "Method not allowed.");
-      const runId = z.uuid().safeParse(cancellation[1]);
-      if (!runId.success) throw new HttpError(400, "Invalid task ID.");
-      const run = store.run(runId.data);
-      if (!run || !store.ownsConversation(run.conversationId, userId))
-        throw new HttpError(404, "Task not found.");
-      json(response, 200, { run: await chat.cancel(runId.data) });
-      return;
-    }
-    const match = /^\/api\/conversations\/([^/]+)(\/messages)?$/.exec(
-      url.pathname,
-    );
-    if (!match) throw new HttpError(404, "Endpoint not found.");
-    const id = z.uuid().safeParse(match[1]);
-    if (!id.success) throw new HttpError(400, "Invalid conversation ID.");
-    if (!store.ownsConversation(id.data, userId))
-      throw new HttpError(404, "Conversation not found.");
-    const conversation = store.conversation(id.data);
-    if (!conversation) throw new HttpError(404, "Conversation not found.");
-    if (!match[2] && request.method === "GET") {
-      json(response, 200, {
-        conversation,
-        messages: store.messages(id.data),
-        runs: store.runs(id.data),
-        activities: store.activities(id.data),
-      });
-      return;
-    }
-    if (
-      !match[2] &&
-      (request.method === "PATCH" || request.method === "DELETE")
-    ) {
-      let title: string | undefined;
-      if (request.method === "PATCH") {
-        const result = renameConversationSchema.safeParse(
-          await readJson(request),
-        );
-        assertAccess();
-        if (!result.success)
-          throw new HttpError(400, "Title must contain 1–120 characters.");
-        title = result.data.title;
-      }
-      if (!store.ownsConversation(id.data, userId))
-        throw new HttpError(404, "Conversation not found.");
-      if (chat.activeConversationId === id.data)
-        throw new HttpError(
-          409,
-          "Wait for this conversation's response to finish.",
-        );
-      if (title !== undefined) {
-        json(response, 200, store.renameConversation(id.data, title));
-      } else {
-        store.deleteConversation(id.data);
-        response.writeHead(204);
-        response.end();
-      }
-      return;
-    }
-    if (match[2] && request.method === "POST") {
-      const {
-        content,
-        includeActivity,
-        interview,
-        useSources,
-        modelSelection,
-      } = await readSubmission(request);
-      assertAccess();
-      if (!store.ownsConversation(id.data, userId))
-        throw new HttpError(404, "Conversation not found.");
-      let modelProvider: ModelProvider | undefined;
-      if (modelSelection) {
-        if (!bearer && user?.role !== "owner")
-          throw new HttpError(
-            403,
-            "Only the owner can use the ChatGPT subscription prototype.",
-          );
-        if (!config.CHATGPT_ENABLED)
-          throw new HttpError(
-            409,
-            "ChatGPT subscription access is not enabled on this server.",
-          );
-        const models = await chatGPTModels(response);
-        assertAccess();
-        if (!store.ownsConversation(id.data, userId))
-          throw new HttpError(404, "Conversation not found.");
-        if (!models.some((model) => model.id === modelSelection.model))
-          throw new HttpError(
-            400,
-            "This ChatGPT model is no longer available. Refresh the model list.",
-          );
-        modelProvider = chatGPT.provider(modelSelection.model);
-      }
-      const useChatSources =
-        !interview && useSources && experience.status(userId).usableCount > 0;
-      const controller = new AbortController();
-      const disconnect = () => controller.abort();
-      response.once("close", disconnect);
-      if (response.destroyed) controller.abort();
-      const send = async (event: StreamEvent) => {
-        controller.signal.throwIfAborted();
-        if (!response.headersSent)
-          response.writeHead(200, {
-            "Content-Type": "text/event-stream; charset=utf-8",
-            "X-Accel-Buffering": "no",
-          });
-        if (!response.write(`data: ${JSON.stringify(event)}\n\n`))
-          await once(response, "drain", { signal: controller.signal });
-      };
-      try {
-        await chat.start(
-          id.data,
-          content,
-          send,
-          controller.signal,
-          includeActivity,
-          interview,
-          (
-            interview
-              ? interview.useExperience && interview.useSources
-              : useChatSources
-          )
-            ? experience.search(
-                userId,
-                interview
-                  ? interviewRetrievalQuery(content, interview)
-                  : content,
-              )
-            : [],
-          useChatSources,
-          modelProvider,
-        );
-        response.end();
-      } finally {
-        response.off("close", disconnect);
-      }
-      return;
-    }
-    throw new HttpError(405, "Method not allowed.");
+    if (await chatApi.route(request, response, url.pathname, access)) return;
+    throw new HttpError(404, "Endpoint not found.");
   }
 
   const server = createServer((request, response) => {

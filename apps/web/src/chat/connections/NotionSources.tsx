@@ -1,7 +1,7 @@
 import { BannerToast, Button } from "@jack.winter/pancake-ui";
 import type { NotionConnection } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
-import type { Api } from "../api/chat";
+import type { Api } from "../../api/chat";
 import { NotionPagePicker } from "./NotionPagePicker";
 import { NotionPassages, NotionSourceList } from "./NotionSourceList";
 import { useNotionSources } from "./useNotionSources";

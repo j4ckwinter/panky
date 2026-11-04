@@ -56,8 +56,8 @@ try {
   );
   await page.goto(origin + "/speech-evaluation");
   const result = await page.evaluate(async () => {
-    const modelPath = "/src/chat/transcription.ts";
-    const capturePath = "/src/chat/browserAudio.ts";
+    const modelPath = "/src/chat/interview/audio/transcription.ts";
+    const capturePath = "/src/chat/interview/audio/browserAudio.ts";
     const { BrowserTranscription } = await import(modelPath);
     const { BrowserAudio } = await import(capturePath);
     const results: {

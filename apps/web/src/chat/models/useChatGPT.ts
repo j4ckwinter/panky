@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Api } from "../api/chat";
-import { errorMessage } from "../api/chat";
+import type { Api } from "../../api/chat";
+import { errorMessage } from "../../api/chat";
 
 type Connection = Awaited<ReturnType<Api["chatGPTConnection"]>>;
 type Models = Awaited<ReturnType<Api["chatGPTModels"]>>["models"];

@@ -1,9 +1,9 @@
-import { PankyMark } from "../components/PankyMark";
+import { PankyMark } from "../../components/PankyMark";
 import { Button } from "@jack.winter/pancake-ui";
 import type { Message, TaskRun } from "@panky/shared";
 import type { RefObject } from "react";
-import { CopyButton } from "./CopyButton";
-import { Markdown } from "./Markdown";
+import { CopyButton } from "../messages/CopyButton";
+import { Markdown } from "../messages/Markdown";
 
 export function InterviewAnswer({
   question,

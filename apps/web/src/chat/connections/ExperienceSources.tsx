@@ -1,7 +1,7 @@
 import { BannerToast, Button, TextField } from "@jack.winter/pancake-ui";
 import type { ExperienceSource } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
-import { type Api, errorMessage } from "../api/chat";
+import { type Api, errorMessage } from "../../api/chat";
 
 export function ExperienceSources({
   api,

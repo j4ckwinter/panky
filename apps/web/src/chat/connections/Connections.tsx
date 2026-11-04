@@ -1,13 +1,13 @@
 import { Text } from "@jack.winter/pancake-ui";
 import { useEffect, useRef } from "react";
-import type { Api } from "../api/chat";
+import type { Api } from "../../api/chat";
 import {
   type ConnectionReturn,
   NotionConnectionDetails,
 } from "./NotionConnectionDetails";
 import { ChatGPTConnectionDetails } from "./ChatGPTConnectionDetails";
 import type { ConnectionId, ConnectionItem } from "./connection-catalogue";
-import type { ChatGPTState } from "./useChatGPT";
+import type { ChatGPTState } from "../models/useChatGPT";
 export type { ConnectionReturn } from "./NotionConnectionDetails";
 
 export function Connections({

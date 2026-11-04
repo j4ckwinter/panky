@@ -6,7 +6,7 @@ import {
   StatusChip,
 } from "@jack.winter/pancake-ui";
 import { ConnectionDetails } from "./ConnectionDetails";
-import type { ChatGPTState } from "./useChatGPT";
+import type { ChatGPTState } from "../models/useChatGPT";
 
 export function ChatGPTConnectionDetails({
   state,
