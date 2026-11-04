@@ -110,6 +110,7 @@ the host needs to [configure Notion OAuth](docs/notion-connections.md) first. th
 pnpm check       # lint, formatting, types and backend tests
 pnpm build       # build all packages
 pnpm test:e2e    # browser tests against an isolated backend
+pnpm test:production # built-asset loading and message rendering tests
 pnpm format      # format source
 ```
 

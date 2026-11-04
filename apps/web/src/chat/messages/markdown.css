@@ -164,3 +164,7 @@
     min-height: 36px;
   }
 }
+.markdown-plain {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
