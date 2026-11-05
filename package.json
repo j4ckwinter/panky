@@ -16,6 +16,7 @@
     "test": "pnpm --filter @panky/server test",
     "test:e2e": "playwright test",
     "evaluate:ollama": "tsx scripts/evaluate-ollama.ts",
+    "evaluate:picks": "tsx scripts/evaluate-picks.ts",
     "evaluate:interview": "tsx scripts/interview-evaluation.ts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
     "test:production": "pnpm build && playwright test --config playwright.production.config.ts",
