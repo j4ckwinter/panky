@@ -1,25 +1,25 @@
-import { Picks } from "./picks/Picks";
-import { ModelNotice, ModelPicker } from "./models/ModelPicker";
-import { useChatGPT } from "./models/useChatGPT";
-import {
-  connectionCatalogue,
-  type ConnectionId,
-} from "./connections/connection-catalogue";
 import { BannerToast } from "@jack.winter/pancake-ui";
 import type { Conversation, ModelSelection } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api/chat";
-import { ManageChat } from "./navigation/ManageChat";
-import { ChatSidebar } from "./navigation/ChatSidebar";
-import type { ChatView } from "./navigation/FeatureNavigation";
+import { ChatComposer } from "./composer/ChatComposer";
+import { type ConnectionReturn, Connections } from "./connections/Connections";
+import {
+  type ConnectionId,
+  connectionCatalogue,
+} from "./connections/connection-catalogue";
+import { Interview } from "./interview/Interview";
+import { MessageList } from "./messages/MessageList";
+import { useChatScroll } from "./messages/useChatScroll";
+import { ModelNotice, ModelPicker } from "./models/ModelPicker";
+import { useChatGPT } from "./models/useChatGPT";
 import { AccountMenu } from "./navigation/AccountMenu";
 import { ChatHeader } from "./navigation/ChatHeader";
-import { ChatComposer } from "./composer/ChatComposer";
-import { MessageList } from "./messages/MessageList";
+import { ChatSidebar } from "./navigation/ChatSidebar";
+import type { ChatView } from "./navigation/FeatureNavigation";
+import { ManageChat } from "./navigation/ManageChat";
+import { Picks } from "./picks/Picks";
 import { useChat } from "./useChat";
-import { useChatScroll } from "./messages/useChatScroll";
-import { Interview } from "./interview/Interview";
-import { Connections, type ConnectionReturn } from "./connections/Connections";
 
 function initialView(): ChatView {
   const view = new URLSearchParams(window.location.search).get("view");
@@ -233,7 +233,7 @@ export function Chat({
           </div>
         )}
         {view === "picks" ? (
-          <Picks api={api} />
+          <Picks api={api} canRefresh={Boolean(onAccess)} />
         ) : view === "connections" ? (
           <Connections
             api={api}

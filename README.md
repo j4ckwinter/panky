@@ -104,7 +104,7 @@ the host needs to [configure Notion OAuth](docs/notion-connections.md) first. th
 
 Open **Picks** in the feature rail to browse sample football fixtures and inspect outcome probabilities and supporting evidence. **Explain this prediction** and match follow-up questions use the configured local model on the Windows backend. Picks keeps its own account-scoped analysis history, separate from chats and Notion sources, and shares Panky's one-response-at-a-time limit. The mock provider supplies scripted replies during development.
 
-Fixtures and probabilities are illustrative sample data, not current fixtures or evaluated predictions. Odds are outside this first draft. Live data imports, an evaluated prediction model, accumulators and paid coverage are not implemented yet. Ollama remains private on the PC; Picks does not use the ChatGPT subscription connection.
+Without a configured data source, fixtures and probabilities remain illustrative samples. To audit football data, reproduce the statistical backtest and enable recorded predictions, follow [Running Picks with football data](docs/picks-operations.md). The audited current feed is stale, so new predictions are held until fresher data passes the checks. Odds, accumulators and paid coverage remain outside this draft. Ollama stays private on the PC; Picks does not use the ChatGPT subscription connection.
 
 ## development
 

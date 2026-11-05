@@ -2,19 +2,19 @@ import { Button } from "@jack.winter/pancake-ui";
 import type { Conversation } from "@panky/shared";
 import {
   type Dispatch,
-  type RefObject,
   type ReactNode,
+  type RefObject,
   type SetStateAction,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { FeatureNavigation, type ChatView } from "./FeatureNavigation";
 import { Brand } from "../../components/Brand";
 import type {
   ConnectionId,
   ConnectionItem,
 } from "../connections/connection-catalogue";
+import { type ChatView, FeatureNavigation } from "./FeatureNavigation";
 import { SidebarList } from "./SidebarList";
 
 export function ChatSidebar({
@@ -227,11 +227,10 @@ export function ChatSidebar({
           )}
           {view === "picks" ? (
             <section id="picks-navigation" className="picks-sidebar">
-              <strong>Weekend football</strong>
+              <strong>Football predictions</strong>
               <p>
                 Explore match probabilities and ask Panky about the evidence.
               </p>
-              <p>Preview · sample data</p>
             </section>
           ) : (
             <SidebarList

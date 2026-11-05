@@ -1,36 +1,25 @@
 import { BannerToast, Button, Text } from "@jack.winter/pancake-ui";
-import type { PickFixture } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
-import { type Api, errorMessage } from "../../api/chat";
+import type { Api } from "../../api/chat";
+import { fixtureDate } from "./dates";
 import { PickDetails } from "./PickDetails";
+import { PicksStatus } from "./PicksStatus";
+import { usePicks } from "./usePicks";
 import "./picks.css";
 
-export function Picks({ api }: { api: Api }) {
-  const [fixtures, setFixtures] = useState<PickFixture[]>([]);
+export function Picks({
+  api,
+  canRefresh = false,
+}: {
+  api: Api;
+  canRefresh?: boolean;
+}) {
+  const { fixtures, availability, loading, refreshing, error, load } =
+    usePicks(api);
   const [selected, setSelected] = useState<string | null>(null);
   const [competition, setCompetition] = useState("All competitions");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [refresh, setRefresh] = useState(0);
   const cards = useRef(new Map<string, HTMLButtonElement>());
   const returnFocus = useRef<string | null>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    void api
-      .picks(controller.signal)
-      .then((result) => {
-        if (!controller.signal.aborted) setFixtures(result.fixtures);
-      })
-      .catch((cause: unknown) => {
-        if (!controller.signal.aborted) setError(errorMessage(cause));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [api, refresh]);
   useEffect(() => {
     if (!selected && returnFocus.current) {
       cards.current.get(returnFocus.current)?.focus();
@@ -45,11 +34,21 @@ export function Picks({ api }: { api: Api }) {
   return (
     <div className="picks-scroll">
       <div className="picks-panel">
-        <p className="picks-sample-notice">
-          <strong>Preview · sample data</strong> Explore how Picks works.
-          Fixtures, statistics and probabilities are illustrative, not evaluated
-          predictions.
-        </p>
+        {availability && (
+          <PicksStatus
+            availability={availability}
+            canRefresh={canRefresh}
+            refreshing={refreshing}
+            onRefresh={() => {
+              void load(true);
+            }}
+          />
+        )}
+        {error && (
+          <BannerToast tone="error" title="Could not load fixtures">
+            {error}
+          </BannerToast>
+        )}
         {fixture ? (
           <PickDetails
             key={fixture.id}
@@ -65,7 +64,9 @@ export function Picks({ api }: { api: Api }) {
             <div className="picks-intro">
               <p className="picks-eyebrow">Football, with context</p>
               <Text as="h2" variant="heading">
-                The weekend view
+                {availability?.mode === "real"
+                  ? "Upcoming predictions"
+                  : "The weekend view"}
               </Text>
               <p>
                 Explore the numbers behind each match, then ask Panky to walk
@@ -74,17 +75,14 @@ export function Picks({ api }: { api: Api }) {
             </div>
             {loading && <p role="status">Loading fixtures…</p>}
             {error && (
-              <>
-                <BannerToast tone="error" title="Could not load fixtures">
-                  {error}
-                </BannerToast>
-                <Button
-                  variant="secondary"
-                  onClick={() => setRefresh((value) => value + 1)}
-                >
-                  Try again
-                </Button>
-              </>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  void load();
+                }}
+              >
+                Try again
+              </Button>
             )}
             {!loading && !error && (
               <>
@@ -125,14 +123,12 @@ export function Picks({ api }: { api: Api }) {
                       >
                         <span className="picks-fixture-meta">
                           <span>{item.competition}</span>
-                          <time dateTime={item.kickoff}>
-                            {new Date(item.kickoff).toLocaleString("en-GB", {
-                              weekday: "short",
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                          <time
+                            dateTime={
+                              item.sample ? item.kickoff : item.matchDate
+                            }
+                          >
+                            {fixtureDate(item)}
                           </time>
                         </span>
                         <strong>
@@ -157,7 +153,13 @@ export function Picks({ api }: { api: Api }) {
                       </button>
                     ))}
                 </div>
-                {fixtures.length === 0 && <p>No fixtures available yet.</p>}
+                {fixtures.length === 0 && (
+                  <p>
+                    {availability?.mode === "real"
+                      ? "No upcoming predictions available. Predictions appear when the source is current and has enough completed matches."
+                      : "No fixtures available yet."}
+                  </p>
+                )}
               </>
             )}
           </>

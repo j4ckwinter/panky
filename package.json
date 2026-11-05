@@ -23,7 +23,8 @@
     "test:speech": "pnpm build && playwright test --config playwright.speech.config.ts",
     "connect:chatgpt": "pnpm --filter @panky/server connect:chatgpt",
     "audit:picks": "tsx scripts/audit-picks-data.ts",
-    "evaluate:picks-model": "tsx scripts/evaluate-picks-model.ts"
+    "evaluate:picks-model": "tsx scripts/evaluate-picks-model.ts",
+    "test:picks-real": "playwright test --config playwright.picks.config.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",

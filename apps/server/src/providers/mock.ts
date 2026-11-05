@@ -43,7 +43,9 @@ export class MockProvider implements ModelProvider {
     }
     const response =
       purpose === "picks"
-        ? "This sample match uses fictional teams, probabilities. The supplied numbers illustrate uncertainty; they are not a validated prediction or a betting recommendation. No live team news is available. This is a mock explanation; no AI model was used."
+        ? history[0]?.content.includes("saved experimental football prediction")
+          ? "These supplied probabilities come from an experimental statistical model. The saved evidence describes its historical sample and limitations; no live team news is available. This is a scripted mock explanation; no AI model was used."
+          : "This sample match uses fictional teams, probabilities. The supplied numbers illustrate uncertainty; they are not a validated prediction or a betting recommendation. No live team news is available. This is a mock explanation; no AI model was used."
         : interview
           ? mockInterviewReply(
               z.object({ question: z.string() }).parse(JSON.parse(prompt))

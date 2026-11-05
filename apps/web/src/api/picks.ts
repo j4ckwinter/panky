@@ -11,6 +11,13 @@ export function picksApi(
         await (await request("/picks", { signal })).json(),
       );
     },
+    async refreshPicks(signal?: AbortSignal) {
+      return picksSchema.parse(
+        await (
+          await request("/picks/refresh", { method: "POST", signal })
+        ).json(),
+      );
+    },
     async pickAnalysis(id: string, signal?: AbortSignal) {
       return pickAnalysisSchema.parse(
         await (await request(analysisPath(id), { signal })).json(),

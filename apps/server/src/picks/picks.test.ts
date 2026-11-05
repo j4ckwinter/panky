@@ -88,6 +88,7 @@ test("Picks endpoints enforce authentication, exact write origin and strict inpu
   const app = await fixture(t);
   for (const [url, method] of [
     ["/api/picks", "GET"],
+    ["/api/picks/refresh", "POST"],
     [analysis, "GET"],
     [analysis, "POST"],
   ])
@@ -114,6 +115,40 @@ test("Picks endpoints enforce authentication, exact write origin and strict inpu
       (await app.submit("", { body: JSON.stringify(body) })).status,
       400,
     );
+  assert.equal(
+    (
+      await app.request("/api/picks/refresh", {
+        method: "POST",
+        headers: { Origin: "https://evil.example" },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await app.request("/api/picks/refresh", {
+        method: "POST",
+        headers: {
+          Cookie:
+            "panky-google-session=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await app.request("/api/picks/refresh", {
+        method: "POST",
+        body: JSON.stringify({ path: "/tmp/other" }),
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await app.request("/api/picks/refresh", { method: "POST" })).status,
+    200,
+  );
   assert.equal((await app.request("/api/picks/missing/analysis")).status, 404);
   assert.deepEqual((await app.history()).messages, []);
   const fixtures = picksSchema.parse(

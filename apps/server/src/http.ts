@@ -1,3 +1,5 @@
+import { PicksCatalogue } from "./picks/catalogue.js";
+import { PredictionsStore } from "./picks/predictions-store.js";
 import { ExecutionGate } from "./execution-gate.js";
 import { PicksStore } from "./picks/store.js";
 import { PicksService } from "./picks/service.js";
@@ -46,6 +48,7 @@ export function createApp(
     enabled: config.CHATGPT_ENABLED,
     credentialPath: config.CHATGPT_CREDENTIAL_PATH,
   }),
+  picksClock: () => Date = () => new Date(),
 ) {
   const store = new Store(config.DATABASE_PATH);
   const auth = new Auth(config, googleVerifier);
@@ -66,7 +69,13 @@ export function createApp(
   const chat = new Chat(store, provider, config, tools, gate);
   const picksStore = new PicksStore(config.DATABASE_PATH);
   const picksService = new PicksService(picksStore, provider, config, gate);
-  const picksApi = new PicksApi(picksStore, picksService);
+  const predictionsStore = new PredictionsStore(config.DATABASE_PATH);
+  const picksCatalogue = new PicksCatalogue(
+    predictionsStore,
+    config.PICKS_DATA_PATH,
+    picksClock,
+  );
+  const picksApi = new PicksApi(picksStore, picksService, picksCatalogue);
   const experienceApi = new ExperienceApi(
     experience,
     config.NOTION_TOKEN,
@@ -201,6 +210,8 @@ export function createApp(
       );
       auth.close();
       store.close();
+      await picksCatalogue.ready();
+      predictionsStore.close();
       picksStore.close();
       experience.close();
     },

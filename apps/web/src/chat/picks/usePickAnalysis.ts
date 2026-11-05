@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import type { PickMessage } from "@panky/shared";
+import { useEffect, useRef, useState } from "react";
 import { type Api, errorMessage } from "../../api/chat";
 
 export function usePickAnalysis(api: Api, fixtureId: string) {

@@ -6,7 +6,7 @@ import {
   readJson,
   type RequestAccess,
 } from "../http-utils.js";
-import { sampleFixtures } from "./fixtures.js";
+import type { PicksCatalogue } from "./catalogue.js";
 import type { PicksStore } from "./store.js";
 import type { PicksService } from "./service.js";
 
@@ -14,6 +14,7 @@ export class PicksApi {
   constructor(
     private readonly store: PicksStore,
     private readonly service: PicksService,
+    private readonly catalogue: PicksCatalogue,
   ) {}
   async route(
     request: IncomingMessage,
@@ -21,15 +22,34 @@ export class PicksApi {
     path: string,
     access: RequestAccess,
   ) {
+    if (path === "/api/picks/refresh") {
+      if (request.method !== "POST")
+        throw new HttpError(405, "Method not allowed.");
+      if (!access.isOwner)
+        throw new HttpError(403, "Only the owner can refresh Picks data.");
+      if (
+        request.headers["transfer-encoding"] ||
+        Number(request.headers["content-length"] ?? 0) > 0
+      )
+        throw new HttpError(400, "Refresh does not accept a request body.");
+      const result = await this.catalogue.refresh();
+      access.assertAccess();
+      json(response, 200, result);
+      return true;
+    }
     if (path === "/api/picks") {
       if (request.method !== "GET")
         throw new HttpError(405, "Method not allowed.");
-      json(response, 200, { fixtures: sampleFixtures });
+      await this.catalogue.ready();
+      access.assertAccess();
+      json(response, 200, this.catalogue.list());
       return true;
     }
     const match = /^\/api\/picks\/([^/]+)\/analysis$/.exec(path);
     if (!match) return false;
-    const fixture = sampleFixtures.find((item) => item.id === match[1]);
+    await this.catalogue.ready();
+    access.assertAccess();
+    const fixture = this.catalogue.find(match[1] ?? "");
     if (!fixture) throw new HttpError(404, "Match not found.");
     if (request.method === "GET") {
       json(response, 200, {

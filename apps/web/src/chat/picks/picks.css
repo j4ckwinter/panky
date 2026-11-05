@@ -52,6 +52,33 @@
 .picks-sample-notice strong {
   display: block;
 }
+.picks-data-status,
+.picks-model-details {
+  display: grid;
+  gap: var(--spacing-pancake-12);
+}
+.picks-record {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--spacing-pancake-16);
+  margin: 0;
+}
+.picks-record dt {
+  color: var(--color-pancake-muted);
+  font-size: var(--text-pancake-label);
+}
+.picks-record dd {
+  margin: var(--spacing-pancake-4) 0 0;
+}
+.picks-model-details summary {
+  cursor: pointer;
+}
+.picks-model-details[open] > :not(summary) {
+  margin-top: var(--spacing-pancake-16);
+}
+.picks-model-details a {
+  color: var(--color-pancake-deep);
+}
 .picks-filters,
 .picks-section-heading,
 .picks-question-actions {

@@ -3,6 +3,8 @@ import type { PickFixture } from "@panky/shared";
 import { useEffect, useRef } from "react";
 import type { Api } from "../../api/chat";
 import { Markdown } from "../messages/Markdown";
+import { fixtureDate } from "./dates";
+import { PredictionRecord } from "./PredictionRecord";
 import { usePickAnalysis } from "./usePickAnalysis";
 
 export function PickDetails({
@@ -43,10 +45,8 @@ export function PickDetails({
           {fixture.homeTeam} vs {fixture.awayTeam}
         </Text>
         <p>
-          {new Date(fixture.kickoff).toLocaleString("en-GB", {
-            dateStyle: "full",
-            timeStyle: "short",
-          })}
+          {fixtureDate(fixture, true)}
+          {!fixture.sample && " · Kickoff time unavailable"}
         </p>
       </div>
       <section className="picks-section" aria-label="Match probabilities">
@@ -54,8 +54,9 @@ export function PickDetails({
           Match result
         </Text>
         <p className="muted">
-          Illustrative probabilities. These predictions have not been evaluated
-          against real results.
+          {fixture.sample
+            ? "Illustrative probabilities. These predictions have not been evaluated against real results."
+            : "Experimental statistical probabilities based on recorded results. Outcomes remain uncertain; these are not guarantees."}
         </p>
         <table className="picks-probabilities">
           <thead>
@@ -74,6 +75,7 @@ export function PickDetails({
           </tbody>
         </table>
       </section>
+      {!fixture.sample && <PredictionRecord fixture={fixture} />}
       <div className="picks-evidence-grid">
         <section className="picks-section">
           <Text as="h3" variant="heading">

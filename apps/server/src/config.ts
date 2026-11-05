@@ -71,6 +71,10 @@ const configSchema = z.object({
   ),
   HOST: z.string().min(1).default("127.0.0.1"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
+  PICKS_DATA_PATH: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(1).optional(),
+  ),
   DATABASE_PATH: z.string().min(1).default("./data/panky.sqlite"),
   ALLOWED_ORIGINS: z
     .string()

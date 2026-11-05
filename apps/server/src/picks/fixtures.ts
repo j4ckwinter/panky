@@ -1,6 +1,13 @@
 import { picksSchema } from "@panky/shared";
 
 export const sampleFixtures = picksSchema.parse({
+  availability: {
+    mode: "sample",
+    state: "sample",
+    message: "Fictional sample fixtures.",
+    sourceRetrievedAt: null,
+    lastResultDate: null,
+  },
   fixtures: [
     {
       id: "sample-premier-1",
