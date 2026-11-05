@@ -16,15 +16,11 @@
     "test": "pnpm --filter @panky/server test",
     "test:e2e": "playwright test",
     "evaluate:ollama": "tsx scripts/evaluate-ollama.ts",
-    "evaluate:picks": "tsx scripts/evaluate-picks.ts",
     "evaluate:interview": "tsx scripts/interview-evaluation.ts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
     "test:production": "pnpm build && playwright test --config playwright.production.config.ts",
     "test:speech": "pnpm build && playwright test --config playwright.speech.config.ts",
-    "connect:chatgpt": "pnpm --filter @panky/server connect:chatgpt",
-    "audit:picks": "tsx scripts/audit-picks-data.ts",
-    "evaluate:picks-model": "tsx scripts/evaluate-picks-model.ts",
-    "test:picks-real": "playwright test --config playwright.picks.config.ts"
+    "connect:chatgpt": "pnpm --filter @panky/server connect:chatgpt"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",

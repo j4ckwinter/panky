@@ -1,4 +1,3 @@
-import { ExecutionGate } from "../execution-gate.js";
 import type { Evidence, InterviewInput, StreamEvent } from "@panky/shared";
 import type { Config } from "../config.js";
 import { HttpError } from "../http-utils.js";
@@ -20,10 +19,9 @@ export class Chat {
     private readonly provider: ModelProvider,
     private readonly config: Config,
     private readonly tools: readonly Tool[] = [dateTimeTool],
-    private readonly gate = new ExecutionGate(),
   ) {}
   get busy() {
-    return this.gate.busy;
+    return this.active !== undefined;
   }
   get activeConversationId() {
     return this.active?.conversationId;
@@ -61,7 +59,6 @@ export class Chat {
             sources,
           )
         : undefined;
-    const release = this.gate.acquire();
     const controller = new AbortController();
     const active: NonNullable<Chat["active"]> = { controller, conversationId };
     this.active = active;
@@ -84,7 +81,6 @@ export class Chat {
     ).finally(() => {
       clearTimeout(timeout);
       signal.removeEventListener("abort", abort);
-      release();
       this.active = undefined;
       this.finished = undefined;
     });

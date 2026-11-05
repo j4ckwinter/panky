@@ -1,9 +1,3 @@
-import { PicksCatalogue } from "./picks/catalogue.js";
-import { PredictionsStore } from "./picks/predictions-store.js";
-import { ExecutionGate } from "./execution-gate.js";
-import { PicksStore } from "./picks/store.js";
-import { PicksService } from "./picks/service.js";
-import { PicksApi } from "./picks/http.js";
 import { createHash, timingSafeEqual } from "node:crypto";
 import {
   createServer,
@@ -48,7 +42,6 @@ export function createApp(
     enabled: config.CHATGPT_ENABLED,
     credentialPath: config.CHATGPT_CREDENTIAL_PATH,
   }),
-  picksClock: () => Date = () => new Date(),
 ) {
   const store = new Store(config.DATABASE_PATH);
   const auth = new Auth(config, googleVerifier);
@@ -65,17 +58,7 @@ export function createApp(
     notionSearcher,
     (userId): boolean => experienceApi.busy(userId),
   );
-  const gate = new ExecutionGate();
-  const chat = new Chat(store, provider, config, tools, gate);
-  const picksStore = new PicksStore(config.DATABASE_PATH);
-  const picksService = new PicksService(picksStore, provider, config, gate);
-  const predictionsStore = new PredictionsStore(config.DATABASE_PATH);
-  const picksCatalogue = new PicksCatalogue(
-    predictionsStore,
-    config.PICKS_DATA_PATH,
-    picksClock,
-  );
-  const picksApi = new PicksApi(picksStore, picksService, picksCatalogue);
+  const chat = new Chat(store, provider, config, tools);
   const experienceApi = new ExperienceApi(
     experience,
     config.NOTION_TOKEN,
@@ -170,7 +153,6 @@ export function createApp(
       });
       return;
     }
-    if (await picksApi.route(request, response, url.pathname, access)) return;
     if (await chatApi.route(request, response, url.pathname, access)) return;
     throw new HttpError(404, "Endpoint not found.");
   }
@@ -198,11 +180,9 @@ export function createApp(
     store,
     chat,
     experience,
-    picksStore,
     async close() {
       await connections.close();
       await experienceApi.stop();
-      await picksService.stop();
       await chat.stop();
       chatGPT.close?.();
       await new Promise<void>((resolve, reject) =>
@@ -210,9 +190,6 @@ export function createApp(
       );
       auth.close();
       store.close();
-      await picksCatalogue.ready();
-      predictionsStore.close();
-      picksStore.close();
       experience.close();
     },
   };

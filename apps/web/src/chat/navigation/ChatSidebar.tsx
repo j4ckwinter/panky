@@ -2,19 +2,19 @@ import { Button } from "@jack.winter/pancake-ui";
 import type { Conversation } from "@panky/shared";
 import {
   type Dispatch,
-  type ReactNode,
   type RefObject,
+  type ReactNode,
   type SetStateAction,
   useEffect,
   useRef,
   useState,
 } from "react";
+import { FeatureNavigation, type ChatView } from "./FeatureNavigation";
 import { Brand } from "../../components/Brand";
 import type {
   ConnectionId,
   ConnectionItem,
 } from "../connections/connection-catalogue";
-import { type ChatView, FeatureNavigation } from "./FeatureNavigation";
 import { SidebarList } from "./SidebarList";
 
 export function ChatSidebar({
@@ -110,11 +110,7 @@ export function ChatSidebar({
         aria-modal={sidebarOpen || undefined}
         className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}
         aria-label={
-          view === "picks"
-            ? "Picks navigation"
-            : view === "connections"
-              ? "Connections navigation"
-              : "Conversations"
+          view === "connections" ? "Connections navigation" : "Conversations"
         }
       >
         <div className="feature-rail">
@@ -123,18 +119,14 @@ export function ChatSidebar({
             variant="ghost"
             onClick={() => setSidebarOpen(false)}
             aria-label={
-              view === "picks"
-                ? "Close picks"
-                : view === "connections"
-                  ? "Close connections"
-                  : "Close conversations"
+              view === "connections"
+                ? "Close connections"
+                : "Close conversations"
             }
             title={
-              view === "picks"
-                ? "Close picks"
-                : view === "connections"
-                  ? "Close connections"
-                  : "Close conversations"
+              view === "connections"
+                ? "Close connections"
+                : "Close conversations"
             }
           >
             <svg
@@ -169,11 +161,9 @@ export function ChatSidebar({
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!sidebarCollapsed}
               aria-controls={
-                view === "picks"
-                  ? "picks-navigation"
-                  : view === "connections"
-                    ? "available-connections"
-                    : "conversation-history"
+                view === "connections"
+                  ? "available-connections"
+                  : "conversation-history"
               }
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             >
@@ -197,7 +187,7 @@ export function ChatSidebar({
           <div className="sidebar-brand">
             <Brand />
           </div>
-          {(view === "chat" || view === "interview") && (
+          {view !== "connections" && (
             <Button
               size={40}
               variant="ghost"
@@ -225,81 +215,70 @@ export function ChatSidebar({
               <span className="new-chat-label">New chat</span>
             </Button>
           )}
-          {view === "picks" ? (
-            <section id="picks-navigation" className="picks-sidebar">
-              <strong>Football predictions</strong>
-              <p>
-                Explore match probabilities and ask Panky about the evidence.
-              </p>
-            </section>
-          ) : (
-            <SidebarList
-              id={
-                view === "connections"
-                  ? "available-connections"
-                  : "conversation-history"
-              }
-              label={
-                view === "connections"
-                  ? "Available connections"
-                  : "Conversation history"
-              }
-              searchLabel={
-                view === "connections" ? "Search connections" : "Search chats"
-              }
-              search={view === "connections" ? connectionSearch : search}
-              onSearch={
-                view === "connections" ? setConnectionSearch : setSearch
-              }
-              emptyMessage={
-                view === "connections"
-                  ? "No connections available."
-                  : "No conversations yet."
-              }
-              noMatchesMessage={
-                view === "connections"
-                  ? "No matching connections."
-                  : "No matching chats."
-              }
-              items={
-                view === "connections"
-                  ? connectionItems.map((connection) => ({
-                      id: connection.id,
-                      title: connection.name,
-                      selected: selectedConnection === connection.id,
-                      onSelect: () => {
-                        setSidebarOpen(false);
-                        onSelectConnection(connection.id);
-                      },
-                    }))
-                  : conversations.map((conversation) => ({
-                      id: conversation.id,
-                      title: conversation.title,
-                      selected: currentId === conversation.id,
-                      disabled: pending,
-                      onSelect: () => {
-                        setSidebarOpen(false);
-                        onSelect(conversation.id);
-                      },
-                      action: (
-                        <Button
-                          variant="ghost"
-                          size={40}
-                          className="manage-chat-button"
-                          aria-label={`Manage chat: ${conversation.title}`}
-                          disabled={pending}
-                          onClick={() => {
-                            setSidebarOpen(false);
-                            onManage(conversation);
-                          }}
-                        >
-                          ···
-                        </Button>
-                      ),
-                    }))
-              }
-            />
-          )}
+          <SidebarList
+            id={
+              view === "connections"
+                ? "available-connections"
+                : "conversation-history"
+            }
+            label={
+              view === "connections"
+                ? "Available connections"
+                : "Conversation history"
+            }
+            searchLabel={
+              view === "connections" ? "Search connections" : "Search chats"
+            }
+            search={view === "connections" ? connectionSearch : search}
+            onSearch={view === "connections" ? setConnectionSearch : setSearch}
+            emptyMessage={
+              view === "connections"
+                ? "No connections available."
+                : "No conversations yet."
+            }
+            noMatchesMessage={
+              view === "connections"
+                ? "No matching connections."
+                : "No matching chats."
+            }
+            items={
+              view === "connections"
+                ? connectionItems.map((connection) => ({
+                    id: connection.id,
+                    title: connection.name,
+                    selected: selectedConnection === connection.id,
+                    onSelect: () => {
+                      setSidebarOpen(false);
+                      onSelectConnection(connection.id);
+                    },
+                  }))
+                : conversations.map((conversation) => ({
+                    id: conversation.id,
+                    title: conversation.title,
+                    selected: currentId === conversation.id,
+                    disabled: pending,
+                    onSelect: () => {
+                      setSidebarOpen(false);
+                      onSelect(conversation.id);
+                    },
+                    action: (
+                      <Button
+                        variant="ghost"
+                        size={40}
+                        className="manage-chat-button"
+                        aria-label={`Manage chat: ${conversation.title}`}
+                        disabled={pending}
+                        onClick={() => {
+                          setSidebarOpen(false);
+                          onManage(conversation);
+                        }}
+                      >
+                        ···
+                      </Button>
+                    ),
+                  }))
+            }
+          />
         </div>
       </aside>
     </>

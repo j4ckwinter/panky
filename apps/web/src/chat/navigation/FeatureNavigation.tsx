@@ -1,6 +1,6 @@
 import { Button } from "@jack.winter/pancake-ui";
 
-export type ChatView = "chat" | "interview" | "connections" | "picks";
+export type ChatView = "chat" | "interview" | "connections";
 
 export function FeatureNavigation({
   view,
@@ -64,31 +64,6 @@ export function FeatureNavigation({
         >
           <rect x="9" y="2" width="6" height="12" rx="3" />
           <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" />
-        </svg>
-      </Button>
-      <Button
-        size={40}
-        variant="ghost"
-        className="sidebar-feature-button"
-        aria-label="Picks"
-        title="Picks"
-        aria-current={view === "picks" ? "page" : undefined}
-        disabled={pending}
-        onClick={() => onNavigate("picks")}
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="m12 7 5 4-2 6H9l-2-6 5-4ZM12 7V3M17 11l4-2M15 17l2 3M9 17l-2 3M7 11 3 9" />
         </svg>
       </Button>
       <Button

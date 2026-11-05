@@ -9,8 +9,6 @@ export function ChatHeader({
   serverBusy,
   pending,
   showChatActions = true,
-  navigationLabel,
-  busyLabel = "Busy in another tab",
   sidebarOpen,
   menu,
   onToggleSidebar,
@@ -23,8 +21,6 @@ export function ChatHeader({
   serverBusy: boolean;
   pending: boolean;
   showChatActions?: boolean;
-  navigationLabel?: string;
-  busyLabel?: string;
   sidebarOpen: boolean;
   menu: RefObject<HTMLButtonElement | null>;
   onToggleSidebar: () => void;
@@ -37,8 +33,7 @@ export function ChatHeader({
         <Button
           ref={menu}
           aria-label={
-            navigationLabel ??
-            (showChatActions ? "Conversations" : "Connections navigation")
+            showChatActions ? "Conversations" : "Connections navigation"
           }
           aria-controls="conversation-sidebar"
           className="mobile-menu header-icon-button"
@@ -75,7 +70,7 @@ export function ChatHeader({
               : streaming
                 ? "Replying"
                 : serverBusy
-                  ? busyLabel
+                  ? "Busy in another tab"
                   : "Connected"}
           </span>
         </span>

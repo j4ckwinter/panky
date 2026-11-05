@@ -1,29 +1,30 @@
+import { ModelNotice, ModelPicker } from "./models/ModelPicker";
+import { useChatGPT } from "./models/useChatGPT";
+import {
+  connectionCatalogue,
+  type ConnectionId,
+} from "./connections/connection-catalogue";
 import { BannerToast } from "@jack.winter/pancake-ui";
 import type { Conversation, ModelSelection } from "@panky/shared";
 import { useEffect, useRef, useState } from "react";
 import type { Api } from "../api/chat";
-import { ChatComposer } from "./composer/ChatComposer";
-import { type ConnectionReturn, Connections } from "./connections/Connections";
-import {
-  type ConnectionId,
-  connectionCatalogue,
-} from "./connections/connection-catalogue";
-import { Interview } from "./interview/Interview";
-import { MessageList } from "./messages/MessageList";
-import { useChatScroll } from "./messages/useChatScroll";
-import { ModelNotice, ModelPicker } from "./models/ModelPicker";
-import { useChatGPT } from "./models/useChatGPT";
-import { AccountMenu } from "./navigation/AccountMenu";
-import { ChatHeader } from "./navigation/ChatHeader";
+import { ManageChat } from "./navigation/ManageChat";
 import { ChatSidebar } from "./navigation/ChatSidebar";
 import type { ChatView } from "./navigation/FeatureNavigation";
-import { ManageChat } from "./navigation/ManageChat";
-import { Picks } from "./picks/Picks";
+import { AccountMenu } from "./navigation/AccountMenu";
+import { ChatHeader } from "./navigation/ChatHeader";
+import { ChatComposer } from "./composer/ChatComposer";
+import { MessageList } from "./messages/MessageList";
 import { useChat } from "./useChat";
+import { useChatScroll } from "./messages/useChatScroll";
+import { Interview } from "./interview/Interview";
+import { Connections, type ConnectionReturn } from "./connections/Connections";
 
 function initialView(): ChatView {
-  const view = new URLSearchParams(window.location.search).get("view");
-  return view === "connections" || view === "picks" ? view : "chat";
+  return new URLSearchParams(window.location.search).get("view") ===
+    "connections"
+    ? "connections"
+    : "chat";
 }
 
 function initialConnectionReturn(): ConnectionReturn {
@@ -90,8 +91,7 @@ export function Chat({
   const interview = view === "interview";
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (view === "connections" || view === "picks")
-      url.searchParams.set("view", view);
+    if (view === "connections") url.searchParams.set("view", "connections");
     else url.searchParams.delete("view");
     if (view === "connections" && selectedConnection)
       url.searchParams.set("connection", selectedConnection);
@@ -152,7 +152,6 @@ export function Chat({
         onNavigate={(next) => {
           if (next === "chat") openChat();
           else if (next === "interview") openInterview();
-          else if (next === "picks") setView("picks");
           else {
             setSelectedConnection(null);
             setConnectionReturn(null);
@@ -198,21 +197,17 @@ export function Chat({
       <main className="chat-main" inert={sidebarOpen}>
         <ChatHeader
           title={
-            view === "picks"
-              ? "Pancake Picks"
-              : view === "connections"
-                ? "Connections"
-                : interview
-                  ? "Interview assistant"
-                  : (chat.current?.title ?? "New chat")
+            view === "connections"
+              ? "Connections"
+              : interview
+                ? "Interview assistant"
+                : (chat.current?.title ?? "New chat")
           }
           connected={chat.connected}
           streaming={chat.streaming}
           serverBusy={chat.serverBusy}
           pending={chat.pending}
-          showChatActions={view === "chat" || interview}
-          navigationLabel={view === "picks" ? "Picks navigation" : undefined}
-          busyLabel={view === "picks" ? "Panky is busy" : undefined}
+          showChatActions={view !== "connections"}
           sidebarOpen={sidebarOpen}
           menu={menu}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
@@ -232,9 +227,7 @@ export function Chat({
             </BannerToast>
           </div>
         )}
-        {view === "picks" ? (
-          <Picks api={api} canRefresh={Boolean(onAccess)} />
-        ) : view === "connections" ? (
+        {view === "connections" ? (
           <Connections
             api={api}
             selectedConnection={selectedConnection}

@@ -7,7 +7,6 @@
   },
   "include": [
     "playwright.config.ts",
-    "playwright.picks.config.ts",
     "playwright.speech.config.ts",
     "tests/**/*.ts",
     "scripts/**/*.ts"
