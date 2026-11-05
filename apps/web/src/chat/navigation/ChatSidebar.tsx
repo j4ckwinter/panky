@@ -110,7 +110,11 @@ export function ChatSidebar({
         aria-modal={sidebarOpen || undefined}
         className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}
         aria-label={
-          view === "connections" ? "Connections navigation" : "Conversations"
+          view === "picks"
+            ? "Picks navigation"
+            : view === "connections"
+              ? "Connections navigation"
+              : "Conversations"
         }
       >
         <div className="feature-rail">
@@ -119,14 +123,18 @@ export function ChatSidebar({
             variant="ghost"
             onClick={() => setSidebarOpen(false)}
             aria-label={
-              view === "connections"
-                ? "Close connections"
-                : "Close conversations"
+              view === "picks"
+                ? "Close picks"
+                : view === "connections"
+                  ? "Close connections"
+                  : "Close conversations"
             }
             title={
-              view === "connections"
-                ? "Close connections"
-                : "Close conversations"
+              view === "picks"
+                ? "Close picks"
+                : view === "connections"
+                  ? "Close connections"
+                  : "Close conversations"
             }
           >
             <svg
@@ -161,9 +169,11 @@ export function ChatSidebar({
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!sidebarCollapsed}
               aria-controls={
-                view === "connections"
-                  ? "available-connections"
-                  : "conversation-history"
+                view === "picks"
+                  ? "picks-navigation"
+                  : view === "connections"
+                    ? "available-connections"
+                    : "conversation-history"
               }
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             >
@@ -187,7 +197,7 @@ export function ChatSidebar({
           <div className="sidebar-brand">
             <Brand />
           </div>
-          {view !== "connections" && (
+          {(view === "chat" || view === "interview") && (
             <Button
               size={40}
               variant="ghost"
@@ -215,70 +225,82 @@ export function ChatSidebar({
               <span className="new-chat-label">New chat</span>
             </Button>
           )}
-          <SidebarList
-            id={
-              view === "connections"
-                ? "available-connections"
-                : "conversation-history"
-            }
-            label={
-              view === "connections"
-                ? "Available connections"
-                : "Conversation history"
-            }
-            searchLabel={
-              view === "connections" ? "Search connections" : "Search chats"
-            }
-            search={view === "connections" ? connectionSearch : search}
-            onSearch={view === "connections" ? setConnectionSearch : setSearch}
-            emptyMessage={
-              view === "connections"
-                ? "No connections available."
-                : "No conversations yet."
-            }
-            noMatchesMessage={
-              view === "connections"
-                ? "No matching connections."
-                : "No matching chats."
-            }
-            items={
-              view === "connections"
-                ? connectionItems.map((connection) => ({
-                    id: connection.id,
-                    title: connection.name,
-                    selected: selectedConnection === connection.id,
-                    onSelect: () => {
-                      setSidebarOpen(false);
-                      onSelectConnection(connection.id);
-                    },
-                  }))
-                : conversations.map((conversation) => ({
-                    id: conversation.id,
-                    title: conversation.title,
-                    selected: currentId === conversation.id,
-                    disabled: pending,
-                    onSelect: () => {
-                      setSidebarOpen(false);
-                      onSelect(conversation.id);
-                    },
-                    action: (
-                      <Button
-                        variant="ghost"
-                        size={40}
-                        className="manage-chat-button"
-                        aria-label={`Manage chat: ${conversation.title}`}
-                        disabled={pending}
-                        onClick={() => {
-                          setSidebarOpen(false);
-                          onManage(conversation);
-                        }}
-                      >
-                        ···
-                      </Button>
-                    ),
-                  }))
-            }
-          />
+          {view === "picks" ? (
+            <section id="picks-navigation" className="picks-sidebar">
+              <strong>Weekend football</strong>
+              <p>
+                Explore match probabilities and ask Panky about the evidence.
+              </p>
+              <p>Preview · sample data</p>
+            </section>
+          ) : (
+            <SidebarList
+              id={
+                view === "connections"
+                  ? "available-connections"
+                  : "conversation-history"
+              }
+              label={
+                view === "connections"
+                  ? "Available connections"
+                  : "Conversation history"
+              }
+              searchLabel={
+                view === "connections" ? "Search connections" : "Search chats"
+              }
+              search={view === "connections" ? connectionSearch : search}
+              onSearch={
+                view === "connections" ? setConnectionSearch : setSearch
+              }
+              emptyMessage={
+                view === "connections"
+                  ? "No connections available."
+                  : "No conversations yet."
+              }
+              noMatchesMessage={
+                view === "connections"
+                  ? "No matching connections."
+                  : "No matching chats."
+              }
+              items={
+                view === "connections"
+                  ? connectionItems.map((connection) => ({
+                      id: connection.id,
+                      title: connection.name,
+                      selected: selectedConnection === connection.id,
+                      onSelect: () => {
+                        setSidebarOpen(false);
+                        onSelectConnection(connection.id);
+                      },
+                    }))
+                  : conversations.map((conversation) => ({
+                      id: conversation.id,
+                      title: conversation.title,
+                      selected: currentId === conversation.id,
+                      disabled: pending,
+                      onSelect: () => {
+                        setSidebarOpen(false);
+                        onSelect(conversation.id);
+                      },
+                      action: (
+                        <Button
+                          variant="ghost"
+                          size={40}
+                          className="manage-chat-button"
+                          aria-label={`Manage chat: ${conversation.title}`}
+                          disabled={pending}
+                          onClick={() => {
+                            setSidebarOpen(false);
+                            onManage(conversation);
+                          }}
+                        >
+                          ···
+                        </Button>
+                      ),
+                    }))
+              }
+            />
+          )}
         </div>
       </aside>
     </>

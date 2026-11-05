@@ -28,7 +28,7 @@ export const providerEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("error") }).strict(),
 ]);
 export type ProviderEvent = z.infer<typeof providerEventSchema>;
-export type ProviderPurpose = "chat" | "sourced-chat" | "interview";
+export type ProviderPurpose = "chat" | "sourced-chat" | "interview" | "picks";
 
 export interface ModelProvider {
   stream(

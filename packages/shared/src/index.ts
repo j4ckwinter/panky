@@ -145,3 +145,5 @@ export {
   notionPagesSchema,
   notionSourcesSchema,
 } from "./connections.js";
+
+export * from "./picks.js";

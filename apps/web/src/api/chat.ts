@@ -1,3 +1,4 @@
+import { picksApi } from "./picks";
 import { chatGPTApi } from "./chatgpt";
 import { connectionApi } from "./connections";
 import { ApiError } from "./ApiError";
@@ -83,6 +84,7 @@ export function createApi(token?: string) {
     return response;
   }
   return {
+    ...picksApi(request),
     ...connectionApi(request),
     ...chatGPTApi(request),
     async experienceStatus() {
