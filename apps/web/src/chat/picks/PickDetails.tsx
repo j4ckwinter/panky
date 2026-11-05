@@ -1,9 +1,10 @@
 import { BannerToast, Button, Text, Textarea } from "@jack.winter/pancake-ui";
-import type { PickFixture } from "@panky/shared";
+import type { PickFixture, PickHistoryEntry } from "@panky/shared";
 import { useEffect, useRef } from "react";
 import type { Api } from "../../api/chat";
 import { Markdown } from "../messages/Markdown";
 import { fixtureDate } from "./dates";
+import { PickResultRecord } from "./PickResultRecord";
 import { PredictionRecord } from "./PredictionRecord";
 import { usePickAnalysis } from "./usePickAnalysis";
 
@@ -11,10 +12,14 @@ export function PickDetails({
   api,
   fixture,
   onBack,
+  historyEntry,
+  backLabel = "All fixtures",
 }: {
   api: Api;
   fixture: PickFixture;
   onBack: () => void;
+  historyEntry?: PickHistoryEntry;
+  backLabel?: string;
 }) {
   const back = useRef<HTMLButtonElement>(null);
   const analysis = usePickAnalysis(api, fixture.id);
@@ -37,7 +42,7 @@ export function PickDetails({
         className="picks-back"
         onClick={onBack}
       >
-        All fixtures
+        {backLabel}
       </Button>
       <div className="picks-intro">
         <p className="picks-eyebrow">{fixture.competition}</p>
@@ -75,6 +80,7 @@ export function PickDetails({
           </tbody>
         </table>
       </section>
+      {historyEntry && <PickResultRecord entry={historyEntry} />}
       {!fixture.sample && <PredictionRecord fixture={fixture} />}
       <div className="picks-evidence-grid">
         <section className="picks-section">

@@ -1,4 +1,8 @@
-import type { PickFixture, PicksAvailability } from "@panky/shared";
+import type {
+  PickFixture,
+  PicksAvailability,
+  PicksHistory,
+} from "@panky/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Api, errorMessage } from "../../api/chat";
 
@@ -6,7 +10,9 @@ export function usePicks(api: Api) {
   const [catalogue, setCatalogue] = useState<{
     fixtures: PickFixture[];
     availability: PicksAvailability | null;
-  }>({ fixtures: [], availability: null });
+    history: PicksHistory["history"];
+    performance: PicksHistory["performance"];
+  }>({ fixtures: [], availability: null, history: [], performance: [] });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +30,11 @@ export function usePicks(api: Api) {
         const result = await (refresh
           ? api.refreshPicks(controller.signal)
           : api.picks(controller.signal));
-        if (!controller.signal.aborted) setCatalogue(result);
+        const records =
+          result.availability.mode === "real"
+            ? await api.picksHistory(controller.signal)
+            : { history: [], performance: [] };
+        if (!controller.signal.aborted) setCatalogue({ ...result, ...records });
       } catch (cause) {
         if (!controller.signal.aborted) setError(errorMessage(cause));
       } finally {

@@ -10,6 +10,7 @@ import type { FootballMatch, FootballSnapshot } from "./data.js";
 import { sampleFixtures } from "./fixtures.js";
 import { MODEL_VERSION, predictFootballMatch } from "./model.js";
 import type { PredictionsStore } from "./predictions-store.js";
+import { picksHistory } from "./history.js";
 
 const day = 86_400_000;
 export class PicksCatalogue {
@@ -107,6 +108,7 @@ export class PicksCatalogue {
             .filter(
               (fixture) =>
                 fixture.matchDate > today &&
+                this.store.results(fixture.id).length === 0 &&
                 Date.parse(fixture.matchDate) <= Date.parse(today) + 14 * day,
             )
         : sampleFixtures,
@@ -118,6 +120,11 @@ export class PicksCatalogue {
       (fixture) => fixture.id === id,
     );
   }
+  history() {
+    return this.path
+      ? picksHistory(this.store, this.now())
+      : { history: [], performance: [] };
+  }
   private async load() {
     if (!this.path) return;
     this.loading = true;
@@ -125,6 +132,7 @@ export class PicksCatalogue {
       const snapshot = await readFootballSnapshot(this.path);
       this.snapshot = snapshot;
       this.failure = false;
+      this.store.reconcile(snapshot, this.now());
       if (this.availability().state !== "ready") return;
       const now = this.now();
       const today = now.toISOString().slice(0, 10);

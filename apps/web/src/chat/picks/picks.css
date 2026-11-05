@@ -52,6 +52,7 @@
 .picks-sample-notice strong {
   display: block;
 }
+.picks-performance,
 .picks-data-status,
 .picks-model-details {
   display: grid;

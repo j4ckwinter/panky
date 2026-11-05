@@ -1,4 +1,8 @@
-import { pickAnalysisSchema, picksSchema } from "@panky/shared";
+import {
+  pickAnalysisSchema,
+  picksHistorySchema,
+  picksSchema,
+} from "@panky/shared";
 
 export function picksApi(
   request: (path: string, init?: RequestInit) => Promise<Response>,
@@ -9,6 +13,11 @@ export function picksApi(
     async picks(signal?: AbortSignal) {
       return picksSchema.parse(
         await (await request("/picks", { signal })).json(),
+      );
+    },
+    async picksHistory(signal?: AbortSignal) {
+      return picksHistorySchema.parse(
+        await (await request("/picks/history", { signal })).json(),
       );
     },
     async refreshPicks(signal?: AbortSignal) {

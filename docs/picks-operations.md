@@ -36,6 +36,16 @@ Only fixtures within the next fourteen days are considered. The source supplies 
 
 Each match/model version receives one immutable prediction. It stores the original probabilities, goal estimates, training counts and cutoff, source revision/retrieval time and recording time. Refreshing cannot overwrite it. Expired forecasts leave the upcoming list; their original records and account-scoped explanations remain stored. A source failure retains those records and displays a hold/error state.
 
+## Record results
+
+After a new audit, use **Refresh predictions** to reconcile full-time scores for matches that already have saved forecasts. **Results history** includes every recorded prediction: upcoming matches, matches awaiting a result, correct and incorrect most-likely outcomes, and any records excluded from scoring. No predictions are manufactured for already-played matches.
+
+Corrections append a new result revision while preserving the original forecast. Re-importing the same score does not create duplicate revisions, and an older source snapshot cannot roll back a newer result. A missing score does not erase the last recorded result; this feed cannot distinguish cancellations or withdrawn results from missing data.
+
+Performance is grouped by model version and includes only genuinely prematch records. If a changed match date places the result before the forecast's conservative publication deadline, the record remains visible with an exclusion reason but does not contribute to scores. Pending and excluded counts remain visible. With no scored matches, accuracy and probability-error measures are unavailable rather than zero.
+
+These are recorded-prediction results. The 380-match retrospective evaluation in `evaluation.json` is a separate measurement and is never included in this history. The initial stale source therefore produces neither new real forecasts nor a fabricated performance record.
+
 ## Verification
 
 ```sh

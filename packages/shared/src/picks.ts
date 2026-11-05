@@ -77,3 +77,56 @@ export const pickQuestionSchema = z
   .strict();
 export type PickFixture = z.infer<typeof pickFixtureSchema>;
 export type PickMessage = z.infer<typeof pickMessageSchema>;
+
+export const pickResultSchema = z
+  .object({
+    homeGoals: z.number().int().min(0).max(30),
+    awayGoals: z.number().int().min(0).max(30),
+    outcome: z.enum(["home", "draw", "away"]),
+    matchDate: z.iso.date(),
+    recordedAt: z.iso.datetime(),
+    sourceRetrievedAt: z.iso.datetime(),
+    sourceRevision: z.string().regex(/^[a-f0-9]{40}$/),
+  })
+  .strict();
+export const pickHistoryEntrySchema = z
+  .object({
+    fixture: realPickFixtureSchema,
+    result: pickResultSchema.nullable(),
+    revisions: z.array(pickResultSchema),
+    status: z.enum(["upcoming", "awaiting", "scored", "excluded"]),
+    exclusionReason: z.string().nullable(),
+  })
+  .strict();
+export const pickPerformanceSchema = z
+  .object({
+    modelVersion: z.string(),
+    recorded: z.number().int().nonnegative(),
+    scored: z.number().int().nonnegative(),
+    pending: z.number().int().nonnegative(),
+    excluded: z.number().int().nonnegative(),
+    correct: z.number().int().nonnegative(),
+    accuracy: z.number().min(0).max(1).nullable(),
+    brier: z.number().nonnegative().nullable(),
+    logLoss: z.number().nonnegative().nullable(),
+  })
+  .strict();
+export const picksHistorySchema = z
+  .object({
+    history: z.array(pickHistoryEntrySchema),
+    performance: z.array(pickPerformanceSchema),
+  })
+  .strict();
+export type PickResult = z.infer<typeof pickResultSchema>;
+export type PickHistoryEntry = z.infer<typeof pickHistoryEntrySchema>;
+export type PickPerformance = z.infer<typeof pickPerformanceSchema>;
+export type PicksHistory = z.infer<typeof picksHistorySchema>;
+export function mostLikelyPickOutcome(
+  probabilities: RealPickFixture["probabilities"],
+): PickResult["outcome"] {
+  return (["home", "draw", "away"] as const).reduce(
+    (best, outcome) =>
+      probabilities[outcome] > probabilities[best] ? outcome : best,
+    "home",
+  );
+}

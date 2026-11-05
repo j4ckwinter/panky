@@ -5,7 +5,11 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { test, type TestContext } from "node:test";
 import { setTimeout } from "node:timers/promises";
-import { pickAnalysisSchema, picksSchema } from "@panky/shared";
+import {
+  pickAnalysisSchema,
+  picksSchema,
+  picksHistorySchema,
+} from "@panky/shared";
 import { AuthStore } from "../auth/store.js";
 import { createApp } from "../http.js";
 import { loadConfig } from "../config.js";
@@ -88,6 +92,7 @@ test("Picks endpoints enforce authentication, exact write origin and strict inpu
   const app = await fixture(t);
   for (const [url, method] of [
     ["/api/picks", "GET"],
+    ["/api/picks/history", "GET"],
     ["/api/picks/refresh", "POST"],
     [analysis, "GET"],
     [analysis, "POST"],
@@ -308,4 +313,18 @@ test("Picks startup preserves unfinished work without replay", (t) => {
   );
   assert.equal(reopened.messages("owner", fixture.id)[1]?.content, "partial");
   reopened.close();
+});
+
+test("Picks history is authenticated and empty in sample mode", async (t) => {
+  const app = await fixture(t);
+  assert.deepEqual(
+    picksHistorySchema.parse(
+      await (await app.request("/api/picks/history")).json(),
+    ),
+    { history: [], performance: [] },
+  );
+  assert.equal(
+    (await app.request("/api/picks/history", { method: "POST" })).status,
+    405,
+  );
 });

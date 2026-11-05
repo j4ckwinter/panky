@@ -1,3 +1,4 @@
+import { mostLikelyPickOutcome } from "@panky/shared";
 import {
   type FootballSnapshot,
   seasonSchema,
@@ -42,11 +43,7 @@ export function probabilityMetrics(rows: readonly ScoredPrediction[]) {
       throw new Error(
         "Evaluation probabilities must be positive and sum to one.",
       );
-    const predicted = outcomes.reduce(
-      (best, outcome) =>
-        row.probabilities[outcome] > row.probabilities[best] ? outcome : best,
-      "home",
-    );
+    const predicted = mostLikelyPickOutcome(row.probabilities);
     if (predicted === row.outcome) correct++;
     logLoss -= Math.log(row.probabilities[row.outcome]);
     for (const item of calibration) {

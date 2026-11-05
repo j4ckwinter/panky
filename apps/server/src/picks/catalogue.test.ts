@@ -80,6 +80,35 @@ test("real catalogue freezes predictions, skips the preceding day, holds stale/e
   assert.deepEqual(catalogue.list().fixtures, []);
   assert.deepEqual(catalogue.find(prediction.id), prediction);
   assert.deepEqual(store.all(), first.fixtures);
+  now = new Date("2026-11-08T12:00:00Z");
+  source.source.asOf = "2026-11-08";
+  source.source.retrievedAt = "2026-11-08T10:00:00Z";
+  const completed = source.matches.find(
+    (match) =>
+      match.homeTeam === prediction.homeTeam &&
+      match.awayTeam === prediction.awayTeam,
+  );
+  assert(completed);
+  completed.homeGoals = 0;
+  completed.awayGoals = 0;
+  const coverage = source.coverage[0];
+  assert(coverage);
+  coverage.results = 101;
+  coverage.upcoming = 0;
+  coverage.pastUnscored = 279;
+  coverage.latestCompletedDate = "2026-11-07";
+  await writeFile(path, JSON.stringify(source));
+  await catalogue.refresh();
+  assert.equal(catalogue.list().availability.state, "held");
+  assert.equal(
+    catalogue
+      .history()
+      .history.find((entry) => entry.fixture.id === prediction.id)?.result
+      ?.outcome,
+    "draw",
+  );
+  assert.equal(catalogue.history().performance[0]?.scored, 1);
+  assert.deepEqual(store.all(), first.fixtures);
 });
 
 test("incomplete or missing-result source holds publication and missing file never returns samples", async (t) => {

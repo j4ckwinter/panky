@@ -1,8 +1,9 @@
 import { BannerToast, Button, Text } from "@jack.winter/pancake-ui";
 import { useEffect, useRef, useState } from "react";
 import type { Api } from "../../api/chat";
-import { fixtureDate } from "./dates";
+import { PickCard } from "./PickCard";
 import { PickDetails } from "./PickDetails";
+import { PicksPerformance } from "./PicksPerformance";
 import { PicksStatus } from "./PicksStatus";
 import { usePicks } from "./usePicks";
 import "./picks.css";
@@ -14,22 +15,36 @@ export function Picks({
   api: Api;
   canRefresh?: boolean;
 }) {
-  const { fixtures, availability, loading, refreshing, error, load } =
-    usePicks(api);
+  const {
+    fixtures,
+    availability,
+    history,
+    performance,
+    loading,
+    refreshing,
+    error,
+    load,
+  } = usePicks(api);
   const [selected, setSelected] = useState<string | null>(null);
+  const [view, setView] = useState<"upcoming" | "history">("upcoming");
   const [competition, setCompetition] = useState("All competitions");
+  const viewButton = useRef<HTMLButtonElement>(null);
   const cards = useRef(new Map<string, HTMLButtonElement>());
   const returnFocus = useRef<string | null>(null);
   useEffect(() => {
     if (!selected && returnFocus.current) {
-      cards.current.get(returnFocus.current)?.focus();
+      (cards.current.get(returnFocus.current) ?? viewButton.current)?.focus();
       returnFocus.current = null;
     }
   }, [selected]);
-  const fixture = fixtures.find((item) => item.id === selected);
+  const historyEntry = history.find((entry) => entry.fixture.id === selected);
+  const fixture =
+    fixtures.find((item) => item.id === selected) ?? historyEntry?.fixture;
+  const displayed =
+    view === "history" ? history.map((entry) => entry.fixture) : fixtures;
   const competitions = [
     "All competitions",
-    ...new Set(fixtures.map((item) => item.competition)),
+    ...new Set(displayed.map((item) => item.competition)),
   ];
   return (
     <div className="picks-scroll">
@@ -54,6 +69,8 @@ export function Picks({
             key={fixture.id}
             api={api}
             fixture={fixture}
+            historyEntry={historyEntry}
+            backLabel={view === "history" ? "Results history" : "All fixtures"}
             onBack={() => {
               returnFocus.current = fixture.id;
               setSelected(null);
@@ -61,16 +78,49 @@ export function Picks({
           />
         ) : (
           <>
+            {availability?.mode === "real" && (
+              <div
+                className="picks-filters"
+                role="group"
+                aria-label="Prediction views"
+              >
+                <Button
+                  variant="ghost"
+                  aria-pressed={view === "upcoming"}
+                  ref={view === "upcoming" ? viewButton : undefined}
+                  onClick={() => {
+                    setView("upcoming");
+                    setCompetition("All competitions");
+                  }}
+                >
+                  Upcoming
+                </Button>
+                <Button
+                  variant="ghost"
+                  aria-pressed={view === "history"}
+                  ref={view === "history" ? viewButton : undefined}
+                  onClick={() => {
+                    setView("history");
+                    setCompetition("All competitions");
+                  }}
+                >
+                  Results history
+                </Button>
+              </div>
+            )}
             <div className="picks-intro">
               <p className="picks-eyebrow">Football, with context</p>
               <Text as="h2" variant="heading">
                 {availability?.mode === "real"
-                  ? "Upcoming predictions"
+                  ? view === "history"
+                    ? "Recorded predictions"
+                    : "Upcoming predictions"
                   : "The weekend view"}
               </Text>
               <p>
-                Explore the numbers behind each match, then ask Panky to walk
-                you through them.
+                {view === "history"
+                  ? "Every saved prediction, including pending results and outcomes the model missed. The probabilities shown are the original forecast."
+                  : "Explore the numbers behind each match, then ask Panky to walk you through them."}
               </p>
             </div>
             {loading && <p role="status">Loading fixtures…</p>}
@@ -86,6 +136,9 @@ export function Picks({
             )}
             {!loading && !error && (
               <>
+                {view === "history" && (
+                  <PicksPerformance performance={performance} />
+                )}
                 <div
                   className="picks-filters"
                   role="group"
@@ -102,62 +155,47 @@ export function Picks({
                     </Button>
                   ))}
                 </div>
-                <div className="picks-fixtures">
-                  {fixtures
+                <div
+                  className="picks-fixtures"
+                  role="region"
+                  aria-label={
+                    view === "history"
+                      ? "Recorded predictions"
+                      : "Upcoming fixtures"
+                  }
+                >
+                  {displayed
                     .filter(
                       (item) =>
                         competition === "All competitions" ||
                         item.competition === competition,
                     )
                     .map((item) => (
-                      <button
+                      <PickCard
                         key={item.id}
-                        type="button"
-                        className="picks-fixture"
-                        aria-label={`View ${item.homeTeam} vs ${item.awayTeam}`}
-                        ref={(node) => {
+                        fixture={item}
+                        entry={
+                          view === "history"
+                            ? history.find(
+                                (entry) => entry.fixture.id === item.id,
+                              )
+                            : undefined
+                        }
+                        buttonRef={(node) => {
                           if (node) cards.current.set(item.id, node);
                           else cards.current.delete(item.id);
                         }}
-                        onClick={() => setSelected(item.id)}
-                      >
-                        <span className="picks-fixture-meta">
-                          <span>{item.competition}</span>
-                          <time
-                            dateTime={
-                              item.sample ? item.kickoff : item.matchDate
-                            }
-                          >
-                            {fixtureDate(item)}
-                          </time>
-                        </span>
-                        <strong>
-                          {item.homeTeam}{" "}
-                          <span className="picks-versus">vs</span>{" "}
-                          {item.awayTeam}
-                        </strong>
-                        <span className="picks-fixture-probabilities">
-                          <span>
-                            Home {Math.round(item.probabilities.home * 100)}%
-                          </span>
-                          <span>
-                            Draw {Math.round(item.probabilities.draw * 100)}%
-                          </span>
-                          <span>
-                            Away {Math.round(item.probabilities.away * 100)}%
-                          </span>
-                        </span>
-                        <span className="picks-fixture-link">
-                          View match analysis <span aria-hidden="true">↗</span>
-                        </span>
-                      </button>
+                        onSelect={() => setSelected(item.id)}
+                      />
                     ))}
                 </div>
-                {fixtures.length === 0 && (
+                {displayed.length === 0 && (
                   <p>
-                    {availability?.mode === "real"
-                      ? "No upcoming predictions available. Predictions appear when the source is current and has enough completed matches."
-                      : "No fixtures available yet."}
+                    {view === "history"
+                      ? "No predictions recorded yet."
+                      : availability?.mode === "real"
+                        ? "No upcoming predictions available. Predictions appear when the source is current and has enough completed matches."
+                        : "No fixtures available yet."}
                   </p>
                 )}
               </>

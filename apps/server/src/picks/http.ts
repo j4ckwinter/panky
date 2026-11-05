@@ -45,6 +45,14 @@ export class PicksApi {
       json(response, 200, this.catalogue.list());
       return true;
     }
+    if (path === "/api/picks/history") {
+      if (request.method !== "GET")
+        throw new HttpError(405, "Method not allowed.");
+      await this.catalogue.ready();
+      access.assertAccess();
+      json(response, 200, this.catalogue.history());
+      return true;
+    }
     const match = /^\/api\/picks\/([^/]+)\/analysis$/.exec(path);
     if (!match) return false;
     await this.catalogue.ready();
