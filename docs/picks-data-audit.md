@@ -28,20 +28,20 @@ The normalizer accepts the source's `[home, away]` and `{ft: [home, away]}` full
 
 Revision: `e6744429ee395bc86f247348c6184bb08d4eb361`. Counts refer to regular-season fixtures after explicit playoff exclusion. “Past unknown” means a fixture dated before the audit day with no full-time result; these are not treated as draws.
 
-| Season | Competition | Accepted fixtures | Results | Future fixtures | Past unknown | Outcome |
-| --- | --- | ---: | ---: | ---: | ---: | --- |
-| 2024–25 | Premier League | 380 | 380 | 0 | 0 | Accepted |
-| 2024–25 | Championship | 552 | 552 | 0 | 0 | Accepted; 5 playoff matches excluded |
-| 2024–25 | League One | 552 | 552 | 0 | 0 | Accepted |
-| 2024–25 | League Two | 552 | 552 | 0 | 0 | Accepted |
-| 2025–26 | Premier League | 380 | 380 | 0 | 0 | Accepted |
-| 2025–26 | Championship | 552 | 552 | 0 | 0 | Accepted; 5 playoff matches excluded |
-| 2025–26 | League One | 0 | 0 | 0 | 0 | Entire 552-row file rejected: 276 records outside season |
-| 2025–26 | League Two | 0 | 0 | 0 | 0 | Entire 564-row file rejected: 12 duplicate pairings |
-| 2026–27 | Premier League | 380 | 50 | 290 | 40 | Accepted, stale results; latest completed date 20 September |
-| 2026–27 | Championship | 552 | 95 | 384 | 73 | Accepted, stale results; latest completed date 20 September |
-| 2026–27 | League One | 0 | 0 | 0 | 0 | Source file missing (HTTP 404) |
-| 2026–27 | League Two | 0 | 0 | 0 | 0 | Source file missing (HTTP 404) |
+| Season  | Competition    | Accepted fixtures | Results | Future fixtures | Past unknown | Outcome                                                     |
+| ------- | -------------- | ----------------: | ------: | --------------: | -----------: | ----------------------------------------------------------- |
+| 2024–25 | Premier League |               380 |     380 |               0 |            0 | Accepted                                                    |
+| 2024–25 | Championship   |               552 |     552 |               0 |            0 | Accepted; 5 playoff matches excluded                        |
+| 2024–25 | League One     |               552 |     552 |               0 |            0 | Accepted                                                    |
+| 2024–25 | League Two     |               552 |     552 |               0 |            0 | Accepted                                                    |
+| 2025–26 | Premier League |               380 |     380 |               0 |            0 | Accepted                                                    |
+| 2025–26 | Championship   |               552 |     552 |               0 |            0 | Accepted; 5 playoff matches excluded                        |
+| 2025–26 | League One     |                 0 |       0 |               0 |            0 | Entire 552-row file rejected: 276 records outside season    |
+| 2025–26 | League Two     |                 0 |       0 |               0 |            0 | Entire 564-row file rejected: 12 duplicate pairings         |
+| 2026–27 | Premier League |               380 |      50 |             290 |           40 | Accepted, stale results; latest completed date 20 September |
+| 2026–27 | Championship   |               552 |      95 |             384 |           73 | Accepted, stale results; latest completed date 20 September |
+| 2026–27 | League One     |                 0 |       0 |               0 |            0 | Source file missing (HTTP 404)                              |
+| 2026–27 | League Two     |                 0 |       0 |               0 |            0 | Source file missing (HTTP 404)                              |
 
 The current Premier League file includes Arsenal FC–Hull City AFC on 7 November, and the Championship file includes Derby County FC–Bolton Wanderers FC on 6 November. These are examples of source records, not independently confirmed fixture schedules.
 
