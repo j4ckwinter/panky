@@ -21,7 +21,8 @@
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
     "test:production": "pnpm build && playwright test --config playwright.production.config.ts",
     "test:speech": "pnpm build && playwright test --config playwright.speech.config.ts",
-    "connect:chatgpt": "pnpm --filter @panky/server connect:chatgpt"
+    "connect:chatgpt": "pnpm --filter @panky/server connect:chatgpt",
+    "audit:picks": "tsx scripts/audit-picks-data.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
