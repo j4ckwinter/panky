@@ -50,6 +50,19 @@ export function LiveTranscript({
               </StatusChip>
             )}
           </div>
+          {!hasSession && (
+            <div className="listening-intro" id="listening-help">
+              <p>
+                Share the tab, window or screen playing your call, enable
+                <strong> Share audio</strong>, and allow your microphone.
+              </p>
+              <p>
+                Panky turns shared speech into editable questions. Review a
+                question, then choose <strong>Send question</strong> to get an
+                answer. Nothing is sent automatically.
+              </p>
+            </div>
+          )}
           {((state.status !== "idle" && !active) || loading) && (
             <p role="status" className="listening-status">
               {loading
@@ -69,7 +82,12 @@ export function LiveTranscript({
         <div className="browser-audio-actions listening-controls">
           {topicAction}
           {!active && !pending && !loading && (
-            <Button onClick={() => void start()}>Start listening</Button>
+            <Button
+              onClick={() => void start()}
+              aria-describedby={!hasSession ? "listening-help" : undefined}
+            >
+              Start listening
+            </Button>
           )}
           {modelPicker}
           {active && !loading && (

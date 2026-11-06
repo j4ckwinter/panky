@@ -38,6 +38,18 @@
 .listening-welcome p {
   margin: 0;
 }
+.listening-intro {
+  display: grid;
+  gap: var(--spacing-pancake-12);
+  max-width: 48ch;
+  margin: var(--spacing-pancake-12) auto 0;
+  color: var(--color-pancake-muted);
+  font-size: var(--text-pancake-body);
+}
+.listening-intro strong {
+  color: var(--color-pancake-ink);
+  font-weight: 600;
+}
 .listening-status {
   color: var(--color-pancake-muted);
   font-size: 14px;
