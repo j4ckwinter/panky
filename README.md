@@ -8,6 +8,8 @@ try it at [panky.vercel.app](https://panky.vercel.app). it's invite-only for now
 
 <img src="docs/assets/panky.gif" alt="Panky chat demo" width="320" />
 
+the [architecture case study](docs/architecture.md) follows a reply through streaming, cancellation and recovery, with the tradeoffs, code and tests behind it.
+
 ## run locally
 
 use Node 24+ and pnpm 12.16.1. from the repository root:
