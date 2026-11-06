@@ -9,6 +9,18 @@ import { TaskError } from "../task-error.js";
 import type { Store } from "./store.js";
 import { dateTimeTool, type Tool } from "./tools.js";
 
+type StartChatOptions = {
+  conversationId: string;
+  content: string;
+  send: (event: StreamEvent) => Promise<void>;
+  signal: AbortSignal;
+  includeActivity?: boolean;
+  interview?: InterviewInput;
+  sources?: Evidence[];
+  useSources?: boolean;
+  modelProvider?: ModelProvider;
+};
+
 export class Chat {
   private active:
     | { controller: AbortController; conversationId: string; runId?: string }
@@ -26,17 +38,17 @@ export class Chat {
   get activeConversationId() {
     return this.active?.conversationId;
   }
-  start(
-    conversationId: string,
-    content: string,
-    send: (event: StreamEvent) => Promise<void>,
-    signal: AbortSignal,
+  start({
+    conversationId,
+    content,
+    send,
+    signal,
     includeActivity = false,
-    interview?: InterviewInput,
-    sources: Evidence[] = [],
+    interview,
+    sources = [],
     useSources = false,
-    modelProvider?: ModelProvider,
-  ): Promise<void> {
+    modelProvider,
+  }: StartChatOptions): Promise<void> {
     if (this.active)
       throw new HttpError(
         409,

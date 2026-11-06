@@ -156,14 +156,14 @@ export class ChatApi {
           await once(response, "drain", { signal: controller.signal });
       };
       try {
-        await chat.start(
-          id.data,
+        await chat.start({
+          conversationId: id.data,
           content,
           send,
-          controller.signal,
+          signal: controller.signal,
           includeActivity,
           interview,
-          (
+          sources: (
             interview
               ? interview.useExperience && interview.useSources
               : useChatSources
@@ -175,9 +175,9 @@ export class ChatApi {
                   : content,
               )
             : [],
-          useChatSources,
+          useSources: useChatSources,
           modelProvider,
-        );
+        });
         response.end();
       } finally {
         response.off("close", disconnect);
