@@ -116,6 +116,62 @@ test("reload interrupts a reply and does not submit it again", async ({
   expect(submissions).toBe(0);
 });
 
+test("a truncated stream preserves partial output and refresh recovers without resubmission", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await login(page);
+  let submissions = 0;
+  let partial = "";
+  await page.route("**/api/conversations/*/messages", async (route) => {
+    submissions++;
+    const response = await route.fetch();
+    const frames = (await response.text()).split("\n\n");
+    const truncated: string[] = [];
+    for (const frame of frames) {
+      if (!frame.startsWith("data: ")) continue;
+      const event = JSON.parse(frame.slice(6));
+      truncated.push(frame);
+      if (event.type === "delta") {
+        partial = event.text;
+        break;
+      }
+    }
+    await route.fulfill({ response, body: `${truncated.join("\n\n")}\n\n` });
+  });
+  await page.getByLabel("Message", { exact: true }).fill("Recover this reply");
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "reply was interrupted" }),
+  ).toBeVisible();
+  expect(partial.length).toBeGreaterThan(0);
+  const reply = page.getByRole("article", {
+    name: "Panky response",
+    exact: true,
+  });
+  await expect(reply).toContainText(partial);
+  await expect(reply).toContainText("Connection interrupted");
+  await expect(
+    page.getByRole("button", { name: "Stop response", exact: true }),
+  ).toHaveCount(0);
+  const input = page.getByLabel("Message", { exact: true });
+  await expect(input).toBeEnabled();
+  await input.fill("Keep the next draft");
+  await page
+    .getByRole("button", {
+      name: "Refresh history",
+      exact: true,
+      includeHidden: true,
+    })
+    .click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(reply).toContainText("This is a mock response from Panky");
+  await expect(reply).not.toContainText("Connection interrupted");
+  await expect(input).toHaveValue("Keep the next draft");
+  await expect(page.getByRole("article")).toHaveCount(2);
+  expect(submissions).toBe(1);
+});
+
 test("maximum valid message streams progressively and completes", async ({
   page,
 }) => {

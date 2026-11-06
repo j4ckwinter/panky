@@ -1,15 +1,13 @@
 import type {
-  Activity,
   Conversation,
   InterviewInput,
-  Message,
   ModelSelection,
   StreamEvent,
-  TaskRun,
 } from "@panky/shared";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useReducer } from "react";
 import type { Api } from "../api/chat";
 import { errorMessage } from "../api/chat";
+import { chatReducer, initialChatState, submissionAccepted } from "./chatState";
 
 type History = Awaited<ReturnType<Api["history"]>>;
 
@@ -29,25 +27,16 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
   function setDraft(value: string) {
     setDrafts((items) => ({ ...items, [draftKey]: value }));
   }
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [runs, setRuns] = useState<TaskRun[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [cancelling, setCancelling] = useState(false);
+  const [state, dispatch] = useReducer(chatReducer, initialChatState);
   const cancelLock = useRef(false);
-  const [pending, setPending] = useState(false);
-  const [submissionAccepted, setSubmissionAccepted] = useState(false);
-  const [streaming, setStreaming] = useState(false);
   const [serverBusy, setServerBusy] = useState(false);
   const [connected, setConnected] = useState(true);
-  const [error, setError] = useState("");
   const lock = useRef(false);
   const active = useRef<AbortController | null>(null);
   const mounted = useRef(true);
 
   const replaceHistoryContent = useCallback((history: History | null) => {
-    setMessages(history?.messages ?? []);
-    setRuns(history?.runs ?? []);
-    setActivities(history?.activities ?? []);
+    dispatch({ type: "history-replaced", history });
   }, []);
   const applyHistory = useCallback(
     (history: History | null) => {
@@ -60,18 +49,17 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
   const run = useCallback(async (operation: () => Promise<void>) => {
     if (lock.current || cancelLock.current) return false;
     lock.current = true;
-    setPending(true);
-    setSubmissionAccepted(false);
-    setError("");
+    dispatch({ type: "operation-started" });
     try {
       await operation();
       return true;
     } catch (cause) {
-      if (mounted.current) setError(errorMessage(cause));
+      if (mounted.current)
+        dispatch({ type: "error", error: errorMessage(cause) });
       return false;
     } finally {
       lock.current = false;
-      if (mounted.current) setPending(false);
+      if (mounted.current) dispatch({ type: "operation-finished" });
     }
   }, []);
 
@@ -136,7 +124,7 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
   function create() {
     if (lock.current || cancelLock.current) return;
     applyHistory(null);
-    setError("");
+    dispatch({ type: "error", error: "" });
   }
 
   function rename(id: string, title: string) {
@@ -194,64 +182,25 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
       }
       const controller = new AbortController();
       active.current = controller;
-      setStreaming(true);
-      let assistantId: string | undefined;
-      let runId: string | undefined;
+      dispatch({ type: "stream-opened" });
+      let accepted = false;
       const receive = (event: StreamEvent) => {
         if (!mounted.current) return;
-        switch (event.type) {
-          case "start":
-            if (assistantId) return;
-            setSubmissionAccepted(true);
-            assistantId = event.assistant.id;
-            runId = event.run.id;
-            onAccepted?.({
-              userMessageId: event.user.id,
-              assistantMessageId: event.assistant.id,
-            });
-            setRuns((items) => [...items, event.run]);
-            setMessages((items) => [...items, event.user, event.assistant]);
-            setDrafts((items) => {
-              const next = { ...items };
-              delete next[conversation.id];
-              return next;
-            });
-            break;
-          case "delta":
-            setMessages((items) =>
-              items.map((item) =>
-                item.id === assistantId
-                  ? { ...item, content: item.content + event.text }
-                  : item,
-              ),
-            );
-            break;
-          case "activity":
-            setActivities((items) =>
-              items.some((item) => item.id === event.activity.id)
-                ? items
-                : [...items, event.activity],
-            );
-            break;
-          case "done":
-            setServerBusy(false);
-            setRuns((items) =>
-              items.map((item) =>
-                item.id === event.run.id ? event.run : item,
-              ),
-            );
-            if (event.run.error && event.run.status !== "cancelled")
-              setError(event.run.error);
-            setMessages((items) =>
-              items.map((item) =>
-                item.id === event.message.id ? event.message : item,
-              ),
-            );
-            break;
-          case "error":
-            setError(event.error);
-            break;
+        if (event.type === "start") {
+          if (accepted) return;
+          accepted = true;
+          onAccepted?.({
+            userMessageId: event.user.id,
+            assistantMessageId: event.assistant.id,
+          });
+          setDrafts((items) => {
+            const next = { ...items };
+            delete next[conversation.id];
+            return next;
+          });
         }
+        if (event.type === "done") setServerBusy(false);
+        dispatch({ type: "stream-event", event });
       };
       try {
         await api.send(
@@ -272,31 +221,13 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
         }
       } catch (cause) {
         if (mounted.current) {
-          setRuns((items) =>
-            items.map((item) =>
-              item.id === runId && item.status === "running"
-                ? {
-                    ...item,
-                    status: "interrupted",
-                    error:
-                      "Connection interrupted. Refresh history to confirm the saved task status.",
-                  }
-                : item,
-            ),
-          );
-          setMessages((items) =>
-            items.map((item) =>
-              item.id === assistantId && item.status === "streaming"
-                ? { ...item, status: "interrupted" }
-                : item,
-            ),
-          );
+          dispatch({ type: "stream-interrupted" });
         }
         throw cause;
       } finally {
         active.current = null;
         if (mounted.current) {
-          setStreaming(false);
+          dispatch({ type: "stream-closed" });
         }
       }
     });
@@ -304,24 +235,23 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
   async function cancel(id: string) {
     if (cancelLock.current || (lock.current && !active.current)) return;
     cancelLock.current = true;
-    setCancelling(true);
+    dispatch({ type: "cancel-started" });
     try {
       const { run: task } = await api.cancel(id);
       if (!mounted.current) return;
       if (task.status !== "running") setServerBusy(false);
-      setRuns((items) =>
-        items.map((item) => (item.id === task.id ? task : item)),
-      );
+      dispatch({ type: "cancel-result", run: task });
       if (!active.current && current) {
         const history = await api.history(current.id);
         if (!mounted.current) return;
         replaceHistoryContent(history);
       }
     } catch (cause) {
-      if (mounted.current) setError(errorMessage(cause));
+      if (mounted.current)
+        dispatch({ type: "error", error: errorMessage(cause) });
     } finally {
       cancelLock.current = false;
-      if (mounted.current) setCancelling(false);
+      if (mounted.current) dispatch({ type: "cancel-finished" });
     }
   }
   return {
@@ -331,23 +261,23 @@ export function useChat(api: Api, modelSelection?: ModelSelection) {
     setDraft,
     conversations,
     current,
-    messages,
-    runs,
-    activities,
-    cancelling,
+    messages: state.messages,
+    runs: state.runs,
+    activities: state.activities,
+    cancelling: state.cancelling,
     cancel,
-    pending: pending || cancelling,
-    streaming,
-    submissionAccepted,
+    pending: state.operation.phase !== "idle" || state.cancelling,
+    streaming: state.operation.phase === "stream",
+    submissionAccepted: submissionAccepted(state.operation),
     serverBusy,
     connected,
-    error,
+    error: state.error,
     refresh,
     select,
     create,
     send,
     rename,
     remove,
-    clearError: () => setError(""),
+    clearError: () => dispatch({ type: "error", error: "" }),
   };
 }
